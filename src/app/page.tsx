@@ -54,10 +54,11 @@ export default function VibesphereApp() {
   const [lastY, setLastY] = useState(0);
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
+
+  // --- AUTHENTICATION STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import, show-mnemonic, success
   const [mnemonic, setMnemonic] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
 
   // --- WALLET FUNCTIONS ---
   const handleCreateWallet = () => {
@@ -94,15 +95,27 @@ export default function VibesphereApp() {
       alert("failed to paste. please allow clipboard access.");
     }
   };
-
+  
+  // --- LOGIN/LOGOUT ENGINE ---
   useEffect(() => {
     if (authStep === 'success') {
       setIsAuthenticated(true);
+      console.log("access granted. welcome to vibesphere.");
     }
   }, [authStep]);
-  
 
+  const handleLogout = () => {
+    const confirmLogout = window.confirm("are you sure you want to exit the sovereign zone?");
+    if (confirmLogout) {
+      setIsAuthenticated(false);
+      setIsSidebarOpen(false);
+      setAuthStep('gateway');
+      console.log("logged out. stay sovereign.");
+    }
+  };
+  
   useEffect(() => {
+    if (!isAuthenticated) return; // Only run scroll listener when authenticated
     const handleScroll = () => {
       const currentY = window.scrollY;
       if (currentY > lastY && currentY > 100) {
@@ -114,7 +127,7 @@ export default function VibesphereApp() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastY]);
+  }, [lastY, isAuthenticated]);
 
   const handleNavigation = (target: string, params?: any) => {
     console.log(`Navigating to: ${target}`, params);
@@ -122,10 +135,6 @@ export default function VibesphereApp() {
     setIsSidebarOpen(false);
   };
   
-  const handleLogout = () => {
-    alert("Logging out from Vibesphere...");
-  };
-
   const handleSendComment = (postId: number) => {
     if (commentText.trim() === "") return;
     
@@ -150,412 +159,424 @@ export default function VibesphereApp() {
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden font-sans">
       
-      {/* --- HEADER --- */}
-      <motion.header
-        animate={{ y: isScrolling ? -100 : 0 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
-      >
-        {/* menu toggle (hide when search is active) */}
-        {!isSearchOpen && (
-          <motion.button 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            onClick={() => setIsSidebarOpen(true)} 
-            className="p-2 hover:bg-white/10 rounded-full transition"
-          >
-            <Menu size={22} className="text-slate-400" />
-          </motion.button>
-        )}
-
-        {/* title & search bar container */}
-        <div className="flex-1 flex justify-center px-4">
-          {isSearchOpen ? (
-            <motion.div 
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: "100%", opacity: 1 }}
-              className="relative flex items-center w-full max-w-md"
+      {!isAuthenticated ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={authStep}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-sm mx-auto flex flex-col items-center justify-center p-8"
             >
-              <input 
-                autoFocus
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="search sovereign users..."
-                className="w-full bg-white/5 border border-purple-500/30 rounded-full py-2 pl-10 pr-12 text-sm font-mono lowercase tracking-wider focus:outline-none focus:border-purple-500 transition-all"
-              />
-              <Search size={16} className="absolute left-4 text-purple-400" />
-              
-              <button 
-                onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
-                className="absolute right-4 p-1 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X size={18} className="text-slate-400 hover:text-white" strokeWidth={1.5} />
-              </button>
-            </motion.div>
-          ) : (
-            <motion.h1 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-sm font-black tracking-[0.3em] lowercase italic bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent"
-            >
-              vibes of sovereign
-            </motion.h1>
-          )}
-        </div>
+              {authStep === 'gateway' && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="w-full flex flex-col items-center"
+                  >
+                    <div className="mb-12 relative">
+                      <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full" />
+                      <Wallet size={64} strokeWidth={1} className="text-white relative z-10" />
+                    </div>
 
-        {/* search trigger icon */}
-        {!isSearchOpen && (
-          <motion.button 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            onClick={() => setIsSearchOpen(true)} 
-            className="p-2 hover:bg-white/10 rounded-full transition"
-          >
-            <Search size={22} className="text-slate-400" />
-          </motion.button>
-        )}
-      </motion.header>
+                    <h2 className="text-2xl font-black italic lowercase tracking-tighter mb-2">
+                      nexus login
+                    </h2>
+                    <p className="text-[11px] font-mono text-slate-500 mb-12 text-center leading-relaxed">
+                      secure your sovereignty. <br/> no email. no password. just vibe.
+                    </p>
 
-      {/* --- SIDEBAR --- */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
-            />
-            <motion.div 
-              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 left-0 w-64 bg-[#050505] z-[100] border-r border-white/5 p-8 flex flex-col"
-            >
-              <div className="flex flex-col gap-6 mb-12">
-                <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-slate-500 hover:text-white transition">
-                  <ArrowLeft size={18} strokeWidth={1.5} />
-                  <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
-                </button>
-                <h2 className="text-2xl font-black lowercase italic bg-gradient-to-tr from-white to-purple-500 bg-clip-text text-transparent">vibesphere</h2>
-              </div>
-              <nav className="flex flex-col gap-8 flex-1">
-                <SidebarLink icon={<User size={18} strokeWidth={1.5}/>} label="profile" onClick={() => handleNavigation('profile')} />
-                <SidebarLink icon={<Bookmark size={18} strokeWidth={1.5}/>} label="bookmark" onClick={() => handleNavigation('bookmark')} />
-                <SidebarLink icon={<Settings size={18} strokeWidth={1.5}/>} label="settings" onClick={() => handleNavigation('settings')} />
-              </nav>
-              <div className="mt-auto pt-6 border-t border-white/5">
-                <button onClick={handleLogout} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
-                  <LogOut size={18} strokeWidth={1.5} />
-                  <span className="text-[11px] font-mono uppercase tracking-widest">logout</span>
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* --- MAIN CONTENT --- */}
-      <main className="w-full max-w-4xl mx-auto pb-48 pt-28 px-6 min-h-screen">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {activeTab === 'home' && (
-              <motion.div 
-                initial="hidden" animate="show"
-                variants={{ show: { transition: { staggerChildren: 0.15 } } }}
-                className="flex flex-col items-center gap-12"
-              >
-                {feedData.map((item) => (
-                  <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
-                    <div className="flex justify-between items-start mb-5">
-                      <div 
-                        onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
-                        className="flex items-center gap-3 cursor-pointer group"
+                    <div className="w-full flex flex-col gap-4">
+                      <button 
+                        onClick={handleCreateWallet}
+                        className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
                       >
-                        <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-purple-500/50 transition-all">
-                          <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold group-hover:text-purple-400 transition-colors">
-                            {item.username}
-                          </span>
-                          <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
-                        </div>
-                      </div>
-                      <button className="group p-2 -mr-2 mt-1">
-                        <Share2 size={18} style={{ stroke: `${item.color}66`, strokeWidth: 1.5 }} className="group-hover:stroke-white transition-colors"/>
-                      </button>
-                    </div>
-
-                    <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
-                      <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.content}</p>
-                    </div>
-                    
-                    <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
-                      <div className="flex flex-col">
-                        <button 
-                          onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
-                          className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-purple-400' : 'text-slate-500 hover:text-purple-400'}`}
-                        >
-                          <MessageSquare size={18} strokeWidth={1.5} />
-                          <span className="text-[11px] font-mono">{item.commentCount}</span>
-                        </button>
-                      </div>
-                      
-                      <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
-                        <Repeat2 size={20} strokeWidth={1.5} />
-                        <span className="text-[11px] font-mono">{item.repostCount}</span>
+                        create new wallet
                       </button>
 
-                      <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
-                        <Heart size={18} strokeWidth={1.5} />
-                        <span className="text-[11px] font-mono">{item.likeCount}</span>
-                      </button>
-                    </div>
-                    <AnimatePresence>
-                      {openCommentsId === item.id && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="mt-6 flex flex-col gap-4">
-                            {/* input komentar baru */}
-                            <div className="flex gap-3 items-center mb-2">
-                              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
-                              <div className="relative flex-1 flex items-center">
-                                <input 
-                                  value={commentText}
-                                  onChange={(e) => setCommentText(e.target.value.toLowerCase())}
-                                  onKeyDown={(e) => e.key === 'Enter' && handleSendComment(item.id)}
-                                  placeholder="write your vibe..."
-                                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50 transition-all text-slate-200"
-                                />
-                                
-                                <button 
-                                  onClick={() => handleSendComment(item.id)}
-                                  disabled={!commentText.trim()}
-                                  className={`absolute right-3 transition-colors ${
-                                    commentText.trim() ? 'text-purple-500 hover:text-purple-400' : 'text-slate-700'
-                                  }`}
-                                >
-                                  <Send size={14} strokeWidth={2} />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* list komentar (placeholder) */}
-                            <div className="pl-11 flex flex-col gap-4">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-bold text-purple-400">@sovereign_user</span>
-                                <p className="text-[11px] text-slate-300 leading-relaxed">this vibe is real. 100% locked.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </ResonanceCard>
-                ))}
-                <div className="h-20"></div>
-              </motion.div>
-            )}
-            {activeTab === 'wallet' && (
-              !isAuthenticated ? (
-                <>
-                  {authStep === 'gateway' && (
-                     <motion.div 
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
+                      <button 
+                        onClick={() => setAuthStep('import')}
+                        className="w-full py-4 rounded-[2rem] bg-white/5 border border-white/10 text-slate-300 text-xs font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-all"
                       >
-                        <div className="mb-12 relative">
-                          <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full" />
-                          <Wallet size={64} strokeWidth={1} className="text-white relative z-10" />
-                        </div>
+                        import existing wallet
+                      </button>
+                    </div>
 
-                        <h2 className="text-2xl font-black italic lowercase tracking-tighter mb-2">
-                          nexus login
-                        </h2>
-                        <p className="text-[11px] font-mono text-slate-500 mb-12 text-center leading-relaxed">
-                          secure your sovereignty. <br/> no email. no password. just vibe.
-                        </p>
-
-                        <div className="w-full flex flex-col gap-4">
-                          <button 
-                            onClick={handleCreateWallet}
-                            className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
-                          >
-                            create new wallet
-                          </button>
-
-                          <button 
-                            onClick={() => setAuthStep('import')}
-                            className="w-full py-4 rounded-[2rem] bg-white/5 border border-white/10 text-slate-300 text-xs font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-all"
-                          >
-                            import existing wallet
-                          </button>
-                        </div>
-
-                        <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                          <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
-                            *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
-                          </p>
-                        </div>
-                      </motion.div>
-                  )}
-                  {authStep === 'show-mnemonic' && (
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
-                    >
-                      <motion.div className="w-full p-6 bg-white/[0.02] border border-purple-500/20 rounded-[2rem]">
-                        <h3 className="text-xs font-mono text-purple-400 mb-4 lowercase tracking-[0.2em]">your seed phrase:</h3>
-                        <div className="grid grid-cols-3 gap-2 mb-6">
-                          {mnemonic.split(' ').map((word, i) => (
-                            <div key={i} className="bg-white/5 p-2 rounded-lg text-center text-[10px] font-mono text-slate-300">
-                              {word}
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <button 
-                          onClick={copyToClipboard}
-                          className="w-full py-3 mb-3 bg-white/5 border border-white/10 text-purple-400 text-[10px] font-bold uppercase rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
-                        >
-                          <Copy size={14} /> copy seed phrase
-                        </button>
-                        
-                        <button onClick={() => setAuthStep('success')} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
-                          i've saved it
-                        </button>
-                      </motion.div>
-                      <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                        <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
-                          *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                  {authStep === 'import' && (
-                     <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
-                    >
-                      <motion.div className="w-full">
-                        <div className="relative">
-                          <textarea 
-                            value={mnemonic}
-                            onChange={(e) => setMnemonic(e.target.value)}
-                            placeholder="enter your 12 word seed phrase..."
-                            className="w-full h-32 bg-white/5 border border-white/10 rounded-[2rem] p-6 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50"
-                          />
-                          <button 
-                            onClick={pasteFromClipboard}
-                            className="absolute bottom-4 right-6 text-[10px] font-mono text-purple-400 hover:text-white uppercase flex items-center gap-1"
-                          >
-                            <ClipboardList size={14} /> paste
-                          </button>
-                        </div>
-                        
-                        <button onClick={() => handleImportWallet(mnemonic)} className="w-full mt-4 py-4 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                          verify & import
-                        </button>
-                         <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
-                      </motion.div>
-                      <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                        <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
-                          *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </>
-              ) : (
+                    <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
+                      <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                        *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
+                      </p>
+                    </div>
+                  </motion.div>
+              )}
+              {authStep === 'show-mnemonic' && (
                 <motion.div 
-                  className="w-full max-w-md mx-auto p-6"
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    className="w-full"
                 >
-                  {/* 1. balance card: the core resonance */}
-                  <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
-                    <div className="absolute top-0 right-0 p-6 opacity-20">
-                      <Wallet size={80} strokeWidth={1} />
+                  <motion.div className="w-full p-6 bg-white/[0.02] border border-purple-500/20 rounded-[2rem]">
+                    <h3 className="text-xs font-mono text-purple-400 mb-4 lowercase tracking-[0.2em]">your seed phrase:</h3>
+                    <div className="grid grid-cols-3 gap-2 mb-6">
+                      {mnemonic.split(' ').map((word, i) => (
+                        <div key={i} className="bg-white/5 p-2 rounded-lg text-center text-[10px] font-mono text-slate-300">
+                          {word}
+                        </div>
+                      ))}
                     </div>
                     
-                    <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
-                    <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                      1,240.50 <span className="text-sm font-light not-italic text-purple-400">opn</span>
-                    </h3>
-                    <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $3,420.12 usd</p>
-
-                    {/* quick actions */}
-                    <div className="flex gap-4 mt-10">
-                      <button className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-purple-400 transition-colors">
-                        send
-                      </button>
-                      <button className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">
-                        receive
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 2. asset list */}
-                  <div className="mt-12 flex flex-col gap-6">
-                    <div className="flex justify-between items-center px-2">
-                      <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">assets</span>
-                      <button className="text-[10px] font-mono text-purple-400">view all</button>
-                    </div>
-
-                    {[
-                      { name: 'sovereign', symbol: 'opn', balance: '1,240.50', color: 'from-purple-500' },
-                      { name: 'bitcoin', symbol: 'btc', balance: '0.042', color: 'from-orange-500' },
-                      { name: 'ethereum', symbol: 'eth', balance: '1.25', color: 'from-blue-500' }
-                    ].map((asset) => (
-                      <div key={asset.symbol} className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${asset.color} to-black/20`} />
-                        <div className="flex-1">
-                          <h4 className="text-sm font-bold lowercase">{asset.name}</h4>
-                          <span className="text-[10px] font-mono text-slate-500 uppercase">{asset.symbol}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold font-mono">{asset.balance}</p>
-                          <p className="text-[10px] text-green-500/70">+2.4%</p>
-                        </div>
-                      </div>
-                    ))}
+                    <button 
+                      onClick={copyToClipboard}
+                      className="w-full py-3 mb-3 bg-white/5 border border-white/10 text-purple-400 text-[10px] font-bold uppercase rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                    >
+                      <Copy size={14} /> copy seed phrase
+                    </button>
+                    
+                    <button onClick={() => setAuthStep('success')} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
+                      i've saved it
+                    </button>
+                  </motion.div>
+                  <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
+                    <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                      *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
+                    </p>
                   </div>
                 </motion.div>
-              )
-            )}
-            {activeTab !== 'home' && activeTab !== 'wallet' && (
-              <div className="text-center pt-20">
-                <h2 className="text-4xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">{activeTab}</h2>
-                <p className="text-slate-500 mt-4 font-mono">Resonance field stabilizing... content will materialize shortly.</p>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {/* --- DOCK MENU --- */}
-      <div className="fixed bottom-10 left-0 right-0 flex justify-center z-[80] pointer-events-none">
-        <motion.nav
-          variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 120, opacity: 0 } }}
-          animate={(isScrolling || isSidebarOpen) ? "hidden" : "visible"}
-          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 items-center shadow-2xl"
+              )}
+              {authStep === 'import' && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    className="w-full"
+                >
+                  <motion.div>
+                    <div className="relative">
+                      <textarea 
+                        value={mnemonic}
+                        onChange={(e) => setMnemonic(e.target.value)}
+                        placeholder="enter your 12 word seed phrase..."
+                        className="w-full h-32 bg-white/5 border border-white/10 rounded-[2rem] p-6 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50"
+                      />
+                      <button 
+                        onClick={pasteFromClipboard}
+                        className="absolute bottom-4 right-6 text-[10px] font-mono text-purple-400 hover:text-white uppercase flex items-center gap-1"
+                      >
+                        <ClipboardList size={14} /> paste
+                      </button>
+                    </div>
+                    
+                    <button onClick={() => handleImportWallet(mnemonic)} className="w-full mt-4 py-4 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                      verify & import
+                    </button>
+                     <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
+                  </motion.div>
+                  <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
+                    <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                      *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      ) : (
+      <>
+        {/* --- HEADER --- */}
+        <motion.header
+          animate={{ y: isScrolling ? -100 : 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
         >
-          <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? "text-purple-400" : "text-slate-500"}><Home size={22} strokeWidth={1.5} /></button>
-          <button onClick={() => setActiveTab('market')} className={activeTab === 'market' ? "text-purple-400" : "text-slate-500"}><BarChart3 size={22} strokeWidth={1.5} /></button>
-          <div className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.4)]"><Plus size={24} strokeWidth={2} className="text-white" /></div>
-          <button onClick={() => setActiveTab('wallet')} className={activeTab === 'wallet' ? "text-purple-400" : "text-slate-500"}><Wallet size={22} strokeWidth={1.5} /></button>
-          <button onClick={() => setActiveTab('notif')} className={activeTab === 'notif' ? "text-purple-400" : "text-slate-500"}><Bell size={22} strokeWidth={1.5} /></button>
-        </motion.nav>
-      </div>
+          {/* menu toggle (hide when search is active) */}
+          {!isSearchOpen && (
+            <motion.button 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              onClick={() => setIsSidebarOpen(true)} 
+              className="p-2 hover:bg-white/10 rounded-full transition"
+            >
+              <Menu size={22} className="text-slate-400" />
+            </motion.button>
+          )}
 
+          {/* title & search bar container */}
+          <div className="flex-1 flex justify-center px-4">
+            {isSearchOpen ? (
+              <motion.div 
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "100%", opacity: 1 }}
+                className="relative flex items-center w-full max-w-md"
+              >
+                <input 
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="search sovereign users..."
+                  className="w-full bg-white/5 border border-purple-500/30 rounded-full py-2 pl-10 pr-12 text-sm font-mono lowercase tracking-wider focus:outline-none focus:border-purple-500 transition-all"
+                />
+                <Search size={16} className="absolute left-4 text-purple-400" />
+                
+                <button 
+                  onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
+                  className="absolute right-4 p-1 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X size={18} className="text-slate-400 hover:text-white" strokeWidth={1.5} />
+                </button>
+              </motion.div>
+            ) : (
+              <motion.h1 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="text-sm font-black tracking-[0.3em] lowercase italic bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent"
+              >
+                vibes of sovereign
+              </motion.h1>
+            )}
+          </div>
+
+          {/* search trigger icon */}
+          {!isSearchOpen && (
+            <motion.button 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              onClick={() => setIsSearchOpen(true)} 
+              className="p-2 hover:bg-white/10 rounded-full transition"
+            >
+              <Search size={22} className="text-slate-400" />
+            </motion.button>
+          )}
+        </motion.header>
+
+        {/* --- SIDEBAR --- */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setIsSidebarOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
+              />
+              <motion.div 
+                initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="fixed inset-y-0 left-0 w-64 bg-[#050505] z-[100] border-r border-white/5 p-8 flex flex-col"
+              >
+                <div className="flex flex-col gap-6 mb-12">
+                  <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-slate-500 hover:text-white transition">
+                    <ArrowLeft size={18} strokeWidth={1.5} />
+                    <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
+                  </button>
+                  <h2 className="text-2xl font-black lowercase italic bg-gradient-to-tr from-white to-purple-500 bg-clip-text text-transparent">vibesphere</h2>
+                </div>
+                <nav className="flex flex-col gap-8 flex-1">
+                  <SidebarLink icon={<User size={18} strokeWidth={1.5}/>} label="profile" onClick={() => handleNavigation('profile')} />
+                  <SidebarLink icon={<Bookmark size={18} strokeWidth={1.5}/>} label="bookmark" onClick={() => handleNavigation('bookmark')} />
+                  <SidebarLink icon={<Settings size={18} strokeWidth={1.5}/>} label="settings" onClick={() => handleNavigation('settings')} />
+                </nav>
+                <div className="mt-auto pt-6 border-t border-white/5">
+                  <button onClick={handleLogout} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
+                    <LogOut size={18} strokeWidth={1.5} />
+                    <span className="text-[11px] font-mono uppercase tracking-widest">logout</span>
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* --- MAIN CONTENT --- */}
+        <main className="w-full max-w-4xl mx-auto pb-48 pt-28 px-6 min-h-screen">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {activeTab === 'home' && (
+                <motion.div 
+                  initial="hidden" animate="show"
+                  variants={{ show: { transition: { staggerChildren: 0.15 } } }}
+                  className="flex flex-col items-center gap-12"
+                >
+                  {feedData.map((item) => (
+                    <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
+                      <div className="flex justify-between items-start mb-5">
+                        <div 
+                          onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
+                          className="flex items-center gap-3 cursor-pointer group"
+                        >
+                          <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-purple-500/50 transition-all">
+                            <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold group-hover:text-purple-400 transition-colors">
+                              {item.username}
+                            </span>
+                            <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                          </div>
+                        </div>
+                        <button className="group p-2 -mr-2 mt-1">
+                          <Share2 size={18} style={{ stroke: `${item.color}66`, strokeWidth: 1.5 }} className="group-hover:stroke-white transition-colors"/>
+                        </button>
+                      </div>
+
+                      <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
+                        <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.content}</p>
+                      </div>
+                      
+                      <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
+                        <div className="flex flex-col">
+                          <button 
+                            onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
+                            className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-purple-400' : 'text-slate-500 hover:text-purple-400'}`}
+                          >
+                            <MessageSquare size={18} strokeWidth={1.5} />
+                            <span className="text-[11px] font-mono">{item.commentCount}</span>
+                          </button>
+                        </div>
+                        
+                        <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                          <Repeat2 size={20} strokeWidth={1.5} />
+                          <span className="text-[11px] font-mono">{item.repostCount}</span>
+                        </button>
+
+                        <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                          <Heart size={18} strokeWidth={1.5} />
+                          <span className="text-[11px] font-mono">{item.likeCount}</span>
+                        </button>
+                      </div>
+                      <AnimatePresence>
+                        {openCommentsId === item.id && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-6 flex flex-col gap-4">
+                              {/* input komentar baru */}
+                              <div className="flex gap-3 items-center mb-2">
+                                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
+                                <div className="relative flex-1 flex items-center">
+                                  <input 
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSendComment(item.id)}
+                                    placeholder="write your vibe..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50 transition-all text-slate-200"
+                                  />
+                                  
+                                  <button 
+                                    onClick={() => handleSendComment(item.id)}
+                                    disabled={!commentText.trim()}
+                                    className={`absolute right-3 transition-colors ${
+                                      commentText.trim() ? 'text-purple-500 hover:text-purple-400' : 'text-slate-700'
+                                    }`}
+                                  >
+                                    <Send size={14} strokeWidth={2} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* list komentar (placeholder) */}
+                              <div className="pl-11 flex flex-col gap-4">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[10px] font-bold text-purple-400">@sovereign_user</span>
+                                  <p className="text-[11px] text-slate-300 leading-relaxed">this vibe is real. 100% locked.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </ResonanceCard>
+                  ))}
+                  <div className="h-20"></div>
+                </motion.div>
+              )}
+              {activeTab === 'wallet' && (
+                  <motion.div 
+                    className="w-full max-w-md mx-auto p-6"
+                  >
+                    {/* 1. balance card: the core resonance */}
+                    <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
+                      <div className="absolute top-0 right-0 p-6 opacity-20">
+                        <Wallet size={80} strokeWidth={1} />
+                      </div>
+                      
+                      <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
+                      <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
+                        1,240.50 <span className="text-sm font-light not-italic text-purple-400">opn</span>
+                      </h3>
+                      <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $3,420.12 usd</p>
+
+                      {/* quick actions */}
+                      <div className="flex gap-4 mt-10">
+                        <button className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-purple-400 transition-colors">
+                          send
+                        </button>
+                        <button className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">
+                          receive
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 2. asset list */}
+                    <div className="mt-12 flex flex-col gap-6">
+                      <div className="flex justify-between items-center px-2">
+                        <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">assets</span>
+                        <button className="text-[10px] font-mono text-purple-400">view all</button>
+                      </div>
+
+                      {[
+                        { name: 'sovereign', symbol: 'opn', balance: '1,240.50', color: 'from-purple-500' },
+                        { name: 'bitcoin', symbol: 'btc', balance: '0.042', color: 'from-orange-500' },
+                        { name: 'ethereum', symbol: 'eth', balance: '1.25', color: 'from-blue-500' }
+                      ].map((asset) => (
+                        <div key={asset.symbol} className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${asset.color} to-black/20`} />
+                          <div className="flex-1">
+                            <h4 className="text-sm font-bold lowercase">{asset.name}</h4>
+                            <span className="text-[10px] font-mono text-slate-500 uppercase">{asset.symbol}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold font-mono">{asset.balance}</p>
+                            <p className="text-[10px] text-green-500/70">+2.4%</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+              )}
+              {activeTab !== 'home' && activeTab !== 'wallet' && (
+                <div className="text-center pt-20">
+                  <h2 className="text-4xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">{activeTab}</h2>
+                  <p className="text-slate-500 mt-4 font-mono">Resonance field stabilizing... content will materialize shortly.</p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+
+        {/* --- DOCK MENU --- */}
+        <div className="fixed bottom-10 left-0 right-0 flex justify-center z-[80] pointer-events-none">
+          <motion.nav
+            variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 120, opacity: 0 } }}
+            animate={(isScrolling || isSidebarOpen) ? "hidden" : "visible"}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 items-center shadow-2xl"
+          >
+            <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? "text-purple-400" : "text-slate-500"}><Home size={22} strokeWidth={1.5} /></button>
+            <button onClick={() => setActiveTab('market')} className={activeTab === 'market' ? "text-purple-400" : "text-slate-500"}><BarChart3 size={22} strokeWidth={1.5} /></button>
+            <div className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.4)]"><Plus size={24} strokeWidth={2} className="text-white" /></div>
+            <button onClick={() => setActiveTab('wallet')} className={activeTab === 'wallet' ? "text-purple-400" : "text-slate-500"}><Wallet size={22} strokeWidth={1.5} /></button>
+            <button onClick={() => setActiveTab('notif')} className={activeTab === 'notif' ? "text-purple-400" : "text-slate-500"}><Bell size={22} strokeWidth={1.5} /></button>
+          </motion.nav>
+        </div>
+      </>
+      )}
     </div>
   );
 }
