@@ -5,8 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 
 
 export const metadata: Metadata = {
-  title: 'OPN Nexus',
-  description: 'The Year 3000 Web3 Super-App',
+  title: 'Vibesphere - Vibes of Sovereign',
+  description: 'Decentralized Social-Finance DApp on OPN Network',
 };
 
 const inter = Inter({
