@@ -77,60 +77,60 @@ export default function VibesphereApp() {
         return;
     }
     
-    const account = mnemonicToAccount(cleanMnemonic);
-
     try {
-        const rpcTarget = "https://rpc-testnet.iopn.io";
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rpcTarget)}`;
-
-        const response = await fetch(proxyUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                method: "eth_getBalance",
-                params: [account.address, "latest"],
-                id: 1
-            })
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`RPC request failed with status ${response.status}: ${errorBody}`);
-        }
-
-        const json = await response.json();
-        if (json.error) {
-            throw new Error(`RPC Error: ${json.error.message}`);
-        }
-
-        const rawBalance = json.result;
-        const formattedBalance = formatEther(BigInt(rawBalance));
-
-        setUserProfile({
-            username: "viber_" + account.address.slice(2, 8),
-            address: account.address,
-            avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${account.address}`,
-            balance: formattedBalance
-        });
+        // 1. GENERATE WALLET LOCALLY
+        const account = mnemonicToAccount(cleanMnemonic);
         
-        console.log("vibe check passed. rpc responded via proxy.");
-        setIsLoggedIn(true);
-        setAuthStep('gateway');
-
-    } catch (err) {
-        console.error("RPC Connection Error:", err);
-        
+        // 2. LOGIN IMMEDIATELY with local data
         setUserProfile({
             username: "viber_" + account.address.slice(2, 8),
             address: account.address,
             avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${account.address}`,
             balance: "0.00"
         });
-
+        setMnemonic(cleanMnemonic);
         setIsLoggedIn(true);
         setAuthStep('gateway');
-        alert("connected to local nexus. rpc syncing in background.");
+        console.log("local nexus active. syncing with iopn in background...");
+
+        // 3. BACKGROUND SYNC
+        try {
+            const rpcTarget = "https://rpc-testnet.iopn.io";
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rpcTarget)}`;
+
+            const response = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "eth_getBalance",
+                    params: [account.address, "latest"],
+                    id: 1
+                })
+            });
+
+            if (response.ok) {
+                const json = await response.json();
+                if (json.error) {
+                    throw new Error(`RPC Error: ${json.error.message}`);
+                }
+                const rawBalance = json.result;
+                const formattedBalance = formatEther(BigInt(rawBalance));
+
+                // Update profile with real balance from RPC
+                setUserProfile(prev => ({ ...prev, balance: formattedBalance }));
+                console.log("balance synced from iopn.");
+            } else {
+                const errorBody = await response.text();
+                throw new Error(`RPC request failed with status ${response.status}: ${errorBody}`);
+            }
+        } catch (bgError) {
+            console.warn("RPC sync failed in background, using local balance.", bgError);
+        }
+
+    } catch (error) {
+        console.error("Critical Auth Error:", error);
+        alert("vibe check failed. could not derive wallet from seed phrase.");
     }
   };
   
