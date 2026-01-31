@@ -102,101 +102,47 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="w-full max-w-4xl mx-auto pb-32 pt-4 px-4">
+      <main className="w-full max-w-4xl mx-auto pb-40 pt-8 px-6">
         <motion.div 
-          animate={{ filter: isSearchOpen ? 'blur(10px)' : 'blur(0px)', opacity: isSearchOpen ? 0.5 : 1 }}
-          className="flex flex-col gap-6"
+          animate={{ filter: isSearchOpen ? 'blur(20px)' : 'blur(0px)', opacity: isSearchOpen ? 0.3 : 1 }}
+          className="flex flex-col gap-12"
         >
-          {/* 1. Postingan Tipe Market Update (Real-time Feel) */}
-          <div className="p-6 rounded-[2.5rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 backdrop-blur-sm group hover:border-cyan-500/50 transition-all duration-500">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-                  OPN
+          
+          {/* CARD 1: MARKET ALPHA (CYAN GLOW) */}
+          <motion.div 
+            whileHover={{ y: -10, scale: 1.02 }}
+            className="relative p-8 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-md shadow-[0_20px_50px_rgba(6,182,212,0.15)] group transition-all"
+          >
+            <div className="absolute -top-4 -left-4 w-24 h-24 bg-cyan-500/20 blur-[50px] rounded-full"></div>
+            
+            <div className="flex justify-between items-start relative z-10">
+              <div className="flex gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg">
+                  <BarChart3 size={28} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-white group-hover:text-cyan-400 transition">OPN Market Tracker</h4>
-                  <p className="text-xs text-slate-500 text-mono">@market_alpha • 2m ago</p>
+                  <h4 className="text-lg font-black text-white tracking-tight">OPN / TETHER</h4>
+                  <p className="text-xs text-cyan-400 font-mono">LIVE TRACKER • VOL: $2.4M</p>
                 </div>
               </div>
-              <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-[10px] font-bold border border-green-500/20 uppercase tracking-widest">Bullish</span>
+              <div className="text-right">
+                <p className="text-2xl font-black text-white font-mono">$4.256</p>
+                <p className="text-xs text-green-400 font-bold">+12.4%</p>
+              </div>
             </div>
-            <p className="text-slate-300 leading-relaxed mb-4">
-              $OPN baru saja menembus resistance di <span className="text-cyan-400 font-mono">$4.20</span>. Volume perdagangan di jaringan naik 300% dalam 1 jam terakhir. Siap-siap terbang! 🚀
-            </p>
-            <div className="h-32 w-full bg-white/5 rounded-2xl border border-white/5 flex items-end p-2 gap-1">
-              {/* Simulasi Mini Chart */}
-              {[40, 70, 45, 90, 65, 80, 95, 100].map((h, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ height: 0 }}
-                  animate={{ height: `${h}%` }}
-                  className="flex-1 bg-gradient-to-t from-cyan-600 to-cyan-400 rounded-t-sm"
-                />
+            
+            <div className="mt-8 h-24 w-full flex items-end gap-2 overflow-hidden rounded-xl bg-black/20 p-4">
+              {[60, 40, 70, 50, 90, 100, 80, 110].map((h, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${h}%` }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex-1 bg-cyan-500/40 rounded-t-full border-t border-cyan-300"
+                  />
               ))}
             </div>
-          </div>
-
-          {/* 2. Postingan Tipe Sosial (User Cast) */}
-          <div className="p-6 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all">
-            <div className="flex gap-4">
-              <div className="shrink-0">
-                <div className="w-12 h-12 rounded-full bg-[url('https://api.dicebear.com/7.x/avataaars/svg?seed=Felix')] bg-cover border border-white/10"></div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-slate-200">Alex_Nexus</span>
-                  <span className="text-slate-500 text-sm">@alex88 • 1h</span>
-                </div>
-                <p className="text-slate-400 leading-relaxed">
-                  Membangun di atas OPN Network bener-bener gampang banget. Gas fee-nya hampir nol, dan kecepatannya gila. Vibe coding di tahun 3000 emang beda! 🔥
-                </p>
-                <div className="flex gap-6 mt-4 text-slate-500">
-                  <button className="flex items-center gap-2 hover:text-cyan-400 transition"><span className="text-lg">💬</span> 24</button>
-                  <button className="flex items-center gap-2 hover:text-purple-400 transition"><span className="text-lg">🔁</span> 12</button>
-                  <button className="flex items-center gap-2 hover:text-red-400 transition"><span className="text-lg">❤️</span> 150</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Postingan Tipe NFT Showcase */}
-          <div className="p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/5 overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4">
-              <div className="px-3 py-1 bg-purple-600 text-white text-[10px] font-bold rounded-lg shadow-lg">NEW MINT</div>
-            </div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-500"></div>
-              <div>
-                <p className="font-bold text-sm text-white">Cyber_Art_Collector</p>
-                <p className="text-[10px] text-slate-500">0x71C...3a21</p>
-              </div>
-            </div>
-            <div className="aspect-square w-full rounded-3xl bg-gradient-to-tr from-purple-900/40 to-cyan-900/40 border border-white/10 flex items-center justify-center mb-4 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800')] bg-cover bg-center group-hover:scale-110 transition-transform duration-700"></div>
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-              <p className="relative z-10 font-black text-4xl italic opacity-50 group-hover:opacity-100 transition-opacity">NEURAL #01</p>
-            </div>
-            <div className="flex justify-between items-center px-2">
-              <div>
-                <p className="text-xs text-slate-500 uppercase tracking-tighter">Current Bid</p>
-                <p className="text-lg font-black text-white">1,250 OPN</p>
-              </div>
-              <button className="px-6 py-2 bg-white text-black font-bold rounded-2xl hover:bg-cyan-400 transition">Bid Now</button>
-            </div>
-          </div>
-
-          {/* 4. Simple Text Cast */}
-          <div className="p-6 rounded-[2.5rem] bg-white/[0.02] border border-white/5">
-            <p className="text-xl font-medium text-slate-300 italic italic leading-snug text-center py-4">
-              "The best way to predict the future is to code it." 
-              <br/>
-              <span className="text-sm text-cyan-500 not-italic mt-2 block font-mono">— OPN Core Manifesto</span>
-            </p>
-          </div>
-
-          {/* Space tambahan buat scroll melampaui dock */}
-          <div className="h-20"></div>
+          </motion.div>
 
         </motion.div>
       </main>
