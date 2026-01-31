@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, MessageSquare, Repeat2, Heart, Share2, Waves, User, Bookmark, Settings } from 'lucide-react';
+import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, MessageSquare, Repeat2, Heart, Share2, Waves, User, Bookmark, Settings, ArrowLeft, LogOut } from 'lucide-react';
 
 
 // --- HELPER COMPONENT: USER HEADER ---
@@ -181,65 +181,58 @@ export default function Home() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 left-0 w-80 bg-[#050505]/98 backdrop-blur-3xl z-[100] border-r border-white/5 p-10 flex flex-col"
+              className="fixed inset-y-0 left-0 w-64 bg-[#050505]/98 backdrop-blur-3xl z-[100] border-r border-white/5 p-8 flex flex-col"
             >
-              {/* 1. BRANDING: VibeSphere (White to Purple Gradient) */}
-              <div className="mb-16">
-                <h2 className="text-3xl font-black tracking-[0.25em] lowercase italic bg-gradient-to-tr from-white via-purple-400 to-purple-600 bg-clip-text text-transparent leading-none">
+              {/* 1. top section: back button & branding */}
+              <div className="flex flex-col gap-6 mb-12">
+                <button 
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="group flex items-center gap-2 text-slate-500 hover:text-white transition-all"
+                >
+                  <ArrowLeft size={18} strokeWidth={1.5} />
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em]">back</span>
+                </button>
+
+                <h2 className="text-2xl font-black tracking-[0.2em] lowercase italic bg-gradient-to-tr from-white via-purple-400 to-purple-600 bg-clip-text text-transparent leading-none">
                   vibesphere
                 </h2>
               </div>
 
-              {/* 2. MENU SIDEBAR: UPDATED FONT & STYLE */}
+              {/* 2. menu sidebar: slim & mono style */}
               <nav className="flex flex-col gap-8 flex-1">
-                
-                {/* PROFILE MENU */}
-                <button 
-                  onClick={() => navigateTo('profile-settings')}
-                  className="group flex items-center gap-6 p-2 transition-all"
-                >
-                  <User size={20} className="text-slate-500 group-hover:text-purple-400 transition-colors" strokeWidth={1.5} />
-                  <div className="text-left">
-                    <span className="block text-xs font-mono font-bold tracking-[0.3em] uppercase text-slate-400 group-hover:text-white transition-all">
-                      Profile
-                    </span>
-                    <div className="h-[1px] w-0 group-hover:w-full bg-purple-500/50 transition-all duration-500 mt-1"></div>
-                  </div>
+                {/* profile */}
+                <button onClick={() => navigateTo('profile')} className="group flex items-center gap-4 transition-all">
+                  <User size={18} className="text-slate-500 group-hover:text-purple-400" strokeWidth={1.5} />
+                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">
+                    profile
+                  </span>
                 </button>
 
-                {/* BOOKMARK MENU */}
-                <button 
-                  onClick={() => navigateTo('bookmarks')}
-                  className="group flex items-center gap-6 p-2 transition-all"
-                >
-                  <Bookmark size={20} className="text-slate-500 group-hover:text-purple-400 transition-colors" strokeWidth={1.5} />
-                  <div className="text-left">
-                    <span className="block text-xs font-mono font-bold tracking-[0.3em] uppercase text-slate-400 group-hover:text-white transition-all">
-                      Bookmark
-                    </span>
-                    <div className="h-[1px] w-0 group-hover:w-full bg-purple-500/50 transition-all duration-500 mt-1"></div>
-                  </div>
+                {/* bookmark */}
+                <button onClick={() => navigateTo('bookmarks')} className="group flex items-center gap-4 transition-all">
+                  <Bookmark size={18} className="text-slate-500 group-hover:text-purple-400" strokeWidth={1.5} />
+                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">
+                    bookmark
+                  </span>
                 </button>
 
-                {/* SETTINGS MENU */}
-                <button 
-                  onClick={() => navigateTo('settings-advanced')}
-                  className="group flex items-center gap-6 p-2 transition-all"
-                >
-                  <Settings size={20} className="text-slate-500 group-hover:text-purple-400 transition-colors" strokeWidth={1.5} />
-                  <div className="text-left">
-                    <span className="block text-xs font-mono font-bold tracking-[0.3em] uppercase text-slate-400 group-hover:text-white transition-all">
-                      Settings
-                    </span>
-                    <div className="h-[1px] w-0 group-hover:w-full bg-purple-500/50 transition-all duration-500 mt-1"></div>
-                  </div>
+                {/* settings */}
+                <button onClick={() => navigateTo('settings')} className="group flex items-center gap-4 transition-all">
+                  <Settings size={18} className="text-slate-500 group-hover:text-purple-400" strokeWidth={1.5} />
+                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">
+                    settings
+                  </span>
                 </button>
-
               </nav>
 
-              {/* 3. FOOTER INFO */}
-              <div className="pt-8 border-t border-white/5 opacity-30">
-                 <p className="text-[8px] font-mono text-slate-500 tracking-[0.6em] uppercase">Sovereign Protocol v1.0</p>
+              {/* 3. bottom section: logout */}
+              <div className="mt-auto pt-6 border-t border-white/5">
+                <button className="group flex items-center gap-4 w-full transition-all">
+                  <LogOut size={18} className="text-red-500/60 group-hover:text-red-500" strokeWidth={1.5} />
+                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-red-500/60 group-hover:text-red-500">
+                    logout
+                  </span>
+                </button>
               </div>
             </motion.div>
           </>
