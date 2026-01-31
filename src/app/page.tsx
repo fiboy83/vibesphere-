@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, MessageSquare, Repeat2, Heart, Share2, Waves } from 'lucide-react';
+import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, MessageSquare, Repeat2, Heart, Share2, Waves, User, Bookmark, Settings } from 'lucide-react';
 
 
 // --- HELPER COMPONENT: USER HEADER ---
@@ -131,6 +131,8 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  const navigateTo = (path: string) => console.log(`Navigating to ${path}`);
+
   const { scrollY } = useScroll();
   const [isHidden, setIsHidden] = useState(false);
   const [lastY, setLastY] = useState(0);
@@ -174,54 +176,70 @@ export default function Home() {
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90]"
             />
 
-            <motion.div
+            <motion.div 
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 left-0 w-72 bg-[#050505]/95 backdrop-blur-2xl z-[100] border-r border-white/5 p-8"
+              className="fixed inset-y-0 left-0 w-80 bg-[#050505]/98 backdrop-blur-3xl z-[100] border-r border-white/5 p-10 flex flex-col"
             >
-              {/* TOP SECTION: THE LOGO IDENTITY */}
-              <div className="flex flex-col items-center mb-12 pt-4">
-                <div className="relative group cursor-pointer">
-                  {/* Glow Effect di belakang Logo */}
-                  <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full group-hover:bg-cyan-500/40 transition-all"></div>
-                  
-                  {/* THE VIBESPHERE LOGO */}
-                  <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-cyan-400 via-purple-500 to-blue-600 p-[2px] shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
-                    <div className="w-full h-full rounded-[1.4rem] bg-black flex items-center justify-center overflow-hidden">
-                      {/* Logo Placeholder */}
-                      <span className="text-3xl font-black text-white italic tracking-tighter">VS</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <h2 className="mt-6 text-lg font-black tracking-[0.2em] uppercase bg-gradient-to-r from-white to-slate-500 bg-clip-text text-transparent">
+              {/* 1. BRANDING: VIBESPHERE (ONLY) */}
+              <div className="mb-16">
+                <h2 className="text-3xl font-black tracking-[0.25em] uppercase italic bg-gradient-to-tr from-white via-purple-400 to-purple-600 bg-clip-text text-transparent leading-none">
                   Vibesphere
                 </h2>
-                <p className="text-[10px] font-mono text-cyan-500/60 tracking-widest mt-1">NODE: SOVEREIGN_01</p>
               </div>
 
-              {/* MENU ITEMS */}
-              <nav className="flex flex-col gap-4">
-                {[
-                  { name: 'My Profile', icon: '👤' },
-                  { name: 'Nexus Wallet', icon: '💳' },
-                  { name: 'Sovereign Nodes', icon: '🌐' },
-                  { name: 'Settings', icon: '⚙️' },
-                ].map((item) => (
-                  <button key={item.name} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
-                    <span className="text-xl group-hover:scale-120 transition-transform">{item.icon}</span>
-                    <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">{item.name}</span>
-                  </button>
-                ))}
+              {/* 2. MENU SIDEBAR: INTERACTIVE & CLEAN */}
+              <nav className="flex flex-col gap-6 flex-1">
+                
+                {/* PROFILE MENU */}
+                <button 
+                  onClick={() => navigateTo('profile-settings')}
+                  className="group flex items-center gap-5 p-2 transition-all"
+                >
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-purple-500/20 transition-colors">
+                    <User size={20} className="text-slate-400 group-hover:text-purple-400" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">Profile</span>
+                    <span className="text-[10px] text-slate-600 group-hover:text-purple-300/50">Edit Avatar & Username</span>
+                  </div>
+                </button>
+
+                {/* BOOKMARK MENU */}
+                <button 
+                  onClick={() => navigateTo('bookmarks')}
+                  className="group flex items-center gap-5 p-2 transition-all"
+                >
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-purple-500/20 transition-colors">
+                    <Bookmark size={20} className="text-slate-400 group-hover:text-purple-400" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">Bookmark</span>
+                    <span className="text-[10px] text-slate-600 group-hover:text-purple-300/50">Saved Feeds & Articles</span>
+                  </div>
+                </button>
+
+                {/* SETTINGS MENU */}
+                <button 
+                  onClick={() => navigateTo('settings-advanced')}
+                  className="group flex items-center gap-5 p-2 transition-all"
+                >
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-purple-500/20 transition-colors">
+                    <Settings size={20} className="text-slate-400 group-hover:text-purple-400" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">Settings</span>
+                    <span className="text-[10px] text-slate-600 group-hover:text-purple-300/50">Currency, Language, Security</span>
+                  </div>
+                </button>
+
               </nav>
 
-              {/* FOOTER SIDEBAR */}
-              <div className="absolute bottom-10 left-8 right-8">
-                <button className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-xs font-black text-red-500/80 hover:bg-red-500/10 transition-all uppercase tracking-widest">
-                  Disconnect
-                </button>
+              {/* 3. FOOTER DISCONNECT (OPTIONAL BUT CLEAN) */}
+              <div className="pt-8 border-t border-white/5">
+                 <p className="text-[9px] font-mono text-slate-700 tracking-[0.5em] uppercase">Vibes of Sovereign v1.0</p>
               </div>
             </motion.div>
           </>
