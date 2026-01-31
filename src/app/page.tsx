@@ -60,6 +60,7 @@ const InteractionBar = ({ themeColor }: { themeColor: string }) => {
   const [stats, setStats] = React.useState<{ comments: number, reposts: number, likes: number } | null>(null);
 
   React.useEffect(() => {
+    // This now runs only on the client, avoiding the hydration error.
     setStats({
       likes: Math.floor(Math.random() * 1000),
       reposts: Math.floor(Math.random() * 100),
@@ -189,47 +190,61 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <header className="sticky top-0 w-full p-4 flex justify-between items-center bg-black/20 backdrop-blur-xl z-50 border-b border-white/5">
-        {!isSearchOpen && (
-          <motion.button 
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/10 transition"
-          >
-            <Menu size={24} className="text-cyan-400" />
-          </motion.button>
-        )}
+      <header className="sticky top-0 w-full p-6 flex justify-between items-center bg-black/20 backdrop-blur-xl z-50 border-b border-white/5">
+        <AnimatePresence>
+          {!isSearchOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              className="flex items-center gap-4"
+            >
+              <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-white/5 rounded-xl transition">
+                <Menu size={22} className="text-slate-400" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {!isSearchOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="font-bold tracking-widest text-lg text-slate-300 uppercase"
-          >
-            Vibes of Sovereign
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {!isSearchOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              className="absolute left-1/2 -translate-x-1/2"
+            >
+              <h1 className="text-sm md:text-base font-black tracking-[0.3em] uppercase whitespace-nowrap bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent italic">
+                Vibes of Sovereign
+              </h1>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className={`flex items-center justify-end ${isSearchOpen ? 'w-full' : 'w-auto'}`}>
-          <motion.div 
+        <div className={`flex items-center justify-end ${isSearchOpen ? 'w-full' : 'min-w-[40px]'}`}>
+          <motion.div
             layout
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className={`flex items-center bg-white/5 border border-white/10 rounded-2xl overflow-hidden ${isSearchOpen ? 'w-full p-1' : 'w-12 h-12'}`}
+            className={`flex items-center justify-end rounded-2xl ${isSearchOpen ? 'w-full bg-white/10' : ''}`}
           >
             {isSearchOpen && (
-              <input 
+              <Search size={22} className="text-slate-400 ml-4 flex-shrink-0" />
+            )}
+            <AnimatePresence>
+            {isSearchOpen && (
+              <motion.input
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: '100%', opacity: 1 }}
+                exit={{ width: 0, opacity: 0, transition: { duration: 0.2 } }}
                 autoFocus
-                type="text" 
-                placeholder="Search the vibescape..." 
-                className="bg-transparent border-none focus:ring-0 w-full px-4 text-sm text-white placeholder:text-slate-500"
+                type="text"
+                placeholder="Search the vibescape..."
+                className="bg-transparent border-none focus:ring-0 w-full px-4 text-base text-white placeholder:text-slate-500"
               />
             )}
-            <button 
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-3 transition-colors ${isSearchOpen ? 'hover:bg-white/5 text-cyan-400' : 'text-slate-400 hover:text-white'}`}
-            >
-              {isSearchOpen ? <X size={20} /> : <Search size={24} />}
+            </AnimatePresence>
+            <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-white/5 rounded-xl transition">
+              {isSearchOpen ? <X size={22} className="text-slate-400" /> : <Search size={22} className="text-slate-400" />}
             </button>
           </motion.div>
         </div>
