@@ -132,7 +132,6 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
 const DockItem = ({ icon, active = false }: { icon: React.ReactNode; active?: boolean }) => (
   <button className="text-slate-400 hover:text-white transition-all">
     {React.cloneElement(icon as React.ReactElement, {
-        strokeWidth: active ? 2.5 : 1.5,
         className: `transition-all duration-300 ${active ? 'text-white' : ''}`
     })}
   </button>
@@ -360,23 +359,27 @@ export default function Home() {
         </motion.div>
       </main>
 
-      <motion.nav
-        variants={{
-          visible: { y: 0, opacity: 1 },
-          hidden: { y: 120, opacity: 0 }
-        }}
-        animate={(isHidden || isSidebarOpen) ? "hidden" : "visible"}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 z-[80] flex gap-12 items-center shadow-2xl"
-      >
-        <DockItem icon={<HomeIcon size={22} />} active />
-        <DockItem icon={<BarChart3 size={22} />} />
-        <button className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl -mt-2 shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-110 transition-transform cursor-pointer">
-          <Plus size={24} className="text-white" />
-        </button>
-        <DockItem icon={<Wallet size={22} />} />
-        <DockItem icon={<Bell size={22} />} />
-      </motion.nav>
+      <div className="fixed bottom-10 left-0 right-0 flex justify-center z-[80] pointer-events-none">
+        <motion.nav
+          variants={{
+            visible: { y: 0, opacity: 1 },
+            hidden: { y: 120, opacity: 0 }
+          }}
+          animate={(isHidden || isSidebarOpen) ? "hidden" : "visible"}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 md:gap-12 items-center shadow-2xl"
+        >
+          <DockItem icon={<HomeIcon size={22} strokeWidth={1.5} />} active />
+          <DockItem icon={<BarChart3 size={22} strokeWidth={1.5} />} />
+          
+          <div className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center justify-center">
+            <Plus size={24} className="text-white" strokeWidth={2} />
+          </div>
+
+          <DockItem icon={<Wallet size={22} strokeWidth={1.5} />} />
+          <DockItem icon={<Bell size={22} strokeWidth={1.5} />} />
+        </motion.nav>
+      </div>
 
     </div>
   );
