@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search } from 'lucide-react';
 
@@ -54,11 +54,20 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
 };
 
 // --- COMPONENT: INTERACTION BUTTON (Quantum Sync) ---
-const InteractionBar = ({ themeColor, stats }: { themeColor: string; stats: { comments: number, reposts: number, likes: number } }) => {
-  const [liked, setLiked] = React.useState(false);
-  const [reposted, setReposted] = React.useState(false);
+const InteractionBar = ({ themeColor }: { themeColor: string; }) => {
+  const [liked, setLiked] = useState(false);
+  const [reposted, setReposted] = useState(false);
+  const [stats, setStats] = useState<{ comments: number, reposts: number, likes: number } | null>(null);
 
-  // Fungsi untuk memberikan efek glow pada icon saat aktif
+  useEffect(() => {
+    // Generate random numbers on the client after mount to prevent hydration errors
+    setStats({
+      likes: Math.floor(Math.random() * 1000),
+      reposts: Math.floor(Math.random() * 100),
+      comments: Math.floor(Math.random() * 50)
+    });
+  }, []);
+
   const iconStyle = (isActive: boolean) => ({
     color: isActive ? themeColor : '#64748b',
     filter: isActive ? `drop-shadow(0 0 8px ${themeColor})` : 'none',
@@ -73,7 +82,7 @@ const InteractionBar = ({ themeColor, stats }: { themeColor: string; stats: { co
           <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
              <span className="text-xl">💬</span>
           </div>
-          <span className="text-xs font-bold font-mono">{stats.comments}</span>
+          {stats && <span className="text-xs font-bold font-mono">{stats.comments}</span>}
         </button>
 
         {/* Repost Button */}
@@ -88,7 +97,7 @@ const InteractionBar = ({ themeColor, stats }: { themeColor: string; stats: { co
           >
              <span className="text-xl" style={iconStyle(reposted)}>🔁</span>
           </div>
-          <span className="text-xs font-bold font-mono">{reposted ? stats.reposts + 1 : stats.reposts}</span>
+          {stats && <span className="text-xs font-bold font-mono">{reposted ? stats.reposts + 1 : stats.reposts}</span>}
         </button>
 
         {/* Like Button */}
@@ -102,9 +111,9 @@ const InteractionBar = ({ themeColor, stats }: { themeColor: string; stats: { co
           >
              <span className="text-xl" style={iconStyle(liked)}>❤️</span>
           </div>
-          <span className="text-xs font-bold font-mono" style={{ color: liked ? themeColor : '#64748b' }}>
+          {stats && <span className="text-xs font-bold font-mono" style={{ color: liked ? themeColor : '#64748b' }}>
             {liked ? stats.likes + 1 : stats.likes}
-          </span>
+          </span>}
         </button>
       </div>
 
@@ -248,14 +257,7 @@ export default function Home() {
                           {item.content}
                       </p>
                     </div>
-                    <InteractionBar 
-                      themeColor={item.color} 
-                      stats={{ 
-                        likes: Math.floor(Math.random() * 1000), 
-                        recasts: Math.floor(Math.random() * 100), 
-                        comments: Math.floor(Math.random() * 50) 
-                      }} 
-                    />
+                    <InteractionBar themeColor={item.color} />
                 </ResonanceCard>
             ))}
              <div className="h-20"></div>
