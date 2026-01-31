@@ -3,7 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ClipboardList } from 'lucide-react';
+import { createPublicClient, http, formatEther, defineChain } from 'viem';
+import { mnemonicToAccount } from 'viem/accounts';
 
+const iopnTestnet = defineChain({
+  id: 4080,
+  name: 'IOPN Testnet',
+  nativeCurrency: { name: 'IOPN', symbol: 'IOPN', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc-testnet.iopn.io'] },
+  },
+  testnet: true,
+});
+
+const publicClient = createPublicClient({
+  chain: iopnTestnet,
+  transport: http(),
+});
 
 // --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
@@ -60,25 +76,34 @@ export default function VibesphereApp() {
   const [userProfile, setUserProfile] = useState({
     username: "sovereign_viber",
     address: "",
-    avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=vibe"
+    avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=vibe",
+    balance: "0.00"
   });
   const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import, show-mnemonic
   const [mnemonic, setMnemonic] = useState("");
 
   // --- AUTH FUNCTIONS ---
-  const handleAuthSuccess = (walletAddress?: string) => {
-    // Create a dummy address. In a real app, this would come from a wallet library.
-    const newAddress = walletAddress || `0x${[...Array(40)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-    
-    setUserProfile({
-      username: "viber_" + newAddress.slice(2, 8),
-      address: newAddress,
-      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${newAddress}`
-    });
+  const handleAuthSuccess = async (seedPhrase: string) => {
+    try {
+      const account = mnemonicToAccount(seedPhrase);
+      const balanceResult = await publicClient.getBalance({ address: account.address });
+      const formattedBalance = formatEther(balanceResult);
 
-    setIsLoggedIn(true);
-    setAuthStep('gateway'); // Reset auth flow UI
-    console.log("nexus linked. profile active.");
+      setUserProfile({
+        username: "viber_" + account.address.slice(2, 8),
+        address: account.address,
+        avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${account.address}`,
+        balance: formattedBalance
+      });
+
+      setIsLoggedIn(true);
+      setAuthStep('gateway'); // Reset auth flow UI
+      console.log("connected to iopn testnet. address:", account.address);
+
+    } catch (error) {
+      console.error("connection to iopn failed:", error);
+      alert("Failed to connect to IOPN testnet. Please check console.");
+    }
   };
   
   const handleLogout = () => {
@@ -101,10 +126,7 @@ export default function VibesphereApp() {
 
   const handleImportWallet = (inputMnemonic: string) => {
     if (inputMnemonic.trim().split(' ').length === 12) {
-      console.log("wallet imported successfully.");
-      // simulate address from mnemonic for display
-      const dummyAddress = '0x' + Array.from(inputMnemonic).reduce((acc, char) => acc + char.charCodeAt(0), 0).toString(16).padEnd(40, '0');
-      handleAuthSuccess(dummyAddress);
+      handleAuthSuccess(inputMnemonic);
     } else {
       alert("invalid seed phrase. must be 12 words.");
     }
@@ -248,7 +270,7 @@ export default function VibesphereApp() {
                       <Copy size={14} /> copy seed phrase
                     </button>
                     
-                    <button onClick={() => handleAuthSuccess()} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
+                    <button onClick={() => handleAuthSuccess(mnemonic)} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
                       i've saved it
                     </button>
                   </motion.div>
@@ -522,9 +544,14 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        1,240.50 <span className="text-sm font-light not-italic text-purple-400">opn</span>
+                        {parseFloat(userProfile.balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">opn</span>
                       </h3>
-                      <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $3,420.12 usd</p>
+                      <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
+
+                      <p className="text-[9px] font-mono text-slate-500 mt-4 break-all opacity-50">
+                          {userProfile.address}
+                      </p>
+
 
                       {/* quick actions */}
                       <div className="flex gap-4 mt-10">
