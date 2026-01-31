@@ -5,102 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart } from 'lucide-react';
 
 
-// --- HELPER COMPONENT: USER HEADER ---
-const UserHeader = ({ name, handle, time, themeColor }: { name: string; handle: string; time: string; themeColor: string; }) => (
-    <div className="flex items-center gap-3">
-      <div 
-        className="w-12 h-12 rounded-full p-[2px] shadow-lg"
-        style={{ background: `linear-gradient(to top right, ${themeColor}, #ffffff)` }}
-      >
-        <div className="w-full h-full rounded-full bg-[#050505] overflow-hidden flex items-center justify-center border border-white/10">
-          <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${handle}&backgroundColor=${themeColor.replace('#','')}`} alt="pfp" />
-        </div>
-      </div>
-      <div>
-        <h4 className="text-sm font-black text-white leading-none tracking-tight">{name}</h4>
-        <p className="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-tighter">@{handle} • {time}</p>
-      </div>
-    </div>
-);
-
-// --- HELPER COMPONENT: INTERACTION BUTTON ---
-const InteractionButton = ({ type, icon, count, themeColor }: { type: 'comment' | 'repost' | 'like', icon: React.ReactNode, count: number, themeColor: string }) => {
-  const [isActive, setIsActive] = React.useState(false);
-
-  const getIconStyle = () => {
-    if (type === 'comment') {
-      return { stroke: `${themeColor}88`, strokeWidth: 1.5 };
-    }
-
-    const style = {
-      stroke: isActive ? themeColor : `${themeColor}88`,
-      strokeWidth: 1.5,
-      filter: isActive ? `drop-shadow(0 0 5px ${themeColor}aa)` : 'none',
-      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-    };
-    
-    if (type === 'like') {
-      // @ts-ignore
-      style.fill = isActive ? themeColor : 'transparent';
-      // @ts-ignore
-      style.fillOpacity = 0.2;
-    }
-
-    return style;
-  };
-
-  const handleClick = () => {
-    if (type === 'like' || type === 'repost') {
-      setIsActive(!isActive);
-    }
-  };
-  
-  const displayCount = (type === 'like' || type === 'repost') && isActive ? count + 1 : count;
-  const countColor = (type === 'like' || type === 'repost') && isActive ? themeColor : `${themeColor}aa`;
-
-  return (
-    <button onClick={handleClick} className="flex items-center gap-2.5 group">
-      <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
-        {React.cloneElement(icon as React.ReactElement, {
-          style: getIconStyle(),
-          className: `
-            ${type === 'comment' ? 'group-hover:stroke-white transition-colors' : ''}
-            ${type === 'repost' && isActive ? 'rotate-180' : ''}
-          `,
-        })}
-      </div>
-      <span className="text-[11px] font-mono tracking-tighter" style={{ color: countColor }}>
-        {displayCount}
-      </span>
-    </button>
-  );
-};
-
-// --- COMPONENT: INTERACTION BAR ---
-const InteractionBar = ({ themeColor }: { themeColor: string }) => {
-  const [stats, setStats] = React.useState<{ comments: number, reposts: number, likes: number } | null>(null);
-
-  useEffect(() => {
-    setStats({
-      likes: Math.floor(Math.random() * 1000),
-      reposts: Math.floor(Math.random() * 100),
-      comments: Math.floor(Math.random() * 50)
-    });
-  }, []);
-
-  if (!stats) {
-    return <div className="mt-8 pt-5 border-t border-white/[0.05] h-[37px]" />;
-  }
-
-  return (
-    <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
-      <InteractionButton type="comment" icon={<MessageSquare size={20} />} count={stats.comments} themeColor={themeColor} />
-      <InteractionButton type="repost" icon={<Repeat2 size={22} />} count={stats.reposts} themeColor={themeColor} />
-      <InteractionButton type="like" icon={<Heart size={20} />} count={stats.likes} themeColor={themeColor} />
-    </div>
-  );
-};
-  
 // --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
     return (
@@ -163,24 +67,30 @@ export default function VibesphereApp() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastY]);
 
-  const handleNavigation = (target: string) => {
+  const handleNavigation = (target: string, params?: any) => {
+    console.log(`Navigating to: ${target}`, params);
     setActiveTab(target);
     setIsSidebarOpen(false);
+  };
+  
+  const openCommentModal = (postId: number) => {
+    alert(`Opening comments for post ${postId}`);
   };
 
   const handleLogout = () => {
     alert("Logging out from Vibesphere...");
   };
-
+  
   const feedData = [
-    { id: 1, user: "Nova_Architect", handle: "nova.opn", time: "2m", color: "#a855f7", content: "GM OPN Fam! The sovereign vibes are strong today.", type: "short" },
-    { id: 2, user: "Quantum_Leaper", handle: "ql.opn", time: "30m", color: "#06b6d4", content: "Just deployed a new DApp on OPN... the speed is unreal. Year 3000 is now.", type: "medium" },
-    { id: 3, user: "DAO_Steward", handle: "gov.opn", time: "2h", color: "#ef4444", 
+    { id: 1, postId: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", color: "#a855f7", content: "GM OPN Fam! The sovereign vibes are strong today.", type: "short", commentCount: 12, repostCount: 5, likeCount: 42 },
+    { id: 2, postId: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", color: "#06b6d4", content: "Just deployed a new DApp on OPN... the speed is unreal. Year 3000 is now.", type: "medium", commentCount: 8, repostCount: 2, likeCount: 28 },
+    { id: 3, postId: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", color: "#ef4444", 
       content: `New governance proposal OIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
-      type: "long" 
+      type: "long" , commentCount: 34, repostCount: 15, likeCount: 99
     },
-    { id: 4, user: "Chrono_Trader", handle: "chrono.opn", time: "5h", color: "#f59e0b", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short" },
+    { id: 4, postId: 4, userId: "chrono.opn", username: "Chrono_Trader", handle: "chrono.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", color: "#f59e0b", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
   ];
+
 
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden font-sans">
@@ -219,7 +129,6 @@ export default function VibesphereApp() {
               />
               <Search size={16} className="absolute left-4 text-purple-400" />
               
-              {/* tombol close (x) */}
               <button 
                 onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
                 className="absolute right-4 p-1 hover:bg-white/10 rounded-full transition-colors"
@@ -305,15 +214,48 @@ export default function VibesphereApp() {
                 {feedData.map((item) => (
                   <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
                     <div className="flex justify-between items-start mb-5">
-                      <UserHeader name={item.user} handle={item.handle} time={item.time} themeColor={item.color} />
+                      <div 
+                        onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
+                        className="flex items-center gap-3 cursor-pointer group"
+                      >
+                        <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-purple-500/50 transition-all">
+                          <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold group-hover:text-purple-400 transition-colors">
+                            {item.username}
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                        </div>
+                      </div>
                       <button className="group p-2 -mr-2 mt-1">
                         <Share2 size={18} style={{ stroke: `${item.color}66`, strokeWidth: 1.5 }} className="group-hover:stroke-white transition-colors"/>
                       </button>
                     </div>
+
                     <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
                       <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.content}</p>
                     </div>
-                    <InteractionBar themeColor={item.color} />
+                    
+                    <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
+                      <button 
+                        onClick={() => openCommentModal(item.postId)}
+                        className="group flex items-center gap-2 text-slate-500 hover:text-purple-400 transition-all"
+                      >
+                        <MessageSquare size={18} strokeWidth={1.5} />
+                        <span className="text-[11px] font-mono">{item.commentCount}</span>
+                      </button>
+                      
+                      <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                        <Repeat2 size={20} strokeWidth={1.5} />
+                        <span className="text-[11px] font-mono">{item.repostCount}</span>
+                      </button>
+
+                      <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                        <Heart size={18} strokeWidth={1.5} />
+                        <span className="text-[11px] font-mono">{item.likeCount}</span>
+                      </button>
+                    </div>
                   </ResonanceCard>
                 ))}
                 <div className="h-20"></div>
