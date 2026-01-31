@@ -7,7 +7,7 @@ import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, Messa
 
 // --- HELPER COMPONENT: USER HEADER ---
 const UserHeader = ({ name, handle, time, themeColor }: { name: string; handle: string; time: string; themeColor: string; }) => (
-    <div className="flex items-center gap-3 mb-5">
+    <div className="flex items-center gap-3">
       <div 
         className="w-12 h-12 rounded-full p-[2px] shadow-lg"
         style={{ background: `linear-gradient(to top right, ${themeColor}, #ffffff)` }}
@@ -22,6 +22,79 @@ const UserHeader = ({ name, handle, time, themeColor }: { name: string; handle: 
       </div>
     </div>
 );
+
+// --- NEW HELPER COMPONENT: INTERACTION BUTTON ---
+const InteractionButton = ({ type, icon, count, themeColor }: { type: 'comment' | 'repost' | 'like', icon: React.ReactNode, count: number, themeColor: string }) => {
+  const [isActive, setIsActive] = React.useState(false);
+
+  const getIconStyle = () => {
+    if (type === 'comment') {
+      return { stroke: `${themeColor}88`, strokeWidth: 1.5 };
+    }
+
+    return {
+      stroke: isActive ? themeColor : `${themeColor}88`,
+      strokeWidth: 1.5,
+      filter: isActive ? `drop-shadow(0 0 5px ${themeColor}aa)` : 'none',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      ...(type === 'like' && {
+        fill: isActive ? themeColor : 'transparent',
+        fillOpacity: 0.2,
+      }),
+    };
+  };
+
+  const handleClick = () => {
+    if (type === 'like' || type === 'repost') {
+      setIsActive(!isActive);
+    }
+  };
+  
+  const displayCount = (type === 'like' || type === 'repost') && isActive ? count + 1 : count;
+  const countColor = (type === 'like' || type === 'repost') && isActive ? themeColor : `${themeColor}aa`;
+
+  return (
+    <button onClick={handleClick} className="flex items-center gap-2.5 group">
+      <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
+        {React.cloneElement(icon as React.ReactElement, {
+          style: getIconStyle(),
+          className: `
+            ${type === 'comment' ? 'group-hover:stroke-white transition-colors' : ''}
+            ${type === 'repost' && isActive ? 'rotate-180' : ''}
+          `,
+        })}
+      </div>
+      <span className="text-[11px] font-mono tracking-tighter" style={{ color: countColor }}>
+        {displayCount}
+      </span>
+    </button>
+  );
+};
+
+// --- COMPONENT: INTERACTION BAR ---
+const InteractionBar = ({ themeColor }: { themeColor: string }) => {
+  const [stats, setStats] = React.useState<{ comments: number, reposts: number, likes: number } | null>(null);
+
+  useEffect(() => {
+    setStats({
+      likes: Math.floor(Math.random() * 1000),
+      reposts: Math.floor(Math.random() * 100),
+      comments: Math.floor(Math.random() * 50)
+    });
+  }, []);
+
+  if (!stats) {
+    return <div className="mt-8 pt-5 border-t border-white/[0.05] h-[37px]" />;
+  }
+
+  return (
+    <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
+      <InteractionButton type="comment" icon={<MessageSquare size={20} />} count={stats.comments} themeColor={themeColor} />
+      <InteractionButton type="repost" icon={<Repeat2 size={22} />} count={stats.reposts} themeColor={themeColor} />
+      <InteractionButton type="like" icon={<Heart size={20} />} count={stats.likes} themeColor={themeColor} />
+    </div>
+  );
+};
   
 // --- COMPONENT: RESONANCE CARD (The Floating Shell) ---
 const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
@@ -53,85 +126,6 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
     );
 };
 
-// --- COMPONENT: INTERACTION BAR (Thin Line Resonance) ---
-const InteractionBar = ({ themeColor }: { themeColor: string }) => {
-  const [liked, setLiked] = React.useState(false);
-  const [reposted, setReposted] = React.useState(false);
-  const [stats, setStats] = React.useState<{ comments: number, reposts: number, likes: number } | null>(null);
-
-  React.useEffect(() => {
-    // This now runs only on the client, avoiding the hydration error.
-    setStats({
-      likes: Math.floor(Math.random() * 1000),
-      reposts: Math.floor(Math.random() * 100),
-      comments: Math.floor(Math.random() * 50)
-    });
-  }, []);
-
-  const getIconStyle = (isActive: boolean) => ({
-    stroke: isActive ? themeColor : `${themeColor}88`,
-    strokeWidth: 1.5,
-    filter: isActive ? `drop-shadow(0 0 5px ${themeColor}aa)` : 'none',
-    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-  });
-
-  return (
-    <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]">
-      <div className="flex gap-10">
-        
-        <button className="flex items-center gap-2.5 group">
-          <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
-            <MessageSquare 
-              size={20} 
-              style={{ stroke: `${themeColor}88`, strokeWidth: 1.5 }} 
-              className="group-hover:text-white transition-colors"
-            />
-          </div>
-          {stats && <span className="text-[11px] font-mono tracking-tighter" style={{ color: `${themeColor}aa` }}>
-            {stats.comments}
-          </span>}
-        </button>
-
-        <button 
-          onClick={() => setReposted(!reposted)}
-          className="flex items-center gap-2.5 group"
-        >
-          <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
-            <Repeat2 
-              size={22} 
-              style={getIconStyle(reposted)} 
-              className={reposted ? "rotate-180" : ""}
-            />
-          </div>
-          {stats && <span className="text-[11px] font-mono tracking-tighter" style={{ color: reposted ? themeColor : `${themeColor}aa` }}>
-            {reposted ? stats.reposts + 1 : stats.reposts}
-          </span>}
-        </button>
-
-        <button 
-          onClick={() => setLiked(!liked)}
-          className="flex items-center gap-2.5 group"
-        >
-          <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
-            <Heart 
-              size={20} 
-              style={getIconStyle(liked)} 
-              fill={liked ? themeColor : "transparent"}
-              fillOpacity={0.2}
-            />
-          </div>
-          {stats && <span className="text-[11px] font-mono tracking-tighter" style={{ color: liked ? themeColor : `${themeColor}aa` }}>
-            {liked ? stats.likes + 1 : stats.likes}
-          </span>}
-        </button>
-      </div>
-
-      <button className="p-2 rounded-full hover:bg-white/10 transition-colors">
-          <Share2 size={20} style={{ stroke: `${themeColor}88`, strokeWidth: 1.5 }} />
-       </button>
-    </div>
-  );
-};
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -192,7 +186,7 @@ export default function Home() {
 
       <header className="sticky top-0 w-full p-6 flex justify-between items-center bg-black/20 backdrop-blur-xl z-50 border-b border-white/5">
         <AnimatePresence>
-          {!isSearchOpen && (
+          {!isSearchOpen ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -203,45 +197,49 @@ export default function Home() {
                 <Menu size={22} className="text-slate-400" />
               </button>
             </motion.div>
+          ) : (
+            <div className="w-[40px]" />
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {!isSearchOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.1 } }}
-              className="absolute left-1/2 -translate-x-1/2"
-            >
-              <h1 className="text-sm md:text-base font-black tracking-[0.3em] uppercase whitespace-nowrap bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent italic">
-                Vibes of Sovereign
-              </h1>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+            layout
+            className="flex-1 flex justify-center overflow-hidden"
+        >
+            {!isSearchOpen && (
+                <motion.h1 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-sm md:text-base font-black tracking-[0.3em] uppercase whitespace-nowrap bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent italic"
+                >
+                    Vibes of Sovereign
+                </motion.h1>
+            )}
+        </motion.div>
 
-        <div className={`flex items-center justify-end ${isSearchOpen ? 'w-full' : 'min-w-[40px]'}`}>
+
+        <div className={`flex items-center justify-end ${isSearchOpen ? 'w-full absolute inset-x-0 px-6' : 'min-w-[40px]'}`}>
           <motion.div
             layout
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className={`flex items-center justify-end rounded-2xl ${isSearchOpen ? 'w-full bg-white/10' : ''}`}
           >
-            {isSearchOpen && (
-              <Search size={22} className="text-slate-400 ml-4 flex-shrink-0" />
-            )}
             <AnimatePresence>
-            {isSearchOpen && (
-              <motion.input
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: '100%', opacity: 1 }}
-                exit={{ width: 0, opacity: 0, transition: { duration: 0.2 } }}
-                autoFocus
-                type="text"
-                placeholder="Search the vibescape..."
-                className="bg-transparent border-none focus:ring-0 w-full px-4 text-base text-white placeholder:text-slate-500"
-              />
-            )}
+            {isSearchOpen ? (
+              <>
+                <Search size={22} className="text-slate-400 ml-4 flex-shrink-0 pointer-events-none" />
+                <motion.input
+                    initial={{ width: 0, opacity: 0, paddingLeft: 0, paddingRight: 0 }}
+                    animate={{ width: '100%', opacity: 1, paddingLeft: '1rem', paddingRight: '1rem' }}
+                    exit={{ width: 0, opacity: 0, paddingLeft: 0, paddingRight: 0, transition: { duration: 0.2 } }}
+                    autoFocus
+                    type="text"
+                    placeholder="Search the vibescape..."
+                    className="bg-transparent border-none focus:ring-0 w-full text-base text-white placeholder:text-slate-500"
+                />
+              </>
+            ) : null}
             </AnimatePresence>
             <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-white/5 rounded-xl transition">
               {isSearchOpen ? <X size={22} className="text-slate-400" /> : <Search size={22} className="text-slate-400" />}
@@ -259,13 +257,23 @@ export default function Home() {
         >
             {feedData.map((item) => (
                 <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
-                    <UserHeader 
-                        name={item.user} 
-                        handle={item.handle} 
-                        time={item.time} 
-                        themeColor={item.color} 
-                    />
-                    <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar' : ''}>
+                    <div className="flex justify-between items-start mb-5">
+                      <UserHeader 
+                          name={item.user} 
+                          handle={item.handle} 
+                          time={item.time} 
+                          themeColor={item.color} 
+                      />
+                      <button className="group p-2 -mr-2 mt-1">
+                        <Share2 
+                          size={18} 
+                          style={{ stroke: `${item.color}66`, strokeWidth: 1.5 }} 
+                          className="group-hover:stroke-white transition-colors"
+                        />
+                      </button>
+                    </div>
+
+                    <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
                       <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">
                           {item.content}
                       </p>
