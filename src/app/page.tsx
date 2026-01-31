@@ -4,6 +4,22 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search } from 'lucide-react';
 
+
+const UserHeader = ({ name, handle, time, color }: { name: string; handle: string; time: string; color: string; }) => (
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${color} p-[2px]`}>
+        <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
+          <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${handle}`} alt="pfp" />
+        </div>
+      </div>
+      <div>
+        <h4 className="text-sm font-bold text-white leading-none">{name}</h4>
+        <p className="text-[10px] text-slate-500 font-mono mt-1">@{handle} • {time}</p>
+      </div>
+    </div>
+  );
+
+
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -101,123 +117,102 @@ export default function Home() {
           </motion.div>
         </div>
       </header>
-
+      
       <main className="w-full max-w-4xl mx-auto pb-48 pt-10 px-6 min-h-screen">
         <motion.div 
           initial="hidden"
           animate="show"
-          variants={{
-            show: { transition: { staggerChildren: 0.2 } }
-          }}
-          className="flex flex-col gap-20" // Consistent spacing between cards
+          variants={{ show: { transition: { staggerChildren: 0.15 } } }}
+          className="flex flex-col gap-10" // Tighter gap for dynamic feel
         >
           
-          {/* 1. MARKET CARD (CYAN) */}
+          {/* 1. SHORT FEED (GM / SHORT POST) */}
           <motion.div 
-            variants={{ hidden: { opacity: 0, y: 50 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -15, scale: 1.02 }}
-            className="relative p-10 rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-[0_30px_70px_rgba(6,182,212,0.12)] group"
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -5 }}
+            className="relative p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.3)] self-start min-w-[300px]"
           >
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/10 blur-[80px] rounded-full"></div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex gap-4 items-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg">
-                  <BarChart3 size={28} />
-                </div>
-                <h4 className="text-xl font-black text-white italic tracking-tighter">MARKET ALPHA</h4>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-mono font-bold text-white">$4.82</p>
-                <p className="text-xs text-green-400 font-bold">+12.5%</p>
-              </div>
-            </div>
-            <p className="text-slate-300 text-lg">OPN Network volume is surging. <span className="text-cyan-400 font-bold">#BullishVibe</span> detected across all nodes.</p>
-          </motion.div>
-
-          {/* 2. SOCIAL CARD (PURPLE) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 50 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -15, scale: 1.02 }}
-            className="relative p-10 rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-[0_30px_70px_rgba(139,92,246,0.12)] group"
-          >
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/10 blur-[80px] rounded-full"></div>
-            <div className="flex gap-6 items-start">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[3px] shrink-0">
-                <div className="w-full h-full rounded-full bg-[#050505] overflow-hidden">
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Vibe" alt="pfp" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between mb-2">
-                  <span className="font-bold text-white text-lg">VibeCoder_OPN</span>
-                  <span className="text-xs text-slate-500 font-mono">24m ago</span>
-                </div>
-                <p className="text-slate-300 text-xl font-light leading-relaxed">
-                  Layout synced. All cards are now floating in the correct orbit. <span className="text-purple-400">#NexusUI</span> is ready for launch.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* 3. NFT CARD (GOLD) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 50 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -15 }}
-            className="relative p-6 rounded-[4rem] bg-white/[0.04] border border-white/10 shadow-[0_40px_80px_rgba(245,158,11,0.1)] group"
-          >
-            <div className="aspect-[16/10] w-full rounded-[3rem] bg-slate-900 mb-6 overflow-hidden relative">
-              <img src="https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&q=80&w=800" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[3s]" alt="nft" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-              <div className="absolute bottom-8 left-8">
-                 <p className="text-amber-400 font-mono text-xs mb-1">AUCTION LIVE</p>
-                 <h3 className="text-3xl font-black text-white italic">NEURAL_STATION #02</h3>
-              </div>
-            </div>
-            <div className="flex justify-between items-center px-4 pb-4">
-              <p className="text-2xl font-black text-white">1,200 OPN</p>
-              <button className="px-10 py-4 bg-white text-black font-black rounded-2xl hover:bg-amber-400 transition-all">PLACE BID</button>
-            </div>
-          </motion.div>
-
-          {/* 4. GOVERNANCE CARD (RED) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 50 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -15 }}
-            className="relative p-10 rounded-[3.5rem] bg-gradient-to-br from-red-500/5 to-transparent border border-red-500/20 shadow-[0_30px_70px_rgba(239,68,68,0.1)]"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <span className="px-4 py-1 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/30 tracking-[0.2em]">VOTING ACTIVE</span>
-              <span className="text-slate-500 text-xs font-mono italic">OIP-77</span>
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-6 leading-tight">Implement Auto-Burn Fee for OPN Network</h3>
-            <div className="flex gap-3">
-              <button className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold hover:bg-green-500/20 hover:border-green-500/50 transition-all text-green-400">YES</button>
-              <button className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold hover:bg-red-500/20 hover:border-red-500/50 transition-all text-red-400">NO</button>
-            </div>
-          </motion.div>
-
-          {/* 5. COMMUNITY UPDATE CARD (BLUE) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 50 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -15 }}
-            className="relative p-10 rounded-[3.5rem] bg-white/[0.02] border border-white/5 shadow-[0_30px_70px_rgba(59,130,246,0.1)]"
-          >
-            <div className="flex items-center gap-4 mb-6 text-blue-400">
-              <div className="w-10 h-1 text-blue-500 bg-blue-500 rounded-full"></div>
-              <p className="text-xs font-bold uppercase tracking-widest text-blue-400">Node Update</p>
-            </div>
-            <p className="text-slate-300 text-lg leading-relaxed mb-4">
-              OPN Mainnet just hit <span className="text-white font-bold">1 Million Transactions</span> per second. We are making new history in the Web3 world!
+            <UserHeader name="Zero_G" handle="zerog.opn" time="2m" color="from-cyan-400 to-blue-500" />
+            <p className="text-2xl font-black italic bg-gradient-to-r from-white to-slate-500 bg-clip-text text-transparent">
+              GM OPN Fam! ☀️
             </p>
-            <div className="flex -space-x-3 mt-6">
-              {[1,2,3,4].map(i => (
-                <div key={i} className="w-10 h-10 rounded-full border-4 border-[#050505] bg-slate-800"></div>
-              ))}
-              <div className="flex items-center pl-6 text-xs text-slate-500 font-bold italic">+ 12k Nodes Online</div>
+          </motion.div>
+
+          {/* 2. MEDIUM FEED (WITH IMAGE) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -5 }}
+            className="relative p-6 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+          >
+            <UserHeader name="CryptoArt" handle="art.opn" time="15m" color="from-purple-500 to-pink-500" />
+            <p className="text-slate-300 mb-4">Baru saja menyelesaikan render untuk NFT OPN Nexus terbaru. Gimana menurut kalian?</p>
+            <div className="aspect-video w-full rounded-2xl bg-slate-900 overflow-hidden border border-white/5">
+              <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=800" className="w-full h-full object-cover" alt="post" />
             </div>
           </motion.div>
 
-          <div className="h-20"></div> {/* Bottom Spacer */}
+          {/* 3. LONG FEED (WITH MAX HEIGHT & SCROLL) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -5 }}
+            className="relative p-6 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+          >
+            <UserHeader name="Dev_Protocol" handle="dev.opn" time="1h" color="from-green-400 to-cyan-500" />
+            <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              <h3 className="text-xl font-bold text-cyan-400 mb-2 italic">Update Protokol V3.1</h3>
+              <p className="text-slate-400 leading-relaxed text-sm">
+                Kami baru saja mengimplementasikan sistem Quantum-Secure pada jaringan OPN. Ini artinya semua transaksi sosial dan finansial kamu terlindungi dari serangan komputer kuantum di masa depan. 
+                <br/><br/>
+                Beberapa poin penting:
+                1. Kecepatan transaksi naik 400%.
+                2. Gas fee turun menjadi 0.0000001 OPN.
+                3. Integrasi Soulbound Identity lebih dalam.
+                <br/><br/>
+                DApp ini sekarang adalah node paling stabil di sektor 7 G. Kami mengharapkan semua pengguna untuk segera melakukan sinkronisasi wallet ke versi terbaru guna menghindari glitch di ruang hampa. Tetap waspada, tetap terdesentralisasi.
+              </p>
+            </div>
+            <div className="mt-4 pt-4 border-t border-white/5 text-[10px] text-slate-600 italic">
+              Click to read full proposal on-chain...
+            </div>
+          </motion.div>
+
+          {/* 4. MARKET FEED (AUTO HEIGHT) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -5 }}
+            className="relative p-6 rounded-[3rem] bg-gradient-to-br from-cyan-500/5 to-transparent border border-cyan-500/20 shadow-[0_20px_40px_rgba(6,182,212,0.1)]"
+          >
+            <UserHeader name="OPN Bot" handle="bot.opn" time="Just Now" color="from-slate-700 to-slate-900" />
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-widest">Live Price</p>
+                <p className="text-3xl font-black text-white">$4.95</p>
+              </div>
+              <div className="h-12 w-32 bg-green-500/10 rounded-lg flex items-center justify-center border border-green-500/20">
+                <span className="text-green-400 font-mono font-bold">+18.2%</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* 5. REPOST FEED (NESTED STYLE) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -5 }}
+            className="relative p-6 rounded-[3rem] bg-white/[0.03] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+          >
+            <UserHeader name="Alpha_Seeker" handle="alpha.opn" time="3h" color="from-orange-400 to-red-500" />
+            <p className="text-slate-300 mb-4 font-medium italic">Ini bener banget, OPN Nexus adalah endgame-nya!</p>
+            
+            {/* Nested Repost Card */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <div className="flex items-center gap-2 mb-2 scale-90 origin-left">
+                <div className="w-6 h-6 rounded-full bg-blue-500"></div>
+                <span className="text-xs font-bold">VibeCoder.opn</span>
+              </div>
+              <p className="text-xs text-slate-500 italic">"Membangun di atas OPN Network bener-bener gampang..."</p>
+            </div>
+          </motion.div>
+          <div className="h-20"></div>
         </motion.div>
       </main>
 
