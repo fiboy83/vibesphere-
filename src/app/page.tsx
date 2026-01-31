@@ -54,6 +54,8 @@ export default function VibesphereApp() {
   const [lastY, setLastY] = useState(0);
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import
 
   useEffect(() => {
     const handleScroll = () => {
@@ -316,58 +318,123 @@ export default function VibesphereApp() {
               </motion.div>
             )}
             {activeTab === 'wallet' && (
-              <motion.div 
-                className="w-full max-w-md mx-auto p-6"
-              >
-                {/* 1. balance card: the core resonance */}
-                <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
-                  <div className="absolute top-0 right-0 p-6 opacity-20">
-                    <Wallet size={80} strokeWidth={1} />
-                  </div>
-                  
-                  <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
-                  <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                    1,240.50 <span className="text-sm font-light not-italic text-purple-400">opn</span>
-                  </h3>
-                  <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $3,420.12 usd</p>
+              !isAuthenticated ? (
+                <>
+                  {authStep === 'gateway' && (
+                     <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
+                      >
+                        {/* icon branding melayang */}
+                        <div className="mb-12 relative">
+                          <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full" />
+                          <Wallet size={64} strokeWidth={1} className="text-white relative z-10" />
+                        </div>
 
-                  {/* quick actions */}
-                  <div className="flex gap-4 mt-10">
-                    <button className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-purple-400 transition-colors">
-                      send
-                    </button>
-                    <button className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">
-                      receive
-                    </button>
-                  </div>
-                </div>
+                        <h2 className="text-2xl font-black italic lowercase tracking-tighter mb-2">
+                          nexus login
+                        </h2>
+                        <p className="text-[11px] font-mono text-slate-500 mb-12 text-center leading-relaxed">
+                          secure your sovereignty. <br/> no email. no password. just vibe.
+                        </p>
 
-                {/* 2. asset list */}
-                <div className="mt-12 flex flex-col gap-6">
-                  <div className="flex justify-between items-center px-2">
-                    <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">assets</span>
-                    <button className="text-[10px] font-mono text-purple-400">view all</button>
-                  </div>
+                        {/* opsi login */}
+                        <div className="w-full flex flex-col gap-4">
+                          {/* 1. create wallet: untuk user yang ingin mencoba tanpa resiko */}
+                          <button 
+                            onClick={() => setAuthStep('create')}
+                            className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
+                          >
+                            create new wallet
+                          </button>
 
-                  {[
-                    { name: 'sovereign', symbol: 'opn', balance: '1,240.50', color: 'from-purple-500' },
-                    { name: 'bitcoin', symbol: 'btc', balance: '0.042', color: 'from-orange-500' },
-                    { name: 'ethereum', symbol: 'eth', balance: '1.25', color: 'from-blue-500' }
-                  ].map((asset) => (
-                    <div key={asset.symbol} className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${asset.color} to-black/20`} />
-                      <div className="flex-1">
-                        <h4 className="text-sm font-bold lowercase">{asset.name}</h4>
-                        <span className="text-[10px] font-mono text-slate-500 uppercase">{asset.symbol}</span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold font-mono">{asset.balance}</p>
-                        <p className="text-[10px] text-green-500/70">+2.4%</p>
-                      </div>
+                          {/* 2. import wallet: untuk user yang sudah punya seed phrase */}
+                          <button 
+                            onClick={() => setAuthStep('import')}
+                            className="w-full py-4 rounded-[2rem] bg-white/5 border border-white/10 text-slate-300 text-xs font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-all"
+                          >
+                            import existing wallet
+                          </button>
+                        </div>
+
+                        {/* info tambahan transparan */}
+                        <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
+                          <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                            *vibesphere tidak pernah menyimpan seed phrase anda. 100% on-chain & non-custodial.
+                          </p>
+                        </div>
+                      </motion.div>
+                  )}
+                  {authStep === 'create' && (
+                    <motion.div initial={{opacity:0}} animate={{opacity:1}} className="text-center pt-20">
+                      <h2 className="text-3xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">Create Wallet</h2>
+                      <p className="text-slate-500 mt-4 font-mono">This feature is under construction. Your sovereign identity is being forged.</p>
+                      <button onClick={() => setAuthStep('gateway')} className="mt-8 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
+                    </motion.div>
+                  )}
+                  {authStep === 'import' && (
+                    <motion.div initial={{opacity:0}} animate={{opacity:1}} className="text-center pt-20">
+                      <h2 className="text-3xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">Import Wallet</h2>
+                      <p className="text-slate-500 mt-4 font-mono">This feature is under construction. The network is attuning to your frequency.</p>
+                      <button onClick={() => setAuthStep('gateway')} className="mt-8 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
+                    </motion.div>
+                  )}
+                </>
+              ) : (
+                <motion.div 
+                  className="w-full max-w-md mx-auto p-6"
+                >
+                  {/* 1. balance card: the core resonance */}
+                  <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
+                    <div className="absolute top-0 right-0 p-6 opacity-20">
+                      <Wallet size={80} strokeWidth={1} />
                     </div>
-                  ))}
-                </div>
-              </motion.div>
+                    
+                    <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
+                    <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
+                      1,240.50 <span className="text-sm font-light not-italic text-purple-400">opn</span>
+                    </h3>
+                    <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $3,420.12 usd</p>
+
+                    {/* quick actions */}
+                    <div className="flex gap-4 mt-10">
+                      <button className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-purple-400 transition-colors">
+                        send
+                      </button>
+                      <button className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">
+                        receive
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. asset list */}
+                  <div className="mt-12 flex flex-col gap-6">
+                    <div className="flex justify-between items-center px-2">
+                      <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">assets</span>
+                      <button className="text-[10px] font-mono text-purple-400">view all</button>
+                    </div>
+
+                    {[
+                      { name: 'sovereign', symbol: 'opn', balance: '1,240.50', color: 'from-purple-500' },
+                      { name: 'bitcoin', symbol: 'btc', balance: '0.042', color: 'from-orange-500' },
+                      { name: 'ethereum', symbol: 'eth', balance: '1.25', color: 'from-blue-500' }
+                    ].map((asset) => (
+                      <div key={asset.symbol} className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${asset.color} to-black/20`} />
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold lowercase">{asset.name}</h4>
+                          <span className="text-[10px] font-mono text-slate-500 uppercase">{asset.symbol}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold font-mono">{asset.balance}</p>
+                          <p className="text-[10px] text-green-500/70">+2.4%</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )
             )}
             {activeTab !== 'home' && activeTab !== 'wallet' && (
               <div className="text-center pt-20">
