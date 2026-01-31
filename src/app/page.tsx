@@ -183,63 +183,63 @@ export default function Home() {
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className="fixed inset-y-0 left-0 w-80 bg-[#050505]/98 backdrop-blur-3xl z-[100] border-r border-white/5 p-10 flex flex-col"
             >
-              {/* 1. BRANDING: VIBESPHERE (ONLY) */}
+              {/* 1. BRANDING: VibeSphere (White to Purple Gradient) */}
               <div className="mb-16">
                 <h2 className="text-3xl font-black tracking-[0.25em] uppercase italic bg-gradient-to-tr from-white via-purple-400 to-purple-600 bg-clip-text text-transparent leading-none">
-                  Vibesphere
+                  VibeSphere
                 </h2>
               </div>
 
-              {/* 2. MENU SIDEBAR: INTERACTIVE & CLEAN */}
-              <nav className="flex flex-col gap-6 flex-1">
+              {/* 2. MENU SIDEBAR: UPDATED FONT & STYLE */}
+              <nav className="flex flex-col gap-8 flex-1">
                 
                 {/* PROFILE MENU */}
                 <button 
                   onClick={() => navigateTo('profile-settings')}
-                  className="group flex items-center gap-5 p-2 transition-all"
+                  className="group flex items-center gap-6 p-2 transition-all"
                 >
-                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-purple-500/20 transition-colors">
-                    <User size={20} className="text-slate-400 group-hover:text-purple-400" />
-                  </div>
+                  <User size={20} className="text-slate-500 group-hover:text-purple-400 transition-colors" strokeWidth={1.5} />
                   <div className="text-left">
-                    <span className="block text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">Profile</span>
-                    <span className="text-[10px] text-slate-600 group-hover:text-purple-300/50">Edit Avatar & Username</span>
+                    <span className="block text-xs font-mono font-bold tracking-[0.3em] uppercase text-slate-400 group-hover:text-white transition-all">
+                      Profile
+                    </span>
+                    <div className="h-[1px] w-0 group-hover:w-full bg-purple-500/50 transition-all duration-500 mt-1"></div>
                   </div>
                 </button>
 
                 {/* BOOKMARK MENU */}
                 <button 
                   onClick={() => navigateTo('bookmarks')}
-                  className="group flex items-center gap-5 p-2 transition-all"
+                  className="group flex items-center gap-6 p-2 transition-all"
                 >
-                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-purple-500/20 transition-colors">
-                    <Bookmark size={20} className="text-slate-400 group-hover:text-purple-400" />
-                  </div>
+                  <Bookmark size={20} className="text-slate-500 group-hover:text-purple-400 transition-colors" strokeWidth={1.5} />
                   <div className="text-left">
-                    <span className="block text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">Bookmark</span>
-                    <span className="text-[10px] text-slate-600 group-hover:text-purple-300/50">Saved Feeds & Articles</span>
+                    <span className="block text-xs font-mono font-bold tracking-[0.3em] uppercase text-slate-400 group-hover:text-white transition-all">
+                      Bookmark
+                    </span>
+                    <div className="h-[1px] w-0 group-hover:w-full bg-purple-500/50 transition-all duration-500 mt-1"></div>
                   </div>
                 </button>
 
                 {/* SETTINGS MENU */}
                 <button 
                   onClick={() => navigateTo('settings-advanced')}
-                  className="group flex items-center gap-5 p-2 transition-all"
+                  className="group flex items-center gap-6 p-2 transition-all"
                 >
-                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-purple-500/20 transition-colors">
-                    <Settings size={20} className="text-slate-400 group-hover:text-purple-400" />
-                  </div>
+                  <Settings size={20} className="text-slate-500 group-hover:text-purple-400 transition-colors" strokeWidth={1.5} />
                   <div className="text-left">
-                    <span className="block text-sm font-bold text-slate-300 group-hover:text-white uppercase tracking-widest">Settings</span>
-                    <span className="text-[10px] text-slate-600 group-hover:text-purple-300/50">Currency, Language, Security</span>
+                    <span className="block text-xs font-mono font-bold tracking-[0.3em] uppercase text-slate-400 group-hover:text-white transition-all">
+                      Settings
+                    </span>
+                    <div className="h-[1px] w-0 group-hover:w-full bg-purple-500/50 transition-all duration-500 mt-1"></div>
                   </div>
                 </button>
 
               </nav>
 
-              {/* 3. FOOTER DISCONNECT (OPTIONAL BUT CLEAN) */}
-              <div className="pt-8 border-t border-white/5">
-                 <p className="text-[9px] font-mono text-slate-700 tracking-[0.5em] uppercase">Vibes of Sovereign v1.0</p>
+              {/* 3. FOOTER INFO */}
+              <div className="pt-8 border-t border-white/5 opacity-30">
+                 <p className="text-[8px] font-mono text-slate-500 tracking-[0.6em] uppercase">Sovereign Protocol v1.0</p>
               </div>
             </motion.div>
           </>
