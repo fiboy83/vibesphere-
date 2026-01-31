@@ -53,6 +53,7 @@ export default function VibesphereApp() {
   const [isScrolling, setIsScrolling] = useState(false);
   const [lastY, setLastY] = useState(0);
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -76,6 +77,16 @@ export default function VibesphereApp() {
   
   const handleLogout = () => {
     alert("Logging out from Vibesphere...");
+  };
+
+  const handleSendComment = (postId: number) => {
+    if (commentText.trim() === "") return;
+    
+    // logika pengiriman: saat ini kita tampilkan di konsol sebagai bukti fungsi aktif
+    console.log(`vibe sent to post ${postId}: ${commentText}`);
+    
+    // reset input setelah berhasil "terkirim"
+    setCommentText("");
   };
   
   const feedData = [
@@ -269,13 +280,19 @@ export default function VibesphereApp() {
                               <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
                               <div className="relative flex-1 flex items-center">
                                 <input 
+                                  value={commentText}
+                                  onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSendComment(item.id)}
                                   placeholder="write your vibe..."
                                   className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50 transition-all text-slate-200"
                                 />
                                 
                                 <button 
-                                  onClick={() => console.log("vibe sent!")}
-                                  className="absolute right-3 text-purple-500 hover:text-purple-400 transition-colors"
+                                  onClick={() => handleSendComment(item.id)}
+                                  disabled={!commentText.trim()}
+                                  className={`absolute right-3 transition-colors ${
+                                    commentText.trim() ? 'text-purple-500 hover:text-purple-400' : 'text-slate-700'
+                                  }`}
                                 >
                                   <Send size={14} strokeWidth={2} />
                                 </button>
