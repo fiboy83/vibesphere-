@@ -60,6 +60,7 @@ export default function VibesphereApp() {
   const [lastY, setLastY] = useState(0);
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
 
   // --- CORE SESSION & PROFILE ENGINE ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -149,6 +150,13 @@ export default function VibesphereApp() {
       console.log("seed phrase pasted.");
     } catch (err) {
       alert("failed to paste. please allow clipboard access.");
+    }
+  };
+
+  const copyAddress = () => {
+    if (userProfile.address) {
+      navigator.clipboard.writeText(userProfile.address);
+      alert("wallet address copied to clipboard!");
     }
   };
   
@@ -551,17 +559,31 @@ export default function VibesphereApp() {
                       </h3>
                       <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
 
-                      <p className="text-[9px] font-mono text-slate-500 mt-4 break-all opacity-50">
-                          {userProfile.address}
-                      </p>
+                      <div className="mt-4 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
+                          <code className="text-[10px] font-mono text-purple-300">
+                            {userProfile.address.slice(0, 6)}...{userProfile.address.slice(-4)}
+                          </code>
+                        </div>
+                        <button 
+                          onClick={copyAddress}
+                          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
 
 
                       {/* quick actions */}
-                      <div className="flex gap-4 mt-10">
+                      <div className="flex gap-4 mt-6">
                         <button className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-purple-400 transition-colors">
                           send
                         </button>
-                        <button className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">
+                        <button 
+                          onClick={() => setShowReceiveModal(true)}
+                          className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all text-white"
+                        >
                           receive
                         </button>
                       </div>
@@ -592,6 +614,52 @@ export default function VibesphereApp() {
                         </div>
                       ))}
                     </div>
+                    <AnimatePresence>
+                      {showReceiveModal && (
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowReceiveModal(false)}
+                          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+                        >
+                          <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 flex flex-col items-center shadow-2xl"
+                          >
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive opn</h3>
+                            
+                            <div className="w-48 h-48 bg-white p-3 rounded-3xl mb-8 shadow-[0_0_30px_rgba(168,85,247,0.2)]">
+                               <div className="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-300">
+                                 <span className="text-[8px] text-slate-400 font-mono">qr code generated for {userProfile.address.slice(0,4)}</span>
+                               </div>
+                            </div>
+
+                            <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8">
+                              <p className="text-[10px] font-mono text-slate-400 break-all text-center lowercase leading-relaxed">
+                                {userProfile.address}
+                              </p>
+                            </div>
+
+                            <button 
+                              onClick={copyAddress}
+                              className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest mb-3"
+                            >
+                              copy address
+                            </button>
+                            
+                            <button 
+                              onClick={() => setShowReceiveModal(false)}
+                              className="text-[10px] font-mono text-slate-500 hover:text-white uppercase tracking-widest mt-2"
+                            >
+                              close
+                            </button>
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
               )}
               {activeTab !== 'home' && activeTab !== 'wallet' && (
