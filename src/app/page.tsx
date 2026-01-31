@@ -5,25 +5,66 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search } from 'lucide-react';
 
 
-const UserHeader = ({ name, handle, time, color }: { name: string; handle: string; time: string; color: string; }) => (
-    <div className="flex items-center gap-3 mb-4">
-      <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${color} p-[2px]`}>
-        <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
-          <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${handle}`} alt="pfp" />
+// --- HELPER COMPONENT: USER HEADER ---
+const UserHeader = ({ name, handle, time, themeColor }: { name: string; handle: string; time: string; themeColor: string; }) => (
+    <div className="flex items-center gap-3 mb-5">
+      <div 
+        className="w-12 h-12 rounded-full p-[2px] shadow-lg"
+        style={{ background: `linear-gradient(to top right, ${themeColor}, #ffffff)` }}
+      >
+        <div className="w-full h-full rounded-full bg-[#050505] overflow-hidden flex items-center justify-center border border-white/10">
+          <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${handle}&backgroundColor=${themeColor.replace('#','')}`} alt="pfp" />
         </div>
       </div>
       <div>
-        <h4 className="text-sm font-bold text-white leading-none">{name}</h4>
-        <p className="text-[10px] text-slate-500 font-mono mt-1">@{handle} • {time}</p>
+        <h4 className="text-sm font-black text-white leading-none tracking-tight">{name}</h4>
+        <p className="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-tighter">@{handle} • {time}</p>
       </div>
     </div>
   );
+  
+// --- COMPONENT: RESONANCE CARD (The Floating Shell) ---
+const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
+    return (
+      <motion.div 
+        variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+        whileHover={{ y: -8, scale: 1.01 }}
+        style={{ 
+          borderColor: `${themeColor}44`, 
+          boxShadow: `0 15px 40px -15px ${themeColor}33`,
+        }}
+        className={`relative p-8 rounded-[3rem] bg-white/[0.02] border backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] ${isShort ? 'self-start min-w-[320px]' : 'w-full'}`}
+      >
+        <div 
+          className="absolute -top-10 -right-10 w-32 h-32 blur-[80px] rounded-full opacity-20 pointer-events-none"
+          style={{ backgroundColor: themeColor }}
+        ></div>
+        
+        {children}
 
+        {/* Visual indicator di pojok bawah kartu untuk mempertegas resonance */}
+        <div 
+            className="absolute bottom-6 right-6 w-3 h-3 rounded-full opacity-50"
+            style={{
+              backgroundColor: themeColor,
+              boxShadow: `0 0 12px 2px ${themeColor}`
+            }}
+        ></div>
+      </motion.div>
+    );
+};
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('feed');
+  
+  const feedData = [
+    { id: 1, user: "Red_Void", handle: "void.opn", time: "1m", color: "#ef4444", content: "GM! Energi merah di orbit OPN hari ini sangat kuat. 🔥", type: "short" },
+    { id: 2, user: "Cyan_Pulse", handle: "pulse.opn", time: "12m", color: "#06b6d4", content: "Baru saja mengupdate node di sektor 9. Koneksi super stabil!", type: "medium" },
+    { id: 3, user: "Neon_Aura", handle: "neon.opn", time: "45m", color: "#a855f7", content: "Sovereign identity adalah kunci masa depan. Jangan serahkan datamu pada korporasi lama. #DecentralizedYear3000", type: "medium" },
+    { id: 4, user: "Amber_Grid", handle: "amber.opn", time: "2h", color: "#f59e0b", content: "Lagi nge-bid NFT rare di pasar OPN. Doakan menang ya frens!", type: "short" },
+    { id: 5, user: "Emerald_Dev", handle: "green.opn", time: "5h", color: "#10b981", content: "Update Smart Contract v4.0 sukses dideploy. Outerline warna hijau ini tanda sistem 'Health' 100%.", type: "medium" }
+  ];
 
   return (
     <div className="relative min-h-screen bg-[#050505] text-white font-sans overflow-hidden">
@@ -120,99 +161,25 @@ export default function Home() {
       
       <main className="w-full max-w-4xl mx-auto pb-48 pt-10 px-6 min-h-screen">
         <motion.div 
-          initial="hidden"
-          animate="show"
-          variants={{ show: { transition: { staggerChildren: 0.15 } } }}
-          className="flex flex-col gap-10" // Tighter gap for dynamic feel
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: 0.15 } } }}
+            className="flex flex-col gap-12"
         >
-          
-          {/* 1. SHORT FEED (GM / SHORT POST) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -5 }}
-            className="relative p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.3)] self-start min-w-[300px]"
-          >
-            <UserHeader name="Zero_G" handle="zerog.opn" time="2m" color="from-cyan-400 to-blue-500" />
-            <p className="text-2xl font-black italic bg-gradient-to-r from-white to-slate-500 bg-clip-text text-transparent">
-              GM OPN Fam! ☀️
-            </p>
-          </motion.div>
-
-          {/* 2. MEDIUM FEED (WITH IMAGE) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -5 }}
-            className="relative p-6 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
-          >
-            <UserHeader name="CryptoArt" handle="art.opn" time="15m" color="from-purple-500 to-pink-500" />
-            <p className="text-slate-300 mb-4">Baru saja menyelesaikan render untuk NFT OPN Nexus terbaru. Gimana menurut kalian?</p>
-            <div className="aspect-video w-full rounded-2xl bg-slate-900 overflow-hidden border border-white/5">
-              <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=800" className="w-full h-full object-cover" alt="post" />
-            </div>
-          </motion.div>
-
-          {/* 3. LONG FEED (WITH MAX HEIGHT & SCROLL) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -5 }}
-            className="relative p-6 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
-          >
-            <UserHeader name="Dev_Protocol" handle="dev.opn" time="1h" color="from-green-400 to-cyan-500" />
-            <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              <h3 className="text-xl font-bold text-cyan-400 mb-2 italic">Update Protokol V3.1</h3>
-              <p className="text-slate-400 leading-relaxed text-sm">
-                Kami baru saja mengimplementasikan sistem Quantum-Secure pada jaringan OPN. Ini artinya semua transaksi sosial dan finansial kamu terlindungi dari serangan komputer kuantum di masa depan. 
-                <br/><br/>
-                Beberapa poin penting:
-                1. Kecepatan transaksi naik 400%.
-                2. Gas fee turun menjadi 0.0000001 OPN.
-                3. Integrasi Soulbound Identity lebih dalam.
-                <br/><br/>
-                DApp ini sekarang adalah node paling stabil di sektor 7 G. Kami mengharapkan semua pengguna untuk segera melakukan sinkronisasi wallet ke versi terbaru guna menghindari glitch di ruang hampa. Tetap waspada, tetap terdesentralisasi.
-              </p>
-            </div>
-            <div className="mt-4 pt-4 border-t border-white/5 text-[10px] text-slate-600 italic">
-              Click to read full proposal on-chain...
-            </div>
-          </motion.div>
-
-          {/* 4. MARKET FEED (AUTO HEIGHT) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -5 }}
-            className="relative p-6 rounded-[3rem] bg-gradient-to-br from-cyan-500/5 to-transparent border border-cyan-500/20 shadow-[0_20px_40px_rgba(6,182,212,0.1)]"
-          >
-            <UserHeader name="OPN Bot" handle="bot.opn" time="Just Now" color="from-slate-700 to-slate-900" />
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xs text-slate-500 uppercase tracking-widest">Live Price</p>
-                <p className="text-3xl font-black text-white">$4.95</p>
-              </div>
-              <div className="h-12 w-32 bg-green-500/10 rounded-lg flex items-center justify-center border border-green-500/20">
-                <span className="text-green-400 font-mono font-bold">+18.2%</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* 5. REPOST FEED (NESTED STYLE) */}
-          <motion.div 
-            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -5 }}
-            className="relative p-6 rounded-[3rem] bg-white/[0.03] border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
-          >
-            <UserHeader name="Alpha_Seeker" handle="alpha.opn" time="3h" color="from-orange-400 to-red-500" />
-            <p className="text-slate-300 mb-4 font-medium italic">Ini bener banget, OPN Nexus adalah endgame-nya!</p>
-            
-            {/* Nested Repost Card */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-              <div className="flex items-center gap-2 mb-2 scale-90 origin-left">
-                <div className="w-6 h-6 rounded-full bg-blue-500"></div>
-                <span className="text-xs font-bold">VibeCoder.opn</span>
-              </div>
-              <p className="text-xs text-slate-500 italic">"Membangun di atas OPN Network bener-bener gampang..."</p>
-            </div>
-          </motion.div>
-          <div className="h-20"></div>
+            {feedData.map((item) => (
+                <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
+                    <UserHeader 
+                        name={item.user} 
+                        handle={item.handle} 
+                        time={item.time} 
+                        themeColor={item.color} 
+                    />
+                    <p className="text-slate-300 text-lg leading-relaxed font-light">
+                        {item.content}
+                    </p>
+                </ResonanceCard>
+            ))}
+             <div className="h-20"></div>
         </motion.div>
       </main>
 
