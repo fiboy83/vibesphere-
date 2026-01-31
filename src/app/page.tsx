@@ -56,6 +56,9 @@ export default function VibesphereApp() {
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [recipient, setRecipient] = useState("");
+  const [amount, setAmount] = useState("");
 
   // --- CORE SESSION & PROFILE ENGINE ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -187,6 +190,24 @@ export default function VibesphereApp() {
     if (userProfile.address) {
       navigator.clipboard.writeText(userProfile.address);
       alert("wallet address copied to clipboard!");
+    }
+  };
+
+  const handleSendOPN = async () => {
+    try {
+      if (!recipient || !amount) {
+        alert("Recipient and amount are required.");
+        return;
+      }
+      console.log(`sending ${amount} opn to ${recipient}...`);
+      // In a real app, this is where you'd use a wallet client to send a transaction
+      alert("transaction broadcasted to iopn testnet!");
+      setShowSendModal(false);
+      setRecipient("");
+      setAmount("");
+    } catch (error) {
+      console.error("Send OPN Error:", error)
+      alert("transaction failed. check your balance.");
     }
   };
   
@@ -361,7 +382,6 @@ export default function VibesphereApp() {
                     animate={{ opacity: 1 }} 
                     className="w-full"
                 >
-                  <motion.div>
                     <div className="relative">
                       <textarea 
                         value={mnemonic}
@@ -381,7 +401,6 @@ export default function VibesphereApp() {
                       verify & import
                     </button>
                      <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
-                  </motion.div>
                   <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                     <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
                       *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
@@ -640,7 +659,10 @@ export default function VibesphereApp() {
 
                       {/* quick actions */}
                       <div className="flex gap-4 mt-6">
-                        <button className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-purple-400 transition-colors">
+                        <button 
+                            onClick={() => setShowSendModal(true)}
+                            className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all text-white"
+                        >
                           send
                         </button>
                         <button 
@@ -694,8 +716,12 @@ export default function VibesphereApp() {
                           >
                             <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive opn</h3>
                             
-                            <div className="w-48 h-48 bg-white rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex items-center justify-center">
-                               {/* Blank white QR code area */}
+                            <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
+                                <img 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${userProfile.address}`} 
+                                    alt="wallet qr"
+                                    className="w-full h-full object-contain"
+                                />
                             </div>
 
                             <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8 text-center">
@@ -717,6 +743,39 @@ export default function VibesphereApp() {
                             >
                               close
                             </button>
+                          </motion.div>
+                        </motion.div>
+                      )}
+                      {showSendModal && (
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowSendModal(false)}
+                          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+                        >
+                          <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
+                          >
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">send opn</h3>
+                            <input 
+                              placeholder="recipient address (0x...)"
+                              value={recipient}
+                              onChange={(e) => setRecipient(e.target.value)}
+                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-4 text-[10px] font-mono focus:outline-none focus:border-purple-500"
+                            />
+                            <input 
+                              placeholder="amount"
+                              type="number"
+                              value={amount}
+                              onChange={(e) => setAmount(e.target.value)}
+                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-6 text-[10px] font-mono focus:outline-none focus:border-purple-500"
+                            />
+                            <button onClick={handleSendOPN} className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest">confirm send</button>
+                            <button onClick={() => setShowSendModal(false)} className="w-full mt-4 text-[10px] font-mono text-slate-500 uppercase">cancel</button>
                           </motion.div>
                         </motion.div>
                       )}
