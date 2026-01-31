@@ -42,7 +42,6 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
         
         {children}
 
-        {/* Visual indicator di pojok bawah kartu untuk mempertegas resonance */}
         <div 
             className="absolute bottom-6 right-6 w-3 h-3 rounded-full opacity-50"
             style={{
@@ -52,6 +51,76 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
         ></div>
       </motion.div>
     );
+};
+
+// --- COMPONENT: INTERACTION BUTTON (Quantum Sync) ---
+const InteractionBar = ({ themeColor, stats }: { themeColor: string; stats: { comments: number, reposts: number, likes: number } }) => {
+  const [liked, setLiked] = React.useState(false);
+  const [reposted, setReposted] = React.useState(false);
+
+  // Fungsi untuk memberikan efek glow pada icon saat aktif
+  const iconStyle = (isActive: boolean) => ({
+    color: isActive ? themeColor : '#64748b',
+    filter: isActive ? `drop-shadow(0 0 8px ${themeColor})` : 'none',
+    transition: 'all 0.3s ease'
+  });
+
+  return (
+    <div className="flex justify-between items-center mt-8 pt-6 border-t border-white/5">
+      <div className="flex gap-8">
+        {/* Comment Button */}
+        <button className="flex items-center gap-2 group transition-all text-slate-500 hover:text-white">
+          <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
+             <span className="text-xl">💬</span>
+          </div>
+          <span className="text-xs font-bold font-mono">{stats.comments}</span>
+        </button>
+
+        {/* Repost Button */}
+        <button 
+          onClick={() => setReposted(!reposted)}
+          className="flex items-center gap-2 group transition-all"
+          style={{ color: reposted ? themeColor : '#64748b' }}
+        >
+          <div 
+            className="p-2 rounded-full group-hover:bg-white/5 transition-colors"
+            style={reposted ? { backgroundColor: `${themeColor}22` } : {}}
+          >
+             <span className="text-xl" style={iconStyle(reposted)}>🔁</span>
+          </div>
+          <span className="text-xs font-bold font-mono">{reposted ? stats.reposts + 1 : stats.reposts}</span>
+        </button>
+
+        {/* Like Button */}
+        <button 
+          onClick={() => setLiked(!liked)}
+          className="flex items-center gap-2 group transition-all"
+        >
+          <div 
+            className="p-2 rounded-full group-hover:bg-white/5 transition-colors"
+            style={liked ? { backgroundColor: `${themeColor}22` } : {}}
+          >
+             <span className="text-xl" style={iconStyle(liked)}>❤️</span>
+          </div>
+          <span className="text-xs font-bold font-mono" style={{ color: liked ? themeColor : '#64748b' }}>
+            {liked ? stats.likes + 1 : stats.likes}
+          </span>
+        </button>
+      </div>
+
+      {/* Tip / Action Button - Aksen Kecil */}
+      <button 
+        className="px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all"
+        style={{ 
+          borderColor: `${themeColor}66`, 
+          color: themeColor,
+          boxShadow: `0 0 15px ${themeColor}22` 
+        }}
+      >
+        Tip OPN
+      </button>
+    </div>
+  );
 };
 
 export default function Home() {
@@ -174,9 +243,19 @@ export default function Home() {
                         time={item.time} 
                         themeColor={item.color} 
                     />
-                    <p className="text-slate-300 text-lg leading-relaxed font-light">
-                        {item.content}
-                    </p>
+                    <div className="min-h-[40px]">
+                      <p className="text-slate-200 text-lg leading-relaxed font-light mb-2">
+                          {item.content}
+                      </p>
+                    </div>
+                    <InteractionBar 
+                      themeColor={item.color} 
+                      stats={{ 
+                        likes: Math.floor(Math.random() * 1000), 
+                        recasts: Math.floor(Math.random() * 100), 
+                        comments: Math.floor(Math.random() * 50) 
+                      }} 
+                    />
                 </ResonanceCard>
             ))}
              <div className="h-20"></div>
