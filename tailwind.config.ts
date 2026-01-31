@@ -10,9 +10,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"Geist Sans"', 'sans-serif'],
+        body: ['var(--font-inter)', 'sans-serif'],
         headline: ['Orbitron', 'sans-serif'],
-        code: ['"Geist Mono"', 'monospace'],
+        code: ['var(--font-roboto-mono)', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
