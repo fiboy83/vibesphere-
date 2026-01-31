@@ -315,7 +315,61 @@ export default function VibesphereApp() {
                 <div className="h-20"></div>
               </motion.div>
             )}
-            {activeTab !== 'home' && (
+            {activeTab === 'wallet' && (
+              <motion.div 
+                className="w-full max-w-md mx-auto p-6"
+              >
+                {/* 1. balance card: the core resonance */}
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
+                  <div className="absolute top-0 right-0 p-6 opacity-20">
+                    <Wallet size={80} strokeWidth={1} />
+                  </div>
+                  
+                  <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
+                  <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
+                    1,240.50 <span className="text-sm font-light not-italic text-purple-400">opn</span>
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $3,420.12 usd</p>
+
+                  {/* quick actions */}
+                  <div className="flex gap-4 mt-10">
+                    <button className="flex-1 py-3 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-purple-400 transition-colors">
+                      send
+                    </button>
+                    <button className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">
+                      receive
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. asset list */}
+                <div className="mt-12 flex flex-col gap-6">
+                  <div className="flex justify-between items-center px-2">
+                    <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">assets</span>
+                    <button className="text-[10px] font-mono text-purple-400">view all</button>
+                  </div>
+
+                  {[
+                    { name: 'sovereign', symbol: 'opn', balance: '1,240.50', color: 'from-purple-500' },
+                    { name: 'bitcoin', symbol: 'btc', balance: '0.042', color: 'from-orange-500' },
+                    { name: 'ethereum', symbol: 'eth', balance: '1.25', color: 'from-blue-500' }
+                  ].map((asset) => (
+                    <div key={asset.symbol} className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${asset.color} to-black/20`} />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold lowercase">{asset.name}</h4>
+                        <span className="text-[10px] font-mono text-slate-500 uppercase">{asset.symbol}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold font-mono">{asset.balance}</p>
+                        <p className="text-[10px] text-green-500/70">+2.4%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+            {activeTab !== 'home' && activeTab !== 'wallet' && (
               <div className="text-center pt-20">
                 <h2 className="text-4xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">{activeTab}</h2>
                 <p className="text-slate-500 mt-4 font-mono">Resonance field stabilizing... content will materialize shortly.</p>
