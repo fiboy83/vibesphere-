@@ -55,10 +55,40 @@ export default function VibesphereApp() {
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
 
-  // --- AUTHENTICATION STATE ---
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import, show-mnemonic, success
+  // --- CORE SESSION & PROFILE ENGINE ---
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userProfile, setUserProfile] = useState({
+    username: "sovereign_viber",
+    address: "",
+    avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=vibe"
+  });
+  const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import, show-mnemonic
   const [mnemonic, setMnemonic] = useState("");
+
+  // --- AUTH FUNCTIONS ---
+  const handleAuthSuccess = (walletAddress?: string) => {
+    // Create a dummy address. In a real app, this would come from a wallet library.
+    const newAddress = walletAddress || `0x${[...Array(40)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+    
+    setUserProfile({
+      username: "viber_" + newAddress.slice(2, 8),
+      address: newAddress,
+      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${newAddress}`
+    });
+
+    setIsLoggedIn(true);
+    setAuthStep('gateway'); // Reset auth flow UI
+    console.log("nexus linked. profile active.");
+  };
+  
+  const handleLogout = () => {
+    if (window.confirm("exit vibesphere? your sovereignty remains on-chain.")) {
+      setIsLoggedIn(false);
+      setIsSidebarOpen(false);
+      setAuthStep('gateway'); // Reset auth flow for next login
+      console.log("disconnected from nexus.");
+    }
+  };
 
   // --- WALLET FUNCTIONS ---
   const handleCreateWallet = () => {
@@ -72,8 +102,9 @@ export default function VibesphereApp() {
   const handleImportWallet = (inputMnemonic: string) => {
     if (inputMnemonic.trim().split(' ').length === 12) {
       console.log("wallet imported successfully.");
-      // simpan status login secara lokal (encrypted)
-      setAuthStep('success');
+      // simulate address from mnemonic for display
+      const dummyAddress = '0x' + Array.from(inputMnemonic).reduce((acc, char) => acc + char.charCodeAt(0), 0).toString(16).padEnd(40, '0');
+      handleAuthSuccess(dummyAddress);
     } else {
       alert("invalid seed phrase. must be 12 words.");
     }
@@ -96,26 +127,9 @@ export default function VibesphereApp() {
     }
   };
   
-  // --- LOGIN/LOGOUT ENGINE ---
+  // --- SCROLL HANDLING ---
   useEffect(() => {
-    if (authStep === 'success') {
-      setIsAuthenticated(true);
-      console.log("access granted. welcome to vibesphere.");
-    }
-  }, [authStep]);
-
-  const handleLogout = () => {
-    const confirmLogout = window.confirm("are you sure you want to exit the sovereign zone?");
-    if (confirmLogout) {
-      setIsAuthenticated(false);
-      setIsSidebarOpen(false);
-      setAuthStep('gateway');
-      console.log("logged out. stay sovereign.");
-    }
-  };
-  
-  useEffect(() => {
-    if (!isAuthenticated) return; // Only run scroll listener when authenticated
+    if (!isLoggedIn) return; // Only run scroll listener when logged in
     const handleScroll = () => {
       const currentY = window.scrollY;
       if (currentY > lastY && currentY > 100) {
@@ -127,7 +141,7 @@ export default function VibesphereApp() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastY, isAuthenticated]);
+  }, [lastY, isLoggedIn]);
 
   const handleNavigation = (target: string, params?: any) => {
     console.log(`Navigating to: ${target}`, params);
@@ -159,7 +173,7 @@ export default function VibesphereApp() {
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden font-sans">
       
-      {!isAuthenticated ? (
+      {!isLoggedIn ? (
         <div className="flex items-center justify-center min-h-screen">
           <AnimatePresence mode="wait">
             <motion.div
@@ -234,7 +248,7 @@ export default function VibesphereApp() {
                       <Copy size={14} /> copy seed phrase
                     </button>
                     
-                    <button onClick={() => setAuthStep('success')} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
+                    <button onClick={() => handleAuthSuccess()} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
                       i've saved it
                     </button>
                   </motion.div>
@@ -458,7 +472,7 @@ export default function VibesphereApp() {
                             <div className="mt-6 flex flex-col gap-4">
                               {/* input komentar baru */}
                               <div className="flex gap-3 items-center mb-2">
-                                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
+                                <img src={userProfile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
                                 <div className="relative flex-1 flex items-center">
                                   <input 
                                     value={commentText}
