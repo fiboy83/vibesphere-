@@ -102,47 +102,126 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="w-full max-w-4xl mx-auto pb-40 pt-8 px-6">
+      <main className="w-full max-w-4xl mx-auto pb-48 pt-10 px-6">
         <motion.div 
-          animate={{ filter: isSearchOpen ? 'blur(20px)' : 'blur(0px)', opacity: isSearchOpen ? 0.3 : 1 }}
-          className="flex flex-col gap-12"
+          initial="hidden"
+          animate="show"
+          variants={{
+            show: { transition: { staggerChildren: 0.15 } }
+          }}
+          className="flex flex-col gap-16" // Gap besar agar tiap kartu fokus melayang
         >
           
-          {/* CARD 1: MARKET ALPHA (CYAN GLOW) */}
+          {/* 1. MARKET INSIGHT CARD (Cyan Aura) */}
           <motion.div 
-            whileHover={{ y: -10, scale: 1.02 }}
-            className="relative p-8 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-md shadow-[0_20px_50px_rgba(6,182,212,0.15)] group transition-all"
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -12, scale: 1.01 }}
+            className="relative p-8 rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-[0_25px_60px_rgba(6,182,212,0.15)] group"
           >
-            <div className="absolute -top-4 -left-4 w-24 h-24 bg-cyan-500/20 blur-[50px] rounded-full"></div>
-            
-            <div className="flex justify-between items-start relative z-10">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/10 blur-[80px] rounded-full"></div>
+            <div className="flex justify-between items-start mb-6">
               <div className="flex gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white shadow-lg">
                   <BarChart3 size={28} />
                 </div>
                 <div>
-                  <h4 className="text-lg font-black text-white tracking-tight">OPN / TETHER</h4>
-                  <p className="text-xs text-cyan-400 font-mono">LIVE TRACKER • VOL: $2.4M</p>
+                  <h4 className="text-xl font-black text-white italic">MARKET PULSE</h4>
+                  <p className="text-[10px] text-cyan-400 font-mono tracking-widest">OPN/USDT • REALTIME</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-black text-white font-mono">$4.256</p>
-                <p className="text-xs text-green-400 font-bold">+12.4%</p>
+              <div className="bg-white/5 p-3 rounded-2xl border border-white/10 text-right font-mono">
+                <p className="text-lg font-bold text-white leading-none">$4.82</p>
+                <p className="text-[10px] text-green-400">+8.2%</p>
               </div>
             </div>
-            
-            <div className="mt-8 h-24 w-full flex items-end gap-2 overflow-hidden rounded-xl bg-black/20 p-4">
-              {[60, 40, 70, 50, 90, 100, 80, 110].map((h, i) => (
-                  <motion.div 
-                    key={i}
-                    initial={{ height: 0 }}
-                    animate={{ height: `${h}%` }}
-                    transition={{ delay: i * 0.1 }}
-                    className="flex-1 bg-cyan-500/40 rounded-t-full border-t border-cyan-300"
-                  />
-              ))}
+            <p className="text-slate-300 text-lg leading-relaxed">Liquidity OPN baru saja melonjak. <span className="text-cyan-400">Smart money</span> mulai masuk ke ekosistem. Cek dex tracker sekarang!</p>
+          </motion.div>
+
+          {/* 2. CREATOR SOCIAL CAST (Purple Aura) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -12 }}
+            className="relative p-8 rounded-[3.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-md shadow-[0_25px_60px_rgba(139,92,246,0.1)]"
+          >
+            <div className="flex gap-6">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[3px] shrink-0 shadow-2xl">
+                <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
+                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Neon" alt="pfp" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="font-bold text-lg text-white">Nova_Architect</span>
+                  <span className="text-xs text-slate-500 font-mono">@nova.opn • 12m</span>
+                </div>
+                <p className="text-slate-400 text-xl font-light leading-snug">
+                  Tahun 3000 bukan tentang siapa yang punya server terbanyak, tapi siapa yang punya <span className="text-purple-400">vibe</span> paling sinkron di jaringan. 🌌
+                </p>
+                <div className="flex gap-8 mt-6 text-slate-500 text-sm font-bold">
+                  <span className="hover:text-cyan-400 cursor-pointer transition">REPLY 42</span>
+                  <span className="hover:text-purple-400 cursor-pointer transition">RECAST 12</span>
+                  <span className="hover:text-red-400 cursor-pointer transition">LOVE 550</span>
+                </div>
+              </div>
             </div>
           </motion.div>
+
+          {/* 3. NFT DROP GALLERY (Gold Aura) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -12 }}
+            className="relative p-4 rounded-[4rem] bg-white/[0.05] border border-white/10 shadow-[0_30px_70px_rgba(245,158,11,0.1)] group overflow-hidden"
+          >
+            <div className="aspect-square w-full rounded-[3.5rem] bg-slate-800 mb-6 overflow-hidden relative">
+              <img src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=800" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
+              <div className="absolute bottom-10 left-10">
+                <p className="text-xs font-mono text-amber-400 mb-2">LIMITED EDITION</p>
+                <h3 className="text-3xl font-black text-white italic tracking-tighter">ETHEREAL_VOID #88</h3>
+              </div>
+            </div>
+            <div className="px-6 pb-6 flex justify-between items-center">
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Floor Price</p>
+                <p className="text-2xl font-black text-white tracking-tighter">850 OPN</p>
+              </div>
+              <button className="px-10 py-4 bg-white text-black font-black rounded-full hover:bg-amber-400 transition-colors shadow-xl">COLLECT</button>
+            </div>
+          </motion.div>
+
+          {/* 4. GOVERNANCE PROPOSAL (Red/Pink Aura) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -12 }}
+            className="p-8 rounded-[3.5rem] bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 backdrop-blur-md shadow-[0_25px_60px_rgba(239,68,68,0.1)] relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-8 opacity-20"><Plus size={80} className="rotate-45" /></div>
+            <h4 className="text-xs font-black text-red-400 tracking-[0.4em] mb-4 uppercase">Governance Active</h4>
+            <h3 className="text-2xl font-bold text-white mb-4">OIP-14: Implementasi Quantum-Staking di Jaringan OPN</h3>
+            <div className="w-full h-2 bg-white/5 rounded-full mb-4 overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: '72%' }} className="h-full bg-red-500" />
+            </div>
+            <div className="flex justify-between text-xs font-mono text-slate-400">
+              <span>YES (72%)</span>
+              <span>24h REMAINING</span>
+            </div>
+          </motion.div>
+
+          {/* 5. SIMPLE MINIMALIST QUOTE (Mono Aura) */}
+          <motion.div 
+            variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -12 }}
+            className="p-12 rounded-[3.5rem] bg-white/[0.01] border border-dashed border-white/20 flex flex-col items-center justify-center text-center shadow-2xl"
+          >
+            <div className="w-12 h-1 bg-gradient-to-r from-cyan-400 to-purple-500 mb-8"></div>
+            <p className="text-2xl font-medium text-slate-400 italic">
+              "Di tahun 3000, privasi bukan lagi pilihan, tapi protokol dasar."
+            </p>
+            <p className="mt-6 text-xs font-mono text-slate-600">— OPN_ANONYMOUS_VOID</p>
+          </motion.div>
+
+          {/* Footer Spacer */}
+          <div className="h-32"></div>
 
         </motion.div>
       </main>
