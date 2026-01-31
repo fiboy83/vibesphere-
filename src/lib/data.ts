@@ -26,13 +26,15 @@ const users = {
     avatar: PlaceHolderImages.find(img => img.id === 'vibecoder-avatar')!,
   },
   anotherUser: {
-      name: 'DevDude',
-      handle: '@devdude',
+      name: '0xNeon',
+      handle: '@neondreamer',
       avatar: PlaceHolderImages.find(img => img.id === 'another-user-avatar')!,
   }
 };
 
 export const currentUser = {
+    name: 'VibeCoder.eth',
+    handle: '@vibecoder',
     avatar: PlaceHolderImages.find(img => img.id === 'current-user-avatar')!
 }
 
@@ -41,7 +43,7 @@ export const mockCasts: Cast[] = [
     id: 1,
     user: users.vibecoder,
     timestamp: '2h',
-    content: 'Just finished building a Farcaster clone layout. The decentralized vibe is real! 🚀 $DEGEN',
+    content: 'Just deployed the first iteration of the OPN Nexus. The Year 3000 aesthetic is coming to life. Glassmorphism + Neon = Future 🔮',
     stats: {
       comments: 12,
       recasts: 5,
@@ -52,7 +54,7 @@ export const mockCasts: Cast[] = [
     id: 2,
     user: users.anotherUser,
     timestamp: '5h',
-    content: 'Excited to be on Castaway! This feels like the future of social media. What are you all building?',
+    content: `Quantum trackers are showing a spike in $OPN. The network is buzzing... Haptic feedback on the charts feels incredible. It's like feeling the market's pulse.`,
     stats: {
       comments: 8,
       recasts: 2,
@@ -63,7 +65,7 @@ export const mockCasts: Cast[] = [
     id: 3,
     user: users.vibecoder,
     timestamp: '1d',
-    content: 'Thinking about the next feature to build. Maybe DMs or channels? What do you think?',
+    content: `Thinking about integrating a ZK-proof system for private transactions within the Neural Wallet. Who's interested in contributing? #web3 #privacy`,
     stats: {
       comments: 34,
       recasts: 15,
