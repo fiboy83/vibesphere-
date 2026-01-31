@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, MessageSquare, Repeat2, Heart, Share2, Waves, User, Bookmark, Settings, ArrowLeft, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart } from 'lucide-react';
 
 
 // --- HELPER COMPONENT: USER HEADER ---
@@ -32,16 +32,21 @@ const InteractionButton = ({ type, icon, count, themeColor }: { type: 'comment' 
       return { stroke: `${themeColor}88`, strokeWidth: 1.5 };
     }
 
-    return {
+    const style = {
       stroke: isActive ? themeColor : `${themeColor}88`,
       strokeWidth: 1.5,
       filter: isActive ? `drop-shadow(0 0 5px ${themeColor}aa)` : 'none',
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-      ...(type === 'like' && {
-        fill: isActive ? themeColor : 'transparent',
-        fillOpacity: 0.2,
-      }),
     };
+    
+    if (type === 'like') {
+      // @ts-ignore
+      style.fill = isActive ? themeColor : 'transparent';
+      // @ts-ignore
+      style.fillOpacity = 0.2;
+    }
+
+    return style;
   };
 
   const handleClick = () => {
@@ -76,7 +81,6 @@ const InteractionBar = ({ themeColor }: { themeColor: string }) => {
   const [stats, setStats] = React.useState<{ comments: number, reposts: number, likes: number } | null>(null);
 
   useEffect(() => {
-    // Client-side only effect to avoid hydration mismatch
     setStats({
       likes: Math.floor(Math.random() * 1000),
       reposts: Math.floor(Math.random() * 100),
@@ -85,7 +89,6 @@ const InteractionBar = ({ themeColor }: { themeColor: string }) => {
   }, []);
 
   if (!stats) {
-    // Render a placeholder or null during SSR and initial client render
     return <div className="mt-8 pt-5 border-t border-white/[0.05] h-[37px]" />;
   }
 
@@ -98,7 +101,7 @@ const InteractionBar = ({ themeColor }: { themeColor: string }) => {
   );
 };
   
-// --- COMPONENT: RESONANCE CARD (The Floating Shell) ---
+// --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
     return (
       <motion.div 
@@ -128,41 +131,46 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
     );
 };
 
-// --- HELPER COMPONENT: DOCK ITEM ---
-const DockItem = ({ icon, active = false }: { icon: React.ReactNode; active?: boolean }) => (
-  <button className="text-slate-400 hover:text-white transition-all">
-    {React.cloneElement(icon as React.ReactElement, {
-        className: `transition-all duration-300 ${active ? 'text-white' : ''}`
-    })}
+// --- Sub-komponen untuk Sidebar Link ---
+const SidebarLink = ({ icon, label, onClick }: {icon: React.ReactNode, label: string, onClick: () => void}) => (
+  <button onClick={onClick} className="group flex items-center gap-4 transition-all">
+    <span className="text-slate-500 group-hover:text-purple-400 transition-colors">{icon}</span>
+    <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">{label}</span>
   </button>
 );
 
 
-export default function Home() {
+// --- MAIN APP COMPONENT ---
+export default function VibesphereApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  const navigateTo = (path: string) => console.log(`Navigating to ${path}`);
-
-  const { scrollY } = useScroll();
+  const [activeTab, setActiveTab] = useState('home');
   const [isHidden, setIsHidden] = useState(false);
   const [lastY, setLastY] = useState(0);
 
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const diff = latest - lastY;
-    if (Math.abs(diff) > 5) {
-      setIsHidden(true);
-    }
-    setLastY(latest);
-  });
-
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsHidden(false);
-    }, 150);
-    return () => clearTimeout(timeout);
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY > lastY && currentY > 100) {
+        setIsHidden(true); // Hide on scroll down
+      } else {
+        setIsHidden(false); // Show on scroll up
+      }
+      setLastY(currentY);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [lastY]);
-  
+
+  const handleNavigation = (target: string) => {
+    setActiveTab(target);
+    setIsSidebarOpen(false);
+  };
+
+  const handleLogout = () => {
+    alert("Logging out from Vibesphere...");
+  };
+
   const feedData = [
     { id: 1, user: "Nova_Architect", handle: "nova.opn", time: "2m", color: "#a855f7", content: "GM OPN Fam! The sovereign vibes are strong today.", type: "short" },
     { id: 2, user: "Quantum_Leaper", handle: "ql.opn", time: "30m", color: "#06b6d4", content: "Just deployed a new DApp on OPN... the speed is unreal. Year 3000 is now.", type: "medium" },
@@ -174,75 +182,60 @@ export default function Home() {
   ];
 
   return (
-    <div className="relative min-h-screen bg-[#050505] text-white font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden font-sans">
       
+      {/* --- HEADER --- */}
+      <motion.header
+        variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: -100, opacity: 0 } }}
+        animate={isHidden ? "hidden" : "visible"}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
+      >
+        <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition">
+          <Menu size={22} className="text-slate-400" />
+        </button>
+        <h1 className="text-sm font-black tracking-[0.3em] lowercase italic bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent">
+          vibes of sovereign
+        </h1>
+        <div className="flex justify-end min-w-[40px]">
+          <motion.div layout>
+            <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-white/10 rounded-full transition">
+              <Search size={22} className="text-slate-400" />
+            </button>
+          </motion.div>
+        </div>
+      </motion.header>
+
+      {/* --- SIDEBAR --- */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90]"
-            />
-
             <motion.div 
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
+            />
+            <motion.div 
+              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 left-0 w-64 bg-[#050505]/98 backdrop-blur-3xl z-[100] border-r border-white/5 p-8 flex flex-col"
+              className="fixed inset-y-0 left-0 w-64 bg-[#050505] z-[100] border-r border-white/5 p-8 flex flex-col"
             >
-              {/* 1. top section: back button & branding */}
               <div className="flex flex-col gap-6 mb-12">
-                <button 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="group flex items-center gap-2 text-slate-500 hover:text-white transition-all"
-                >
+                <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-slate-500 hover:text-white transition">
                   <ArrowLeft size={18} strokeWidth={1.5} />
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em]">back</span>
+                  <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
                 </button>
-
-                <h2 className="text-2xl font-black tracking-[0.2em] lowercase italic bg-gradient-to-tr from-white via-purple-400 to-purple-600 bg-clip-text text-transparent leading-none">
-                  vibesphere
-                </h2>
+                <h2 className="text-2xl font-black lowercase italic bg-gradient-to-tr from-white to-purple-500 bg-clip-text text-transparent">vibesphere</h2>
               </div>
-
-              {/* 2. menu sidebar: slim & mono style */}
               <nav className="flex flex-col gap-8 flex-1">
-                {/* profile */}
-                <button onClick={() => navigateTo('profile')} className="group flex items-center gap-4 transition-all">
-                  <User size={18} className="text-slate-500 group-hover:text-purple-400" strokeWidth={1.5} />
-                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">
-                    profile
-                  </span>
-                </button>
-
-                {/* bookmark */}
-                <button onClick={() => navigateTo('bookmarks')} className="group flex items-center gap-4 transition-all">
-                  <Bookmark size={18} className="text-slate-500 group-hover:text-purple-400" strokeWidth={1.5} />
-                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">
-                    bookmark
-                  </span>
-                </button>
-
-                {/* settings */}
-                <button onClick={() => navigateTo('settings')} className="group flex items-center gap-4 transition-all">
-                  <Settings size={18} className="text-slate-500 group-hover:text-purple-400" strokeWidth={1.5} />
-                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">
-                    settings
-                  </span>
-                </button>
+                <SidebarLink icon={<User size={18} strokeWidth={1.5}/>} label="profile" onClick={() => handleNavigation('profile')} />
+                <SidebarLink icon={<Bookmark size={18} strokeWidth={1.5}/>} label="bookmark" onClick={() => handleNavigation('bookmark')} />
+                <SidebarLink icon={<Settings size={18} strokeWidth={1.5}/>} label="settings" onClick={() => handleNavigation('settings')} />
               </nav>
-
-              {/* 3. bottom section: logout */}
               <div className="mt-auto pt-6 border-t border-white/5">
-                <button className="group flex items-center gap-4 w-full transition-all">
-                  <LogOut size={18} className="text-red-500/60 group-hover:text-red-500" strokeWidth={1.5} />
-                  <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-red-500/60 group-hover:text-red-500">
-                    logout
-                  </span>
+                <button onClick={handleLogout} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
+                  <LogOut size={18} strokeWidth={1.5} />
+                  <span className="text-[11px] font-mono uppercase tracking-widest">logout</span>
                 </button>
               </div>
             </motion.div>
@@ -250,134 +243,62 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <motion.header
-        variants={{
-          visible: { y: 0, opacity: 1 },
-          hidden: { y: -100, opacity: 0 }
-        }}
-        animate={isHidden ? "hidden" : "visible"}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
-      >
-        <AnimatePresence>
-          {!isSearchOpen ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.1 } }}
-              className="flex items-center gap-4"
-            >
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-white/5 rounded-xl transition">
-                <Menu size={22} className="text-slate-400" />
-              </button>
-            </motion.div>
-          ) : (
-            <div className="w-[40px]" />
-          )}
-        </AnimatePresence>
-
-        <motion.div
-            layout
-            className="flex-1 flex justify-center overflow-hidden"
-        >
-            {!isSearchOpen && (
-                <motion.h1 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-sm md:text-base font-black tracking-[0.3em] lowercase whitespace-nowrap bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent italic"
-                >
-                    vibes of sovereign
-                </motion.h1>
-            )}
-        </motion.div>
-
-
-        <div className={`flex items-center justify-end ${isSearchOpen ? 'w-full absolute inset-x-0 px-6' : 'min-w-[40px]'}`}>
-          <motion.div
-            layout
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className={`flex items-center justify-end rounded-2xl ${isSearchOpen ? 'w-full bg-white/10' : ''}`}
-          >
-            <AnimatePresence>
-            {isSearchOpen ? (
-              <>
-                <Search size={22} className="text-slate-400 ml-4 flex-shrink-0 pointer-events-none" />
-                <motion.input
-                    initial={{ width: 0, opacity: 0, paddingLeft: 0, paddingRight: 0 }}
-                    animate={{ width: '100%', opacity: 1, paddingLeft: '1rem', paddingRight: '1rem' }}
-                    exit={{ width: 0, opacity: 0, paddingLeft: 0, paddingRight: 0, transition: { duration: 0.2 } }}
-                    autoFocus
-                    type="text"
-                    placeholder="Search the vibescape..."
-                    className="bg-transparent border-none focus:ring-0 w-full text-base text-white placeholder:text-slate-500"
-                />
-              </>
-            ) : null}
-            </AnimatePresence>
-            <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-white/5 rounded-xl transition">
-              {isSearchOpen ? <X size={22} className="text-slate-400" /> : <Search size={22} className="text-slate-400" />}
-            </button>
-          </motion.div>
-        </div>
-      </motion.header>
-      
+      {/* --- MAIN CONTENT --- */}
       <main className="w-full max-w-4xl mx-auto pb-48 pt-28 px-6 min-h-screen">
-        <motion.div 
-            initial="hidden"
-            animate="show"
-            variants={{ show: { transition: { staggerChildren: 0.15 } } }}
-            className="flex flex-col items-center gap-12"
-        >
-            {feedData.map((item) => (
-                <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === 'home' && (
+              <motion.div 
+                initial="hidden" animate="show"
+                variants={{ show: { transition: { staggerChildren: 0.15 } } }}
+                className="flex flex-col items-center gap-12"
+              >
+                {feedData.map((item) => (
+                  <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
                     <div className="flex justify-between items-start mb-5">
-                      <UserHeader 
-                          name={item.user} 
-                          handle={item.handle} 
-                          time={item.time} 
-                          themeColor={item.color} 
-                      />
+                      <UserHeader name={item.user} handle={item.handle} time={item.time} themeColor={item.color} />
                       <button className="group p-2 -mr-2 mt-1">
-                        <Share2 
-                          size={18} 
-                          style={{ stroke: `${item.color}66`, strokeWidth: 1.5 }} 
-                          className="group-hover:stroke-white transition-colors"
-                        />
+                        <Share2 size={18} style={{ stroke: `${item.color}66`, strokeWidth: 1.5 }} className="group-hover:stroke-white transition-colors"/>
                       </button>
                     </div>
-
                     <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
-                      <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">
-                          {item.content}
-                      </p>
+                      <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.content}</p>
                     </div>
                     <InteractionBar themeColor={item.color} />
-                </ResonanceCard>
-            ))}
-             <div className="h-20"></div>
-        </motion.div>
+                  </ResonanceCard>
+                ))}
+                <div className="h-20"></div>
+              </motion.div>
+            )}
+            {activeTab !== 'home' && (
+              <div className="text-center pt-20">
+                <h2 className="text-4xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">{activeTab}</h2>
+                <p className="text-slate-500 mt-4 font-mono">Resonance field stabilizing... content will materialize shortly.</p>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
+      {/* --- DOCK MENU --- */}
       <div className="fixed bottom-10 left-0 right-0 flex justify-center z-[80] pointer-events-none">
         <motion.nav
-          variants={{
-            visible: { y: 0, opacity: 1 },
-            hidden: { y: 120, opacity: 0 }
-          }}
+          variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 120, opacity: 0 } }}
           animate={(isHidden || isSidebarOpen) ? "hidden" : "visible"}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 md:gap-12 items-center shadow-2xl"
+          className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 items-center shadow-2xl"
         >
-          <DockItem icon={<HomeIcon size={22} strokeWidth={1.5} />} active />
-          <DockItem icon={<BarChart3 size={22} strokeWidth={1.5} />} />
-          
-          <div className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center justify-center">
-            <Plus size={24} className="text-white" strokeWidth={2} />
-          </div>
-
-          <DockItem icon={<Wallet size={22} strokeWidth={1.5} />} />
-          <DockItem icon={<Bell size={22} strokeWidth={1.5} />} />
+          <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? "text-purple-400" : "text-slate-500"}><Home size={22} strokeWidth={1.5} /></button>
+          <button onClick={() => setActiveTab('market')} className={activeTab === 'market' ? "text-purple-400" : "text-slate-500"}><BarChart3 size={22} strokeWidth={1.5} /></button>
+          <div className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.4)]"><Plus size={24} strokeWidth={2} className="text-white" /></div>
+          <button onClick={() => setActiveTab('wallet')} className={activeTab === 'wallet' ? "text-purple-400" : "text-slate-500"}><Wallet size={22} strokeWidth={1.5} /></button>
+          <button onClick={() => setActiveTab('notif')} className={activeTab === 'notif' ? "text-purple-400" : "text-slate-500"}><Bell size={22} strokeWidth={1.5} /></button>
         </motion.nav>
       </div>
 
