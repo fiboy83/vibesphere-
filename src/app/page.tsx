@@ -166,39 +166,64 @@ export default function Home() {
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-purple-900/10 backdrop-blur-md z-[60]"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90]"
             />
-            
-            <motion.aside
+
+            <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 20 }}
-              className="fixed top-0 left-0 h-full w-72 bg-black/40 backdrop-blur-3xl border-r border-white/10 z-[70] p-6 shadow-[20px_0_50px_rgba(138,99,210,0.1)]"
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed inset-y-0 left-0 w-72 bg-[#050505]/95 backdrop-blur-2xl z-[100] border-r border-white/5 p-8"
             >
-              <div className="flex items-center gap-4 mb-10 p-3 bg-white/5 rounded-2xl border border-white/10">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white">
-                  <Waves size={28}/>
+              {/* TOP SECTION: THE LOGO IDENTITY */}
+              <div className="flex flex-col items-center mb-12 pt-4">
+                <div className="relative group cursor-pointer">
+                  {/* Glow Effect di belakang Logo */}
+                  <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full group-hover:bg-cyan-500/40 transition-all"></div>
+                  
+                  {/* THE VIBESPHERE LOGO */}
+                  <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-cyan-400 via-purple-500 to-blue-600 p-[2px] shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                    <div className="w-full h-full rounded-[1.4rem] bg-black flex items-center justify-center overflow-hidden">
+                      {/* Logo Placeholder */}
+                      <span className="text-3xl font-black text-white italic tracking-tighter">VS</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-sm">Sovereign_Vibe</p>
-                  <p className="text-xs text-slate-500 italic">Core Contributor</p>
-                </div>
+                
+                <h2 className="mt-6 text-lg font-black tracking-[0.2em] uppercase bg-gradient-to-r from-white to-slate-500 bg-clip-text text-transparent">
+                  Vibesphere
+                </h2>
+                <p className="text-[10px] font-mono text-cyan-500/60 tracking-widest mt-1">NODE: SOVEREIGN_01</p>
               </div>
 
-              <nav className="space-y-2">
-                {['Profile', 'Settings', 'Governance', 'Soulbound ID'].map((item) => (
-                  <div key={item} className="p-4 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 cursor-pointer transition group">
-                    <span className="text-slate-400 group-hover:text-cyan-400 transition">{item}</span>
-                  </div>
+              {/* MENU ITEMS */}
+              <nav className="flex flex-col gap-4">
+                {[
+                  { name: 'My Profile', icon: '👤' },
+                  { name: 'Nexus Wallet', icon: '💳' },
+                  { name: 'Sovereign Nodes', icon: '🌐' },
+                  { name: 'Settings', icon: '⚙️' },
+                ].map((item) => (
+                  <button key={item.name} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                    <span className="text-xl group-hover:scale-120 transition-transform">{item.icon}</span>
+                    <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">{item.name}</span>
+                  </button>
                 ))}
               </nav>
-            </motion.aside>
+
+              {/* FOOTER SIDEBAR */}
+              <div className="absolute bottom-10 left-8 right-8">
+                <button className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-xs font-black text-red-500/80 hover:bg-red-500/10 transition-all uppercase tracking-widest">
+                  Disconnect
+                </button>
+              </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
