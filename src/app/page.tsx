@@ -18,7 +18,7 @@ const iopnTestnet = defineChain({
 
 const publicClient = createPublicClient({
   chain: iopnTestnet,
-  transport: http('/api/rpc'),
+  transport: http('https://rpc-testnet.iopn.io'),
 });
 
 // --- COMPONENT: RESONANCE CARD ---
@@ -125,7 +125,7 @@ export default function VibesphereApp() {
   };
 
   const handleImportWallet = (inputMnemonic: string) => {
-    if (inputMnemonic.trim().split(' ').length === 12) {
+    if (inputMnemonic.trim().split(/\s+/).length === 12) {
       handleAuthSuccess(inputMnemonic);
     } else {
       alert("invalid seed phrase. must be 12 words.");
