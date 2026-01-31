@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send } from 'lucide-react';
+import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ClipboardList } from 'lucide-react';
 
 
 // --- COMPONENT: RESONANCE CARD ---
@@ -75,6 +75,23 @@ export default function VibesphereApp() {
       setAuthStep('success');
     } else {
       alert("invalid seed phrase. must be 12 words.");
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (mnemonic) {
+      navigator.clipboard.writeText(mnemonic);
+      alert("seed phrase copied to clipboard. stay safe, vibe coder.");
+    }
+  };
+
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setMnemonic(text);
+      console.log("seed phrase pasted.");
+    } catch (err) {
+      alert("failed to paste. please allow clipboard access.");
     }
   };
 
@@ -395,17 +412,27 @@ export default function VibesphereApp() {
                         animate={{ opacity: 1 }} 
                         className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
                     >
-                      <div className="w-full p-6 bg-white/[0.02] border border-purple-500/20 rounded-[2rem]">
+                      <motion.div className="w-full p-6 bg-white/[0.02] border border-purple-500/20 rounded-[2rem]">
                         <h3 className="text-xs font-mono text-purple-400 mb-4 lowercase tracking-[0.2em]">your seed phrase:</h3>
                         <div className="grid grid-cols-3 gap-2 mb-6">
                           {mnemonic.split(' ').map((word, i) => (
                             <div key={i} className="bg-white/5 p-2 rounded-lg text-center text-[10px] font-mono text-slate-300">
-                              <span className="text-[8px] text-slate-600 mr-1">{i+1}</span>{word}
+                              {word}
                             </div>
                           ))}
                         </div>
-                        <button onClick={() => setAuthStep('success')} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">i've saved it</button>
-                      </div>
+                        
+                        <button 
+                          onClick={copyToClipboard}
+                          className="w-full py-3 mb-3 bg-white/5 border border-white/10 text-purple-400 text-[10px] font-bold uppercase rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                        >
+                          <Copy size={14} /> copy seed phrase
+                        </button>
+                        
+                        <button onClick={() => setAuthStep('success')} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
+                          i've saved it
+                        </button>
+                      </motion.div>
                       <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                         <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
                           *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
@@ -419,15 +446,27 @@ export default function VibesphereApp() {
                         animate={{ opacity: 1 }} 
                         className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
                     >
-                      <div className="w-full">
-                        <textarea 
-                          onChange={(e) => setMnemonic(e.target.value)}
-                          placeholder="enter your 12 word seed phrase..."
-                          className="w-full h-32 bg-white/5 border border-white/10 rounded-[2rem] p-6 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50"
-                        />
-                        <button onClick={() => handleImportWallet(mnemonic)} className="w-full mt-4 py-3 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-xl">verify & import</button>
-                        <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
-                      </div>
+                      <motion.div className="w-full">
+                        <div className="relative">
+                          <textarea 
+                            value={mnemonic}
+                            onChange={(e) => setMnemonic(e.target.value)}
+                            placeholder="enter your 12 word seed phrase..."
+                            className="w-full h-32 bg-white/5 border border-white/10 rounded-[2rem] p-6 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50"
+                          />
+                          <button 
+                            onClick={pasteFromClipboard}
+                            className="absolute bottom-4 right-6 text-[10px] font-mono text-purple-400 hover:text-white uppercase flex items-center gap-1"
+                          >
+                            <ClipboardList size={14} /> paste
+                          </button>
+                        </div>
+                        
+                        <button onClick={() => handleImportWallet(mnemonic)} className="w-full mt-4 py-4 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                          verify & import
+                        </button>
+                         <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
+                      </motion.div>
                       <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                         <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
                           *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
