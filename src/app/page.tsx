@@ -215,14 +215,16 @@ export default function VibesphereApp() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="search sovereign users..."
-                className="w-full bg-white/5 border border-purple-500/30 rounded-full py-2 px-10 text-sm font-mono lowercase tracking-wider focus:outline-none focus:border-purple-500 transition-all"
+                className="w-full bg-white/5 border border-purple-500/30 rounded-full py-2 pl-10 pr-12 text-sm font-mono lowercase tracking-wider focus:outline-none focus:border-purple-500 transition-all"
               />
               <Search size={16} className="absolute left-4 text-purple-400" />
+              
+              {/* tombol close (x) */}
               <button 
                 onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
-                className="absolute right-4 text-[10px] font-mono uppercase text-slate-500 hover:text-white"
+                className="absolute right-4 p-1 hover:bg-white/10 rounded-full transition-colors"
               >
-                esc
+                <X size={18} className="text-slate-400 hover:text-white" strokeWidth={1.5} />
               </button>
             </motion.div>
           ) : (
