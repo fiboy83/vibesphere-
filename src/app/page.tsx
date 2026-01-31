@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart } from 'lucide-react';
+import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send } from 'lucide-react';
 
 
 // --- COMPONENT: RESONANCE CARD ---
@@ -267,10 +267,19 @@ export default function VibesphereApp() {
                             {/* input komentar baru */}
                             <div className="flex gap-3 items-center mb-2">
                               <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
-                              <input 
-                                placeholder="write your vibe..."
-                                className="flex-1 bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50 transition-all"
-                              />
+                              <div className="relative flex-1 flex items-center">
+                                <input 
+                                  placeholder="write your vibe..."
+                                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50 transition-all text-slate-200"
+                                />
+                                
+                                <button 
+                                  onClick={() => console.log("vibe sent!")}
+                                  className="absolute right-3 text-purple-500 hover:text-purple-400 transition-colors"
+                                >
+                                  <Send size={14} strokeWidth={2} />
+                                </button>
+                              </div>
                             </div>
 
                             {/* list komentar (placeholder) */}
