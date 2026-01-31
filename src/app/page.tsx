@@ -18,7 +18,7 @@ const iopnTestnet = defineChain({
 
 const publicClient = createPublicClient({
   chain: iopnTestnet,
-  transport: http(),
+  transport: http('/api/rpc'),
 });
 
 // --- COMPONENT: RESONANCE CARD ---
