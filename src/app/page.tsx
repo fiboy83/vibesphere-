@@ -185,8 +185,8 @@ export default function Home() {
             >
               {/* 1. BRANDING: VibeSphere (White to Purple Gradient) */}
               <div className="mb-16">
-                <h2 className="text-3xl font-black tracking-[0.25em] uppercase italic bg-gradient-to-tr from-white via-purple-400 to-purple-600 bg-clip-text text-transparent leading-none">
-                  VibeSphere
+                <h2 className="text-3xl font-black tracking-[0.25em] lowercase italic bg-gradient-to-tr from-white via-purple-400 to-purple-600 bg-clip-text text-transparent leading-none">
+                  vibesphere
                 </h2>
               </div>
 
@@ -281,9 +281,9 @@ export default function Home() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-sm md:text-base font-black tracking-[0.3em] uppercase whitespace-nowrap bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent italic"
+                  className="text-sm md:text-base font-black tracking-[0.3em] lowercase whitespace-nowrap bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent italic"
                 >
-                    Vibes of Sovereign
+                    vibes of sovereign
                 </motion.h1>
             )}
         </motion.div>
