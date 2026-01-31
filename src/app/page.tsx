@@ -55,7 +55,35 @@ export default function VibesphereApp() {
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import
+  const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import, show-mnemonic, success
+  const [mnemonic, setMnemonic] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+
+  // --- WALLET FUNCTIONS ---
+  const handleCreateWallet = () => {
+    // simulasi generate 12 kata (seed phrase)
+    const dummyMnemonic = "vibe soul orbit neon spark pulse crypto sovereign nexus logic flow wave";
+    setMnemonic(dummyMnemonic);
+    setAuthStep('show-mnemonic'); // pindah ke layar tampilkan seed phrase
+    console.log("new wallet generated locally.");
+  };
+
+  const handleImportWallet = (inputMnemonic: string) => {
+    if (inputMnemonic.trim().split(' ').length === 12) {
+      console.log("wallet imported successfully.");
+      // simpan status login secara lokal (encrypted)
+      setAuthStep('success');
+    } else {
+      alert("invalid seed phrase. must be 12 words.");
+    }
+  };
+
+  useEffect(() => {
+    if (authStep === 'success') {
+      setIsAuthenticated(true);
+    }
+  }, [authStep]);
+  
 
   useEffect(() => {
     const handleScroll = () => {
@@ -326,7 +354,6 @@ export default function VibesphereApp() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
                       >
-                        {/* icon branding melayang */}
                         <div className="mb-12 relative">
                           <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full" />
                           <Wallet size={64} strokeWidth={1} className="text-white relative z-10" />
@@ -339,17 +366,14 @@ export default function VibesphereApp() {
                           secure your sovereignty. <br/> no email. no password. just vibe.
                         </p>
 
-                        {/* opsi login */}
                         <div className="w-full flex flex-col gap-4">
-                          {/* 1. create wallet: untuk user yang ingin mencoba tanpa resiko */}
                           <button 
-                            onClick={() => setAuthStep('create')}
+                            onClick={handleCreateWallet}
                             className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
                           >
                             create new wallet
                           </button>
 
-                          {/* 2. import wallet: untuk user yang sudah punya seed phrase */}
                           <button 
                             onClick={() => setAuthStep('import')}
                             className="w-full py-4 rounded-[2rem] bg-white/5 border border-white/10 text-slate-300 text-xs font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-all"
@@ -358,26 +382,57 @@ export default function VibesphereApp() {
                           </button>
                         </div>
 
-                        {/* info tambahan transparan */}
                         <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                           <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
-                            *vibesphere tidak pernah menyimpan seed phrase anda. 100% on-chain & non-custodial.
+                            *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
                           </p>
                         </div>
                       </motion.div>
                   )}
-                  {authStep === 'create' && (
-                    <motion.div initial={{opacity:0}} animate={{opacity:1}} className="text-center pt-20">
-                      <h2 className="text-3xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">Create Wallet</h2>
-                      <p className="text-slate-500 mt-4 font-mono">This feature is under construction. Your sovereign identity is being forged.</p>
-                      <button onClick={() => setAuthStep('gateway')} className="mt-8 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
+                  {authStep === 'show-mnemonic' && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
+                    >
+                      <div className="w-full p-6 bg-white/[0.02] border border-purple-500/20 rounded-[2rem]">
+                        <h3 className="text-xs font-mono text-purple-400 mb-4 lowercase tracking-[0.2em]">your seed phrase:</h3>
+                        <div className="grid grid-cols-3 gap-2 mb-6">
+                          {mnemonic.split(' ').map((word, i) => (
+                            <div key={i} className="bg-white/5 p-2 rounded-lg text-center text-[10px] font-mono text-slate-300">
+                              <span className="text-[8px] text-slate-600 mr-1">{i+1}</span>{word}
+                            </div>
+                          ))}
+                        </div>
+                        <button onClick={() => setAuthStep('success')} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">i've saved it</button>
+                      </div>
+                      <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
+                        <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                          *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
+                        </p>
+                      </div>
                     </motion.div>
                   )}
                   {authStep === 'import' && (
-                    <motion.div initial={{opacity:0}} animate={{opacity:1}} className="text-center pt-20">
-                      <h2 className="text-3xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">Import Wallet</h2>
-                      <p className="text-slate-500 mt-4 font-mono">This feature is under construction. The network is attuning to your frequency.</p>
-                      <button onClick={() => setAuthStep('gateway')} className="mt-8 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
+                     <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        className="w-full max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] p-8"
+                    >
+                      <div className="w-full">
+                        <textarea 
+                          onChange={(e) => setMnemonic(e.target.value)}
+                          placeholder="enter your 12 word seed phrase..."
+                          className="w-full h-32 bg-white/5 border border-white/10 rounded-[2rem] p-6 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50"
+                        />
+                        <button onClick={() => handleImportWallet(mnemonic)} className="w-full mt-4 py-3 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-xl">verify & import</button>
+                        <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
+                      </div>
+                      <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
+                        <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                          *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
+                        </p>
+                      </div>
                     </motion.div>
                   )}
                 </>
