@@ -52,6 +52,7 @@ export default function VibesphereApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [isScrolling, setIsScrolling] = useState(false);
   const [lastY, setLastY] = useState(0);
+  const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -73,10 +74,6 @@ export default function VibesphereApp() {
     setIsSidebarOpen(false);
   };
   
-  const openCommentModal = (postId: number) => {
-    alert(`Opening comments for post ${postId}`);
-  };
-
   const handleLogout = () => {
     alert("Logging out from Vibesphere...");
   };
@@ -238,13 +235,15 @@ export default function VibesphereApp() {
                     </div>
                     
                     <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
-                      <button 
-                        onClick={() => openCommentModal(item.postId)}
-                        className="group flex items-center gap-2 text-slate-500 hover:text-purple-400 transition-all"
-                      >
-                        <MessageSquare size={18} strokeWidth={1.5} />
-                        <span className="text-[11px] font-mono">{item.commentCount}</span>
-                      </button>
+                      <div className="flex flex-col">
+                        <button 
+                          onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
+                          className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-purple-400' : 'text-slate-500 hover:text-purple-400'}`}
+                        >
+                          <MessageSquare size={18} strokeWidth={1.5} />
+                          <span className="text-[11px] font-mono">{item.commentCount}</span>
+                        </button>
+                      </div>
                       
                       <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
                         <Repeat2 size={20} strokeWidth={1.5} />
@@ -256,6 +255,35 @@ export default function VibesphereApp() {
                         <span className="text-[11px] font-mono">{item.likeCount}</span>
                       </button>
                     </div>
+                    <AnimatePresence>
+                      {openCommentsId === item.id && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-6 flex flex-col gap-4">
+                            {/* input komentar baru */}
+                            <div className="flex gap-3 items-center mb-2">
+                              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
+                              <input 
+                                placeholder="write your vibe..."
+                                className="flex-1 bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50 transition-all"
+                              />
+                            </div>
+
+                            {/* list komentar (placeholder) */}
+                            <div className="pl-11 flex flex-col gap-4">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-bold text-purple-400">@sovereign_user</span>
+                                <p className="text-[11px] text-slate-300 leading-relaxed">this vibe is real. 100% locked.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </ResonanceCard>
                 ))}
                 <div className="h-20"></div>
