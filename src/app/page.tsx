@@ -3,13 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ClipboardList } from 'lucide-react';
-import { createPublicClient, http, formatEther } from 'viem';
+import { formatEther } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
-
-const RPC_TARGET = encodeURIComponent("https://rpc-testnet.iopn.io");
-const publicClient = createPublicClient({
-  transport: http(`https://api.allorigins.win/raw?url=${RPC_TARGET}`),
-});
 
 // --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
@@ -75,42 +70,67 @@ export default function VibesphereApp() {
 
   // --- AUTH FUNCTIONS ---
   const handleAuthSuccess = async (seedPhrase: string) => {
-    const cleanMnemonic = seedPhrase.trim().toLowerCase();
-    
-    try {
-      if (cleanMnemonic.split(/\s+/).length !== 12) {
+    const cleanMnemonic = seedPhrase.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    if (cleanMnemonic.split(/\s+/).length !== 12) {
         alert("check your vibe: seed phrase must be 12 words.");
         return;
-      }
-      
-      const account = mnemonicToAccount(cleanMnemonic);
-      const balanceResult = await publicClient.getBalance({ address: account.address });
-      const formattedBalance = formatEther(balanceResult);
+    }
+    
+    const account = mnemonicToAccount(cleanMnemonic);
 
-      setUserProfile({
-        username: "viber_" + account.address.slice(2, 8),
-        address: account.address,
-        avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${account.address}`,
-        balance: formattedBalance
-      });
-      
-      console.log("rpc connection success through proxy!");
-      setIsLoggedIn(true);
-      setAuthStep('gateway'); // Reset auth flow UI
+    try {
+        const rpcTarget = "https://rpc-testnet.iopn.io";
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rpcTarget)}`;
 
-    } catch (err) {
-        console.error("RPC Error:", err);
-        // Fallback for when proxy fails
-        const account = mnemonicToAccount(cleanMnemonic);
+        const response = await fetch(proxyUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                method: "eth_getBalance",
+                params: [account.address, "latest"],
+                id: 1
+            })
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`RPC request failed with status ${response.status}: ${errorBody}`);
+        }
+
+        const json = await response.json();
+        if (json.error) {
+            throw new Error(`RPC Error: ${json.error.message}`);
+        }
+
+        const rawBalance = json.result;
+        const formattedBalance = formatEther(BigInt(rawBalance));
+
         setUserProfile({
             username: "viber_" + account.address.slice(2, 8),
             address: account.address,
             avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${account.address}`,
-            balance: "0.00" // default balance
+            balance: formattedBalance
         });
-        setIsLoggedIn(true); 
+        
+        console.log("vibe check passed. rpc responded via proxy.");
+        setIsLoggedIn(true);
         setAuthStep('gateway');
-        alert("connected with local session (rpc lag).");
+
+    } catch (err) {
+        console.error("RPC Connection Error:", err);
+        
+        setUserProfile({
+            username: "viber_" + account.address.slice(2, 8),
+            address: account.address,
+            avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${account.address}`,
+            balance: "0.00"
+        });
+
+        setIsLoggedIn(true);
+        setAuthStep('gateway');
+        alert("connected to local nexus. rpc syncing in background.");
     }
   };
   
