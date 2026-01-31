@@ -67,6 +67,8 @@ export default function VibesphereApp() {
   });
   const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import, show-mnemonic
   const [mnemonic, setMnemonic] = useState("");
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
 
   // --- AUTH FUNCTIONS ---
   const handleAuthSuccess = async (seedPhrase: string) => {
@@ -74,6 +76,7 @@ export default function VibesphereApp() {
 
     if (cleanMnemonic.split(/\s+/).length !== 12) {
         alert("check your vibe: seed phrase must be 12 words.");
+        setIsAuthenticating(false); // Stop animation on error
         return;
     }
     
@@ -131,7 +134,17 @@ export default function VibesphereApp() {
     } catch (error) {
         console.error("Critical Auth Error:", error);
         alert("vibe check failed. could not derive wallet from seed phrase.");
+        setIsAuthenticating(false); // Stop animation on error
     }
+  };
+
+  const handleAuthWithVibe = async (mnemonic: string) => {
+    setIsAuthenticating(true);
+    
+    setTimeout(() => {
+      handleAuthSuccess(mnemonic);
+      // isAuthenticating will be set to false when isLoggedIn becomes true
+    }, 2500); 
   };
   
   const handleLogout = () => {
@@ -139,6 +152,7 @@ export default function VibesphereApp() {
       setIsLoggedIn(false);
       setIsSidebarOpen(false);
       setAuthStep('gateway'); // Reset auth flow for next login
+      setIsAuthenticating(false); // Ensure auth screen is hidden
       console.log("disconnected from nexus.");
     }
   };
@@ -150,10 +164,6 @@ export default function VibesphereApp() {
     setMnemonic(dummyMnemonic);
     setAuthStep('show-mnemonic'); // pindah ke layar tampilkan seed phrase
     console.log("new wallet generated locally.");
-  };
-
-  const handleImportWallet = (inputMnemonic: string) => {
-    handleAuthSuccess(inputMnemonic);
   };
 
   const copyToClipboard = () => {
@@ -196,6 +206,13 @@ export default function VibesphereApp() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastY, isLoggedIn]);
 
+  useEffect(() => {
+    if (isLoggedIn) {
+      setIsAuthenticating(false);
+    }
+  }, [isLoggedIn]);
+
+
   const handleNavigation = (target: string, params?: any) => {
     console.log(`Navigating to: ${target}`, params);
     setActiveTab(target);
@@ -226,6 +243,32 @@ export default function VibesphereApp() {
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden font-sans">
       
+      <AnimatePresence>
+        {isAuthenticating && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-[200] bg-[#050505] flex flex-col items-center justify-center"
+          >
+            <motion.h2 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="text-xl font-black italic lowercase tracking-[0.5em] text-white"
+            >
+              vibe of sovereign
+            </motion.h2>
+            <motion.div 
+              animate={{ scaleX: [0, 1, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="w-32 h-[1px] bg-purple-500 mt-4"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {!isLoggedIn ? (
         <div className="flex items-center justify-center min-h-screen">
           <AnimatePresence mode="wait">
@@ -301,7 +344,7 @@ export default function VibesphereApp() {
                       <Copy size={14} /> copy seed phrase
                     </button>
                     
-                    <button onClick={() => handleAuthSuccess(mnemonic)} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
+                    <button onClick={() => handleAuthWithVibe(mnemonic)} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
                       i've saved it
                     </button>
                   </motion.div>
@@ -334,7 +377,7 @@ export default function VibesphereApp() {
                       </button>
                     </div>
                     
-                    <button onClick={() => handleImportWallet(mnemonic)} className="w-full mt-4 py-4 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                    <button onClick={() => handleAuthWithVibe(mnemonic)} className="w-full mt-4 py-4 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
                       verify & import
                     </button>
                      <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
@@ -651,14 +694,12 @@ export default function VibesphereApp() {
                           >
                             <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive opn</h3>
                             
-                            <div className="w-48 h-48 bg-white p-3 rounded-3xl mb-8 shadow-[0_0_30px_rgba(168,85,247,0.2)]">
-                               <div className="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-300">
-                                 <span className="text-[8px] text-slate-400 font-mono">qr code generated for {userProfile.address.slice(0,4)}</span>
-                               </div>
+                            <div className="w-48 h-48 bg-white rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex items-center justify-center">
+                               {/* Blank white QR code area */}
                             </div>
 
-                            <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8">
-                              <p className="text-[10px] font-mono text-slate-400 break-all text-center lowercase leading-relaxed">
+                            <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8 text-center">
+                              <p className="text-[10px] font-mono text-slate-400 break-all lowercase">
                                 {userProfile.address}
                               </p>
                             </div>
