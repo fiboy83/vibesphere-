@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, MessageSquare, Repeat2, Heart, Share2, Waves } from 'lucide-react';
 
 
@@ -130,6 +130,25 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const { scrollY } = useScroll();
+  const [isHidden, setIsHidden] = useState(false);
+  const [lastY, setLastY] = useState(0);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const diff = latest - lastY;
+    if (Math.abs(diff) > 5) {
+      setIsHidden(true);
+    }
+    setLastY(latest);
+  });
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setIsHidden(false);
+    }, 150);
+    return () => clearTimeout(timeout);
+  }, [lastY]);
   
   const feedData = [
     { id: 1, user: "Nova_Architect", handle: "nova.opn", time: "2m", color: "#a855f7", content: "GM OPN Fam! The sovereign vibes are strong today.", type: "short" },
@@ -184,7 +203,15 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <header className="sticky top-0 w-full p-6 flex justify-between items-center bg-black/20 backdrop-blur-xl z-50 border-b border-white/5">
+      <motion.header
+        variants={{
+          visible: { y: 0, opacity: 1 },
+          hidden: { y: -100, opacity: 0 }
+        }}
+        animate={isHidden ? "hidden" : "visible"}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
+      >
         <AnimatePresence>
           {!isSearchOpen ? (
             <motion.div
@@ -246,9 +273,9 @@ export default function Home() {
             </button>
           </motion.div>
         </div>
-      </header>
+      </motion.header>
       
-      <main className="w-full max-w-4xl mx-auto pb-48 pt-10 px-6 min-h-screen">
+      <main className="w-full max-w-4xl mx-auto pb-48 pt-28 px-6 min-h-screen">
         <motion.div 
             initial="hidden"
             animate="show"
