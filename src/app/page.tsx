@@ -144,17 +144,18 @@ const SidebarLink = ({ icon, label, onClick }: {icon: React.ReactNode, label: st
 export default function VibesphereApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState('home');
-  const [isHidden, setIsHidden] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   const [lastY, setLastY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentY = window.scrollY;
       if (currentY > lastY && currentY > 100) {
-        setIsHidden(true); // Hide on scroll down
+        setIsScrolling(true); // Hide on scroll down
       } else {
-        setIsHidden(false); // Show on scroll up
+        setIsScrolling(false); // Show on scroll up
       }
       setLastY(currentY);
     };
@@ -186,24 +187,64 @@ export default function VibesphereApp() {
       
       {/* --- HEADER --- */}
       <motion.header
-        variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: -100, opacity: 0 } }}
-        animate={isHidden ? "hidden" : "visible"}
+        animate={{ y: isScrolling ? -100 : 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
       >
-        <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition">
-          <Menu size={22} className="text-slate-400" />
-        </button>
-        <h1 className="text-sm font-black tracking-[0.3em] lowercase italic bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent">
-          vibes of sovereign
-        </h1>
-        <div className="flex justify-end min-w-[40px]">
-          <motion.div layout>
-            <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="p-2 hover:bg-white/10 rounded-full transition">
-              <Search size={22} className="text-slate-400" />
-            </button>
-          </motion.div>
+        {/* menu toggle (hide when search is active) */}
+        {!isSearchOpen && (
+          <motion.button 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            onClick={() => setIsSidebarOpen(true)} 
+            className="p-2 hover:bg-white/10 rounded-full transition"
+          >
+            <Menu size={22} className="text-slate-400" />
+          </motion.button>
+        )}
+
+        {/* title & search bar container */}
+        <div className="flex-1 flex justify-center px-4">
+          {isSearchOpen ? (
+            <motion.div 
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: "100%", opacity: 1 }}
+              className="relative flex items-center w-full max-w-md"
+            >
+              <input 
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="search sovereign users..."
+                className="w-full bg-white/5 border border-purple-500/30 rounded-full py-2 px-10 text-sm font-mono lowercase tracking-wider focus:outline-none focus:border-purple-500 transition-all"
+              />
+              <Search size={16} className="absolute left-4 text-purple-400" />
+              <button 
+                onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
+                className="absolute right-4 text-[10px] font-mono uppercase text-slate-500 hover:text-white"
+              >
+                esc
+              </button>
+            </motion.div>
+          ) : (
+            <motion.h1 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="text-sm font-black tracking-[0.3em] lowercase italic bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent"
+            >
+              vibes of sovereign
+            </motion.h1>
+          )}
         </div>
+
+        {/* search trigger icon */}
+        {!isSearchOpen && (
+          <motion.button 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            onClick={() => setIsSearchOpen(true)} 
+            className="p-2 hover:bg-white/10 rounded-full transition"
+          >
+            <Search size={22} className="text-slate-400" />
+          </motion.button>
+        )}
       </motion.header>
 
       {/* --- SIDEBAR --- */}
@@ -290,7 +331,7 @@ export default function VibesphereApp() {
       <div className="fixed bottom-10 left-0 right-0 flex justify-center z-[80] pointer-events-none">
         <motion.nav
           variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 120, opacity: 0 } }}
-          animate={(isHidden || isSidebarOpen) ? "hidden" : "visible"}
+          animate={(isScrolling || isSidebarOpen) ? "hidden" : "visible"}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 items-center shadow-2xl"
         >
