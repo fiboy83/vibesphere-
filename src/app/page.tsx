@@ -23,7 +23,7 @@ const UserHeader = ({ name, handle, time, themeColor }: { name: string; handle: 
     </div>
 );
 
-// --- NEW HELPER COMPONENT: INTERACTION BUTTON ---
+// --- HELPER COMPONENT: INTERACTION BUTTON ---
 const InteractionButton = ({ type, icon, count, themeColor }: { type: 'comment' | 'repost' | 'like', icon: React.ReactNode, count: number, themeColor: string }) => {
   const [isActive, setIsActive] = React.useState(false);
 
@@ -76,6 +76,7 @@ const InteractionBar = ({ themeColor }: { themeColor: string }) => {
   const [stats, setStats] = React.useState<{ comments: number, reposts: number, likes: number } | null>(null);
 
   useEffect(() => {
+    // Client-side only effect to avoid hydration mismatch
     setStats({
       likes: Math.floor(Math.random() * 1000),
       reposts: Math.floor(Math.random() * 100),
@@ -84,6 +85,7 @@ const InteractionBar = ({ themeColor }: { themeColor: string }) => {
   }, []);
 
   if (!stats) {
+    // Render a placeholder or null during SSR and initial client render
     return <div className="mt-8 pt-5 border-t border-white/[0.05] h-[37px]" />;
   }
 
@@ -125,6 +127,16 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
       </motion.div>
     );
 };
+
+// --- HELPER COMPONENT: DOCK ITEM ---
+const DockItem = ({ icon, active = false }: { icon: React.ReactNode; active?: boolean }) => (
+  <button className="text-slate-400 hover:text-white transition-all">
+    {React.cloneElement(icon as React.ReactElement, {
+        strokeWidth: active ? 2.5 : 1.5,
+        className: `transition-all duration-300 ${active ? 'text-white' : ''}`
+    })}
+  </button>
+);
 
 
 export default function Home() {
@@ -348,17 +360,23 @@ export default function Home() {
         </motion.div>
       </main>
 
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-6">
-        <nav className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-2 flex justify-between items-center shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
-          <button className="p-4 rounded-full text-cyan-400 bg-white/5"><HomeIcon size={24} /></button>
-          <button className="p-4 rounded-full text-slate-400 hover:text-white"><BarChart3 size={24} /></button>
-          <button className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform">
-            <Plus size={24} strokeWidth={3} />
-          </button>
-          <button className="p-4 rounded-full text-slate-400 hover:text-white"><Wallet size={24} /></button>
-          <button className="p-4 rounded-full text-slate-400 hover:text-white"><Bell size={24} /></button>
-        </nav>
-      </div>
+      <motion.nav
+        variants={{
+          visible: { y: 0, opacity: 1 },
+          hidden: { y: 120, opacity: 0 }
+        }}
+        animate={(isHidden || isSidebarOpen) ? "hidden" : "visible"}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+        className="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 z-[80] flex gap-12 items-center shadow-2xl"
+      >
+        <DockItem icon={<HomeIcon size={22} />} active />
+        <DockItem icon={<BarChart3 size={22} />} />
+        <button className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl -mt-2 shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-110 transition-transform cursor-pointer">
+          <Plus size={24} className="text-white" />
+        </button>
+        <DockItem icon={<Wallet size={22} />} />
+        <DockItem icon={<Bell size={22} />} />
+      </motion.nav>
 
     </div>
   );
