@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search } from 'lucide-react';
+import { Home as HomeIcon, Wallet, BarChart3, Menu, X, Plus, Bell, Search, MessageSquare, Repeat2, Heart, Share2 } from 'lucide-react';
 
 
 // --- HELPER COMPONENT: USER HEADER ---
@@ -53,13 +53,13 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
     );
 };
 
-// --- COMPONENT: INTERACTION BUTTON (Quantum Sync) ---
-const InteractionBar = ({ themeColor }: { themeColor: string; }) => {
-  const [liked, setLiked] = useState(false);
-  const [reposted, setReposted] = useState(false);
-  const [stats, setStats] = useState<{ comments: number, reposts: number, likes: number } | null>(null);
+// --- COMPONENT: INTERACTION BAR (Thin Line Resonance) ---
+const InteractionBar = ({ themeColor }: { themeColor: string }) => {
+  const [liked, setLiked] = React.useState(false);
+  const [reposted, setReposted] = React.useState(false);
+  const [stats, setStats] = React.useState<{ comments: number, reposts: number, likes: number } | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Generate random numbers on the client after mount to prevent hydration errors
     setStats({
       likes: Math.floor(Math.random() * 1000),
@@ -68,66 +68,71 @@ const InteractionBar = ({ themeColor }: { themeColor: string; }) => {
     });
   }, []);
 
-  const iconStyle = (isActive: boolean) => ({
-    color: isActive ? themeColor : '#64748b',
-    filter: isActive ? `drop-shadow(0 0 8px ${themeColor})` : 'none',
-    transition: 'all 0.3s ease'
+  // Style untuk ikon garis tipis yang beresonansi
+  const getIconStyle = (isActive: boolean) => ({
+    stroke: isActive ? themeColor : `${themeColor}88`, // Warna penuh jika aktif, pudar jika tidak
+    strokeWidth: 1.5,
+    filter: isActive ? `drop-shadow(0 0 5px ${themeColor}aa)` : 'none',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
   });
 
   return (
-    <div className="flex justify-between items-center mt-8 pt-6 border-t border-white/5">
-      <div className="flex gap-8">
-        {/* Comment Button */}
-        <button className="flex items-center gap-2 group transition-all text-slate-500 hover:text-white">
-          <div className="p-2 rounded-full group-hover:bg-white/5 transition-colors">
-             <span className="text-xl">💬</span>
+    <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]">
+      <div className="flex gap-10">
+        
+        {/* Comment - Line Style */}
+        <button className="flex items-center gap-2.5 group">
+          <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
+            <MessageSquare 
+              size={20} 
+              style={{ stroke: `${themeColor}88`, strokeWidth: 1.5 }} 
+              className="group-hover:text-white transition-colors"
+            />
           </div>
-          {stats && <span className="text-xs font-bold font-mono">{stats.comments}</span>}
+          {stats && <span className="text-[11px] font-mono tracking-tighter" style={{ color: `${themeColor}aa` }}>
+            {stats.comments}
+          </span>}
         </button>
 
-        {/* Repost Button */}
+        {/* Repost - Line Style */}
         <button 
           onClick={() => setReposted(!reposted)}
-          className="flex items-center gap-2 group transition-all"
-          style={{ color: reposted ? themeColor : '#64748b' }}
+          className="flex items-center gap-2.5 group"
         >
-          <div 
-            className="p-2 rounded-full group-hover:bg-white/5 transition-colors"
-            style={reposted ? { backgroundColor: `${themeColor}22` } : {}}
-          >
-             <span className="text-xl" style={iconStyle(reposted)}>🔁</span>
+          <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
+            <Repeat2 
+              size={22} 
+              style={getIconStyle(reposted)} 
+              className={reposted ? "rotate-180" : ""}
+            />
           </div>
-          {stats && <span className="text-xs font-bold font-mono">{reposted ? stats.reposts + 1 : stats.reposts}</span>}
+          {stats && <span className="text-[11px] font-mono tracking-tighter" style={{ color: reposted ? themeColor : `${themeColor}aa` }}>
+            {reposted ? stats.reposts + 1 : stats.reposts}
+          </span>}
         </button>
 
-        {/* Like Button */}
+        {/* Like - Line Style */}
         <button 
           onClick={() => setLiked(!liked)}
-          className="flex items-center gap-2 group transition-all"
+          className="flex items-center gap-2.5 group"
         >
-          <div 
-            className="p-2 rounded-full group-hover:bg-white/5 transition-colors"
-            style={liked ? { backgroundColor: `${themeColor}22` } : {}}
-          >
-             <span className="text-xl" style={iconStyle(liked)}>❤️</span>
+          <div className="p-1 rounded-full group-hover:bg-white/5 transition-colors">
+            <Heart 
+              size={20} 
+              style={getIconStyle(liked)} 
+              fill={liked ? themeColor : "transparent"} // Hanya fill saat diklik
+              fillOpacity={0.2}
+            />
           </div>
-          {stats && <span className="text-xs font-bold font-mono" style={{ color: liked ? themeColor : '#64748b' }}>
+          {stats && <span className="text-[11px] font-mono tracking-tighter" style={{ color: liked ? themeColor : `${themeColor}aa` }}>
             {liked ? stats.likes + 1 : stats.likes}
           </span>}
         </button>
       </div>
 
-      {/* Tip / Action Button - Aksen Kecil */}
-      <button 
-        className="px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all"
-        style={{ 
-          borderColor: `${themeColor}66`, 
-          color: themeColor,
-          boxShadow: `0 0 15px ${themeColor}22` 
-        }}
-      >
-        Tip OPN
-      </button>
+      <button className="p-2 rounded-full hover:bg-white/10 transition-colors">
+          <Share2 size={20} style={{ stroke: `${themeColor}88`, strokeWidth: 1.5 }} />
+       </button>
     </div>
   );
 };
