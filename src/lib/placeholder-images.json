@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "vibecoder-avatar",
+      "description": "Avatar for VibeCoder",
+      "imageUrl": "https://images.unsplash.com/photo-1604076913837-52ab5629fba9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhYnN0cmFjdCUyMGdyYWRpZW50fGVufDB8fHx8MTc2OTcxODU3OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract gradient"
+    },
+    {
+      "id": "current-user-avatar",
+      "description": "Avatar for the current user",
+      "imageUrl": "https://images.unsplash.com/photo-1476445704028-a36e0c798192?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YWJzdHJhY3QlMjBnZW9tZXRyaWN8ZW58MHx8fHwxNzY5ODI0MzI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract geometric"
+    },
+    {
+      "id": "another-user-avatar",
+      "description": "Avatar for another user",
+      "imageUrl": "https://images.unsplash.com/photo-1595411425732-e69c1abe2763?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMHNoYXBlc3xlbnwwfHx8fDE3Njk4Mjc1Njd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract shapes"
+    }
+  ]
 }
