@@ -3,33 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
-import { formatEther, createWalletClient, custom, defineChain, http, createPublicClient } from 'viem';
+import { useWeb3Modal } from '@web3modal/wagmi/react';
+import { useAccount, useDisconnect, useBalance, useSwitchNetwork, useNetwork } from 'wagmi';
 
-// --- Pharos Testnet Configuration ---
-const pharosTestnet = defineChain({
-  id: 237,
-  name: 'Pharos Atlantic Testnet',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'PHAROS',
-    symbol: 'PHRS',
-  },
-  rpcUrls: {
-    default: {
-      http: ['https://rpc.atlantic.pharos.network'],
-    },
-  },
-  blockExplorers: {
-    default: { name: 'Pharos Scan', url: 'https://pharos-testnet.socialscan.io' },
-  },
-  testnet: true,
-});
 
-// --- Create Viem Public Client ---
-const publicClient = createPublicClient({
-  chain: pharosTestnet,
-  transport: http(),
-});
+// --- PHAROS CHAIN ID ---
+const PHAROS_CHAIN_ID = 237;
 
 // --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
@@ -85,107 +64,32 @@ export default function VibesphereApp() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
 
-  // --- CORE SESSION & PROFILE ENGINE ---
-  const [account, setAccount] = useState<`0x${string}` | null>(null);
-  const [balance, setBalance] = useState("0.00");
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // --- Viem Wallet Client ---
-  const walletClient = typeof window !== 'undefined' && window.ethereum ? createWalletClient({
-      transport: custom(window.ethereum)
-  }) : null;
+  // --- CORE SESSION & PROFILE ENGINE (WAGMI + Web3Modal) ---
+  const { open: openWeb3Modal } = useWeb3Modal();
+  const { address, isConnected, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { data: balanceData } = useBalance({ address });
+  const { switchNetwork } = useSwitchNetwork();
   
-  // --- AUTH FUNCTIONS ---
-  const connectWallet = async () => {
-    if (!walletClient) {
-      setError("wallet not detected. please install a browser wallet like metamask.");
-      return;
+  // --- Auto-switch to Pharos Testnet ---
+  useEffect(() => {
+    if (isConnected && chainId !== PHAROS_CHAIN_ID) {
+      switchNetwork?.(PHAROS_CHAIN_ID);
     }
-    
-    setIsConnecting(true);
-    setError(null);
-    try {
-      const [address] = await walletClient.requestAddresses();
-      
-      const chainId = await walletClient.getChainId();
-      if (chainId !== pharosTestnet.id) {
-        try {
-          await walletClient.switchChain({ id: pharosTestnet.id });
-        } catch (switchError: any) {
-          // This error code indicates that the chain has not been added to MetaMask.
-          if (switchError.code === 4902) {
-            await walletClient.addChain({ chain: pharosTestnet });
-          } else {
-            throw switchError;
-          }
-        }
-      }
-      
-      setAccount(address);
-      console.log("nexus connected:", address);
-    } catch (err: any) {
-      setError(err.message || "an unexpected error occurred during connection.");
-      console.error("Connection Error:", err);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
+  }, [isConnected, chainId, switchNetwork]);
 
   const disconnectWallet = () => {
     if (window.confirm("exit vibesphere? your sovereignty remains on-chain.")) {
-      setAccount(null);
-      setBalance("0.00");
+      disconnect();
       setIsSidebarOpen(false);
       console.log("disconnected from nexus.");
     }
   };
 
-  // --- Fetch Balance on Account Change ---
-  useEffect(() => {
-    if (account) {
-      const fetchBalance = async () => {
-        console.log("current address:", account); // Debugging line added
-        try {
-          const balanceWei = await publicClient.getBalance({ address: account });
-          const formattedBalance = formatEther(balanceWei);
-          setBalance(formattedBalance);
-          console.log("fetched balance:", formattedBalance); // Debugging line added
-          console.log("balance synced from pharos.");
-        } catch (bgError) {
-          console.error("Balance fetch error:", bgError); // Changed for better error visibility
-          console.warn("balance sync failed, showing 0.", bgError);
-          setBalance("0.00");
-        }
-      };
-      fetchBalance();
-    }
-  }, [account]);
-
-  // --- Listen for account changes ---
-  useEffect(() => {
-    if (typeof window.ethereum !== 'undefined') {
-      const handleAccountsChanged = (accounts: string[]) => {
-        if (accounts.length > 0) {
-          setAccount(accounts[0] as `0x${string}`);
-        } else {
-          setAccount(null);
-          setBalance("0.00");
-        }
-      };
-
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      return () => {
-        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      };
-    }
-  }, []);
-
-
   // --- WALLET FUNCTIONS ---
   const copyAddress = () => {
-    if (account) {
-      navigator.clipboard.writeText(account);
+    if (address) {
+      navigator.clipboard.writeText(address);
       alert("wallet address copied to clipboard!");
     }
   };
@@ -210,7 +114,7 @@ export default function VibesphereApp() {
   
   // --- SCROLL HANDLING ---
   useEffect(() => {
-    if (!account) return; // Only run scroll listener when logged in
+    if (!isConnected) return; // Only run scroll listener when logged in
     const handleScroll = () => {
       const currentY = window.scrollY;
       if (currentY > lastY && currentY > 100) {
@@ -222,7 +126,7 @@ export default function VibesphereApp() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastY, account]);
+  }, [lastY, isConnected]);
 
 
   const handleNavigation = (target: string, params?: any) => {
@@ -261,33 +165,7 @@ export default function VibesphereApp() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans">
       
-      <AnimatePresence>
-        {isConnecting && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-[200] bg-[#050505] flex flex-col items-center justify-center"
-          >
-            <motion.h2 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="text-xl font-black italic lowercase tracking-[0.5em] text-white"
-            >
-              connecting nexus...
-            </motion.h2>
-            <motion.div 
-              animate={{ scaleX: [0, 1, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-              className="w-32 h-[1px] bg-purple-500 mt-4"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {!account ? (
+      {!isConnected ? (
         <div className="flex items-center justify-center min-h-screen">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -316,17 +194,12 @@ export default function VibesphereApp() {
 
               <div className="w-full flex flex-col gap-4">
                 <button 
-                  onClick={connectWallet}
-                  disabled={isConnecting}
-                  className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-50"
+                  onClick={() => openWeb3Modal()}
+                  className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
                 >
                   connect wallet
                 </button>
               </div>
-
-              {error && (
-                  <p className="text-red-400 text-xs text-center mt-8 font-mono lowercase">{error}</p>
-              )}
 
               <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                 <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
@@ -532,7 +405,7 @@ export default function VibesphereApp() {
                             <div className="mt-6 flex flex-col gap-4">
                               {/* input komentar baru */}
                               <div className="flex gap-3 items-center mb-2">
-                                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${account}`} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
+                                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${address}`} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
                                 <div className="relative flex-1 flex items-center">
                                   <input 
                                     value={commentText}
@@ -584,7 +457,7 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {parseFloat(balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">PHRS</span>
+                        {parseFloat(balanceData?.formatted || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">{balanceData?.symbol}</span>
                       </h3>
                       <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
 
@@ -592,7 +465,7 @@ export default function VibesphereApp() {
                         <div className="flex flex-col">
                           <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
                           <code className="text-[10px] font-mono text-purple-300">
-                            {account && `${account.slice(0, 6)}...${account.slice(-4)}`}
+                            {address && `${address.slice(0, 6)}...${address.slice(-4)}`}
                           </code>
                         </div>
                         <button 
@@ -624,7 +497,7 @@ export default function VibesphereApp() {
                     <div className="mt-12 flex flex-col gap-4">
                         <div className="flex justify-between items-center px-2">
                             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
-                            {account && <a href={`https://pharos-testnet.socialscan.io/address/${account}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
+                            {address && <a href={`https://pharos-testnet.socialscan.io/address/${address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
                         </div>
                         
                         {[
@@ -666,8 +539,8 @@ export default function VibesphereApp() {
                             <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive PHRS</h3>
                             
                             <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                                {account && <img 
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${account}`} 
+                                {address && <img 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`} 
                                     alt="wallet qr"
                                     className="w-full h-full object-contain"
                                 />}
@@ -675,7 +548,7 @@ export default function VibesphereApp() {
 
                             <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8 text-center">
                               <p className="text-[10px] font-mono text-slate-400 break-all lowercase">
-                                {account}
+                                {address}
                               </p>
                             </div>
 
@@ -757,7 +630,7 @@ export default function VibesphereApp() {
           </AnimatePresence>
         </main>
         
-        {account && (
+        {isConnected && (
           <div className="fixed bottom-24 left-6 z-50 pointer-events-none">
               <p className="text-blue-400 text-[10px] font-mono lowercase bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-blue-400/20">
                   network: pharos atlantic testnet
@@ -835,9 +708,3 @@ export default function VibesphereApp() {
     </div>
   );
 }
-
-    
-
-    
-
-    
