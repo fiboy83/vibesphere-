@@ -431,23 +431,23 @@ export default function VibesphereApp() {
                 </div>
                 <nav className="flex-1">
                   <div className="flex flex-col gap-6 px-6 mt-10">
-                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                    <button onClick={() => handleNavigation('profile')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
                       <span className="text-xl font-light tracking-wide text-white lowercase">profil</span>
                     </button>
                     
-                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                    <button onClick={() => handleNavigation('bookmarks')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
                       <span className="text-xl font-light tracking-wide text-white lowercase">bookmark</span>
                     </button>
                     
-                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                    <button onClick={() => handleNavigation('defi')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
                       <span className="text-xl font-light tracking-wide text-white lowercase">defi</span>
                     </button>
                     
-                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                    <button onClick={() => handleNavigation('swap')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
                       <span className="text-xl font-light tracking-wide text-white lowercase">swap</span>
                     </button>
                     
-                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                    <button onClick={() => handleNavigation('settings')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
                       <span className="text-xl font-light tracking-wide text-white lowercase">seting</span>
                     </button>
                   </div>
@@ -746,16 +746,26 @@ export default function VibesphereApp() {
                       <p className={`text-lg font-mono font-light ${coin.color}`}>{coin.change}</p>
                     </div>
                   ))}
-                  {account && (
-                    <p className="text-center text-xs font-mono text-blue-400 mt-12">
-                      connected to rpc iopn testnet
-                    </p>
-                  )}
+                </motion.div>
+              )}
+              {activeTab === 'inbox' && (
+                <motion.div className="text-center py-20">
+                  <h2 className="text-xl font-black lowercase italic tracking-[0.3em]">inbok</h2>
+                  <p className="text-slate-500 font-mono mt-2">your sovereign messages will appear here.</p>
                 </motion.div>
               )}
             </motion.div>
           </AnimatePresence>
         </main>
+        
+        {account && (
+          <div className="fixed bottom-24 left-6 z-50 pointer-events-none">
+              <p className="text-blue-400 text-[10px] font-mono lowercase bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-blue-400/20">
+                  network: iopn testnet
+              </p>
+          </div>
+        )}
+
 
         {/* --- DOCK MENU --- */}
         <motion.div
@@ -796,7 +806,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* inbok - familiar mail icon */}
-          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+          <button onClick={() => setActiveTab('inbox')} className={`p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 7L12 13L21 7M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
