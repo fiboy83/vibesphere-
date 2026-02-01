@@ -116,7 +116,6 @@ export default function VibesphereApp() {
   useEffect(() => {
     const fetchBalance = async () => {
       if (!wallet?.address) return;
-      console.log("fetching balance for:", wallet.address);
       try {
         const response = await fetch(`/api/balance?address=${wallet.address}`);
         if (!response.ok) {
@@ -124,7 +123,6 @@ export default function VibesphereApp() {
         }
         const data = await response.json();
         setBalance(data.balance);
-        console.log("balance updated:", data.balance);
       } catch (error) {
         console.warn("vibe check failed, rpc error:", error);
         setBalance('0.01'); // Fallback balance on error
@@ -141,15 +139,12 @@ export default function VibesphereApp() {
     setShowSecurityHint(false);
     setIsLoggingIn(true);
     try {
-      console.log("calling privy.login()");
       await login();
-      console.log("privy.login() call completed");
     } catch (error) {
       console.warn("vibe check error:", error);
       setShowSecurityHint(true);
     } finally {
       setIsLoggingIn(false);
-      console.log("login flow finished");
     }
   };
 
@@ -205,7 +200,6 @@ export default function VibesphereApp() {
       };
   
       const txHash = await walletClient.sendTransaction(transaction);
-      console.log('transaction sent:', txHash);
       alert(`transaction broadcasted!\nview on explorer: https://pharos-testnet.socialscan.io/tx/${txHash}`);
   
       setShowSendModal(false);
@@ -224,11 +218,13 @@ export default function VibesphereApp() {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("Avatar upload process started...");
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfile(prev => ({ ...prev, avatar: reader.result as string }));
+        console.log("Avatar state updated and will be saved to localStorage.");
       };
       reader.readAsDataURL(file);
     }
@@ -607,12 +603,14 @@ export default function VibesphereApp() {
                 <motion.div className="flex flex-col items-center">
                   <ResonanceCard themeColor="#a855f7">
                     <div className="flex flex-col items-center text-center">
-                      <div className="relative group mb-6">
+                      <div 
+                        className="relative group mb-6 cursor-pointer"
+                        onClick={handleAvatarClick}
+                      >
                         <img 
                           src={profile.avatar} 
                           alt="User avatar" 
-                          className="w-32 h-32 rounded-full border-4 border-white/10 object-cover shadow-lg cursor-pointer transition-all duration-300 group-hover:border-purple-500/50 group-hover:scale-105"
-                          onClick={handleAvatarClick}
+                          className="w-32 h-32 rounded-full border-4 border-white/10 object-cover shadow-lg transition-all duration-300 group-hover:border-purple-500/50 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-white text-xs font-bold uppercase tracking-widest">change</span>
