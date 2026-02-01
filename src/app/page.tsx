@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
-import { useWeb3Modal } from '@web3modal/wagmi/react';
-import { useAccount, useDisconnect, useBalance, useSwitchChain } from 'wagmi';
+import { useAccount, useDisconnect, useBalance, useSwitchChain, useConnect } from 'wagmi';
 
 
 // --- PHAROS CHAIN ID ---
@@ -64,12 +63,20 @@ export default function VibesphereApp() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
 
-  // --- CORE SESSION & PROFILE ENGINE (WAGMI + Web3Modal) ---
-  const { open: openWeb3Modal } = useWeb3Modal();
-  const { address, isConnected, isConnecting, chainId } = useAccount();
+  // --- CORE SESSION & PROFILE ENGINE (WAGMI) ---
+  const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
-  const { data: balanceData } = useBalance({ address });
+  const { data: balanceData } = useBalance({ address, watch: true });
   const { switchChain } = useSwitchChain();
+  const { connect, connectors, error: connectError, isPending: isConnecting } = useConnect();
+
+  useEffect(() => {
+    if (connectError && connectError.message.includes('User rejected')) {
+      console.log("vibe check failed, try again");
+    } else if (connectError) {
+      console.error("connection failed", connectError);
+    }
+  }, [connectError]);
   
   // --- Auto-switch to Pharos Testnet ---
   useEffect(() => {
@@ -94,20 +101,9 @@ export default function VibesphereApp() {
     }
   };
   
-  const handleConnect = async () => {
-    // localStorage cleanup is now in config/web3.tsx
-    console.log("attempting to connect...");
-    try {
-      // Delay to ensure window focus before modal is triggered
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await openWeb3Modal();
-    } catch (error) {
-      // Log the error and disconnect to clear any stuck sessions
-      console.error("wc_error:", error);
-      if (String(error).includes('User rejected the request')) {
-        console.log('user cancelled, attempting to clear session.');
-        disconnect();
-      }
+  const handleConnect = () => {
+    if (connectors[0]) {
+      connect({ connector: connectors[0] });
     }
   };
 

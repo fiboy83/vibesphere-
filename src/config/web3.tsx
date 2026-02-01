@@ -1,6 +1,6 @@
 'use client';
 
-import { createConfig, http, createStorage } from 'wagmi';
+import { createConfig, http } from 'wagmi';
 import { walletConnect, injected } from 'wagmi/connectors';
 import { defineChain } from 'viem';
 
@@ -10,11 +10,10 @@ if (!projectId) {
   throw new Error('VITE_PROJECT_ID is not set');
 }
 
-// Updated metadata to force identity change
 export const metadata = {
   name: 'vibesphere_atlantic',
   description: 'Vibesphere on Pharos Atlantic - a new sovereign session.',
-  url: 'https://web3modal.com', // Static URL to avoid SSR issues
+  url: 'https://web3modal.com',
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
@@ -40,25 +39,17 @@ const pharosTestnet = defineChain({
   testnet: true,
 });
 
-// The chains array now ONLY contains pharosTestnet
 export const chains = [pharosTestnet] as const;
 
 export const wagmiConfig = createConfig({
   chains,
   transports: {
-    // Force secure HTTP transport, disable batching
     [pharosTestnet.id]: http('https://rpc.atlantic.pharos.network', { batch: false })
   },
   connectors: [
-    walletConnect({ projectId, metadata, showQrModal: false }),
     injected({ shimDisconnect: true }),
+    walletConnect({ projectId, metadata, showQrModal: true }),
   ],
-  // Use a new storage key to force a new session and resolve pairing errors
-  storage: createStorage({
-    storage: typeof window !== 'undefined' ? window.localStorage : ({ getItem: () => null, setItem: () => {}, removeItem: () => {} }),
-    key: 'vibesphere_v3',
-  }),
-  // Enable SSR and disable multi-provider discovery for stability in Next.js
   ssr: true,
   multiInjectedProviderDiscovery: false,
 });

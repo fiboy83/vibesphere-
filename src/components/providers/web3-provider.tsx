@@ -1,23 +1,11 @@
 'use client';
 
 import React from 'react';
-import { createWeb3Modal } from '@web3modal/wagmi/react';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { wagmiConfig, projectId } from '@/config/web3';
+import { wagmiConfig } from '@/config/web3';
 
 const queryClient = new QueryClient();
-
-// createWeb3Modal is called outside the component to ensure it's executed once
-// when the module is loaded on the client.
-createWeb3Modal({
-  wagmiConfig,
-  projectId,
-  enableAnalytics: false,
-  enableOnramp: false,
-  enableInjected: true,
-  enableCoinbase: false,
-});
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   return (
