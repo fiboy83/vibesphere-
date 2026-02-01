@@ -3,6 +3,8 @@ import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Web3Provider } from '@/components/providers/web3-provider';
+import { headers } from 'next/headers';
+import { wagmiConfig } from '@/config/web3';
 
 
 export const metadata: Metadata = {
