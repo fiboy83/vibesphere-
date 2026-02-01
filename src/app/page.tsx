@@ -805,18 +805,47 @@ export default function VibesphereApp() {
         </main>
 
         {/* --- DOCK MENU --- */}
-        <div className="fixed bottom-10 left-0 right-0 flex justify-center z-[80] pointer-events-none">
-          <motion.nav
-            variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 120, opacity: 0 } }}
-            animate={(isScrolling || isSidebarOpen) ? "hidden" : "visible"}
-            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-            className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 items-center shadow-2xl"
-          >
-            <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? "text-purple-400" : "text-slate-500"}><Home size={22} strokeWidth={1.5} /></button>
-            <div className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.4)]"><Plus size={24} strokeWidth={2} className="text-white" /></div>
-            <button onClick={() => setActiveTab('wallet')} className={activeTab === 'wallet' ? "text-purple-400" : "text-slate-500"}><Wallet size={22} strokeWidth={1.5} /></button>
-          </motion.nav>
-        </div>
+        <motion.div
+          variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 100, opacity: 0 } }}
+          animate={(isScrolling || isSidebarOpen) ? "hidden" : "visible"}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-lg border-t border-white/5 z-[80]"
+        >
+          {/* home icon */}
+          <button className="opacity-70 hover:opacity-100 transition-all">
+            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-white/60 rounded-sm"></div>
+            </div>
+          </button>
+
+          {/* market icon */}
+          <button className="opacity-70 hover:opacity-100 transition-all">
+            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+              <div className="w-5 h-3 border-b-2 border-r-2 border-white/60 rotate-45"></div>
+            </div>
+          </button>
+
+          {/* plus button (center) */}
+          <button className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-xl shadow-blue-500/20 active:scale-95 transition-transform">
+            <span className="text-3xl text-white font-light">+</span>
+          </button>
+
+          {/* inbok icon */}
+          <button className="opacity-70 hover:opacity-100 transition-all">
+            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+              <div className="w-5 h-4 border-2 border-white/60 rounded-sm relative">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/60 mt-1"></div>
+              </div>
+            </div>
+          </button>
+
+          {/* wallet icon */}
+          <button className="opacity-70 hover:opacity-100 transition-all">
+            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full border-2 border-white/60"></div>
+            </div>
+          </button>
+        </motion.div>
       </>
       )}
     </div>
