@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, formatEther, parseEther } from 'viem';
+import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 
 
@@ -91,15 +91,13 @@ export default function VibesphereApp() {
         setBalance(formatEther(balanceValue));
         console.log("balance updated:", formatEther(balanceValue));
       } catch (error) {
-        console.error("vibe check failed, rpc error:", error);
+        console.warn("vibe check failed, rpc error:", error);
         setBalance('0.01'); // Fallback balance on error
       }
     }
 
     if (isConnected && wallet?.address) {
       fetchBalance();
-      const interval = setInterval(fetchBalance, 10000); // Poll every 10 seconds
-      return () => clearInterval(interval);
     }
   }, [isConnected, wallet?.address]);
 
@@ -112,7 +110,7 @@ export default function VibesphereApp() {
       await login();
       console.log("privy.login() call completed");
     } catch (error) {
-      console.error("vibe check error:", error);
+      console.warn("vibe check error:", error);
       setShowSecurityHint(true);
     } finally {
       setIsLoggingIn(false);
@@ -148,18 +146,26 @@ export default function VibesphereApp() {
       alert("recipient and amount are required.");
       return;
     }
+    if (!wallet.address) {
+      alert("Wallet address not found.");
+      return;
+    }
 
     setIsSending(true);
     try {
-      await wallet.switchChain(PHAROS_CHAIN_ID);
+        const provider = await wallet.getEthereumProvider();
+        const walletClient = createWalletClient({
+            account: wallet.address as `0x${string}`,
+            chain: pharosTestnet,
+            transport: custom(provider)
+        });
 
       const transaction = {
         to: recipient as `0x${string}`,
-        chainId: PHAROS_CHAIN_ID,
         value: parseEther(amount),
       };
       
-      const txHash = await wallet.sendTransaction(transaction);
+      const txHash = await walletClient.sendTransaction(transaction);
       console.log('transaction sent:', txHash);
       alert(`transaction broadcasted!\nview on explorer: https://pharos-testnet.socialscan.io/tx/${txHash}`);
       
@@ -167,7 +173,7 @@ export default function VibesphereApp() {
       setRecipient("");
       setAmount("");
     } catch (error) {
-      console.error("send phrs error:", error);
+      console.warn("send phrs error:", error);
       alert("transaction failed. check console for details.");
     } finally {
       setIsSending(false);
