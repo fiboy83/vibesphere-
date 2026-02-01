@@ -200,7 +200,6 @@ export default function VibesphereApp() {
 
 
   const handleNavigation = (target: string, params?: any) => {
-    console.log(`Navigating to: ${target}`, params);
     setActiveTab(target);
     setIsSidebarOpen(false);
   };

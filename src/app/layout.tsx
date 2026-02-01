@@ -6,8 +6,8 @@ import { PrivyClientProvider } from '@/components/providers/privy-provider';
 
 
 export const metadata: Metadata = {
-  title: 'Vibesphere - Vibes of Sovereign',
-  description: 'Decentralized Social-Finance DApp on OPN Network',
+  title: 'Vibesphere',
+  description: 'Vibes of Sovereign',
 };
 
 const inter = Inter({
@@ -30,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${roboto_mono.variable} dark`}>
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
