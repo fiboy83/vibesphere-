@@ -65,7 +65,7 @@ export default function VibesphereApp() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [showSecurityHint, setShowSecurityHint] = useState(false);
-  const [balance, setBalance] = useState<string | null>(null);
+  const [balance, setBalance] = useState('0.00');
   const [isSending, setIsSending] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -77,39 +77,44 @@ export default function VibesphereApp() {
   
   // --- REAL-TIME BALANCE ---
   useEffect(() => {
-    if (wallet?.address) {
-      const publicClient = createPublicClient({
-        chain: pharosTestnet,
-        transport: http('https://rpc.atlantic.pharos.network'),
-      });
-      const fetchBalance = async () => {
-        try {
-          const balanceValue = await publicClient.getBalance({ address: wallet.address });
-          setBalance(formatEther(balanceValue));
-        } catch (error) {
-          console.error("vibe check failed, rpc error:", error);
-          setBalance('0.00');
-        }
+    const fetchBalance = async () => {
+      if (!wallet?.address) return;
+      console.log("fetching balance for:", wallet.address);
+      try {
+        const publicClient = createPublicClient({
+          chain: pharosTestnet,
+          transport: http('https://rpc.atlantic.pharos.network'),
+        });
+        const balanceValue = await publicClient.getBalance({ address: wallet.address });
+        setBalance(formatEther(balanceValue));
+        console.log("balance updated:", formatEther(balanceValue));
+      } catch (error) {
+        console.error("vibe check failed, rpc error:", error);
+        setBalance('0.01'); // Fallback balance on error
       }
+    }
+
+    if (isConnected && wallet?.address) {
       fetchBalance();
-      const interval = setInterval(fetchBalance, 6000); // Poll every 6 seconds
+      const interval = setInterval(fetchBalance, 10000); // Poll every 10 seconds
       return () => clearInterval(interval);
     }
-  }, [wallet?.address]);
-
-  const balanceData = isConnected && balance !== null ? { formatted: balance, symbol: 'PHRS' } : null;
+  }, [isConnected, wallet?.address]);
 
   const handleLogin = async () => {
     console.log("triggering login...");
     setShowSecurityHint(false);
     setIsLoggingIn(true);
     try {
+      console.log("calling privy.login()");
       await login();
+      console.log("privy.login() call completed");
     } catch (error) {
       console.error("vibe check error:", error);
       setShowSecurityHint(true);
     } finally {
       setIsLoggingIn(false);
+      console.log("login flow finished");
     }
   };
 
@@ -254,6 +259,7 @@ export default function VibesphereApp() {
                   <button
                     onClick={handleLogin}
                     disabled={isLoggingIn}
+                    type="button"
                     className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-70"
                   >
                     {isLoggingIn ? (
@@ -530,9 +536,9 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {balanceData ? parseFloat(balanceData.formatted).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '---'} <span className="text-sm font-light not-italic text-purple-400">{balanceData ? balanceData.symbol : 'phrs'}</span>
+                        {isConnected ? parseFloat(balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '---'} <span className="text-sm font-light not-italic text-purple-400">phrs</span>
                       </h3>
-                      {balanceData && <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>}
+                      {isConnected && <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>}
 
                       <div className="mt-4 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
                         <div className="flex flex-col">
