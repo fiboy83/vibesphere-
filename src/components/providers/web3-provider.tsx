@@ -13,6 +13,8 @@ createWeb3Modal({
   projectId,
   enableAnalytics: false,
   enableOnramp: false,
+  enableInjected: true,
+  enableCoinbase: false,
 });
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {

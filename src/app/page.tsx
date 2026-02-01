@@ -94,11 +94,22 @@ export default function VibesphereApp() {
     }
   };
   
-  const handleConnect = () => {
+  const handleConnect = async () => {
     // Clear stale session data to prevent connection issues
     localStorage.removeItem('walletconnect');
     console.log("cleared walletconnect session data.");
-    openWeb3Modal();
+    try {
+      // Delay to ensure window focus before modal is triggered
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await openWeb3Modal();
+    } catch (error) {
+      // Log the error and disconnect to clear any stuck sessions
+      console.error("wc_error:", error);
+      if (String(error).includes('User rejected the request')) {
+        console.log('user cancelled, attempting to clear session.');
+        disconnect();
+      }
+    }
   };
 
   const handleSendPHAR = async () => {
