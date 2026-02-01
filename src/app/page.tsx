@@ -145,11 +145,15 @@ export default function VibesphereApp() {
   useEffect(() => {
     if (account) {
       const fetchBalance = async () => {
+        console.log("current address:", account); // Debugging line added
         try {
           const balanceWei = await publicClient.getBalance({ address: account });
-          setBalance(formatEther(balanceWei));
+          const formattedBalance = formatEther(balanceWei);
+          setBalance(formattedBalance);
+          console.log("fetched balance:", formattedBalance); // Debugging line added
           console.log("balance synced from pharos.");
         } catch (bgError) {
+          console.error("Balance fetch error:", bgError); // Changed for better error visibility
           console.warn("balance sync failed, showing 0.", bgError);
           setBalance("0.00");
         }
@@ -831,6 +835,8 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
 
     
 
