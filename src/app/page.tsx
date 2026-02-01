@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ClipboardList } from 'lucide-react';
-import { formatEther, createWalletClient, custom, defineChain, http } from 'viem';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy } from 'lucide-react';
+import { formatEther, createWalletClient, custom, defineChain, http, createPublicClient } from 'viem';
 
 // --- Pharos Testnet Configuration ---
 const pharosTestnet = defineChain({
@@ -23,6 +23,12 @@ const pharosTestnet = defineChain({
     default: { name: 'Pharos Scan', url: 'https://testnet.pharosscan.io' },
   },
   testnet: true,
+});
+
+// --- Create Viem Public Client ---
+const publicClient = createPublicClient({
+  chain: pharosTestnet,
+  transport: http(),
 });
 
 // --- COMPONENT: RESONANCE CARD ---
@@ -140,28 +146,9 @@ export default function VibesphereApp() {
     if (account) {
       const fetchBalance = async () => {
         try {
-          const rpcTarget = "https://rpc.testnet.pharos.network";
-          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rpcTarget)}`;
-
-          const response = await fetch(proxyUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                  jsonrpc: "2.0",
-                  method: "eth_getBalance",
-                  params: [account, "latest"],
-                  id: 1
-              })
-          });
-
-          if (response.ok) {
-              const json = await response.json();
-              if (json.error) throw new Error(`RPC Error: ${json.error.message}`);
-              setBalance(formatEther(BigInt(json.result)));
-              console.log("balance synced from pharos.");
-          } else {
-              throw new Error(`RPC request failed with status ${response.status}`);
-          }
+          const balanceWei = await publicClient.getBalance({ address: account });
+          setBalance(formatEther(balanceWei));
+          console.log("balance synced from pharos.");
         } catch (bgError) {
           console.warn("balance sync failed, showing 0.", bgError);
           setBalance("0.00");
@@ -311,7 +298,9 @@ export default function VibesphereApp() {
             >
               <div className="mb-12 relative">
                 <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full" />
-                <Wallet size={64} strokeWidth={1} className="text-white relative z-10" />
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1" className="text-white relative z-10">
+                  <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
 
               <h2 className="text-2xl font-black italic lowercase tracking-tighter mb-2">
@@ -454,7 +443,9 @@ export default function VibesphereApp() {
                 </nav>
                 <div className="mt-auto pt-6 border-t border-white/5">
                   <button onClick={disconnectWallet} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
-                    <LogOut size={18} strokeWidth={1.5} />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15M10 17L15 12L10 7M15 12H3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                     <span className="text-[11px] font-mono uppercase tracking-widest">logout</span>
                   </button>
                 </div>
@@ -582,7 +573,9 @@ export default function VibesphereApp() {
                     {/* 1. balance card: the core resonance */}
                     <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
                       <div className="absolute top-0 right-0 p-6 opacity-20">
-                        <Wallet size={80} strokeWidth={1} />
+                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1" className="text-white">
+                           <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+                         </svg>
                       </div>
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
@@ -595,7 +588,7 @@ export default function VibesphereApp() {
                         <div className="flex flex-col">
                           <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
                           <code className="text-[10px] font-mono text-purple-300">
-                            {account.slice(0, 6)}...{account.slice(-4)}
+                            {account && `${account.slice(0, 6)}...${account.slice(-4)}`}
                           </code>
                         </div>
                         <button 
@@ -605,7 +598,6 @@ export default function VibesphereApp() {
                           <Copy size={14} />
                         </button>
                       </div>
-
 
                       {/* quick actions */}
                       <div className="flex gap-4 mt-6">
@@ -624,31 +616,34 @@ export default function VibesphereApp() {
                       </div>
                     </div>
 
-                    {/* 2. asset list */}
-                    <div className="mt-12 flex flex-col gap-6">
-                      <div className="flex justify-between items-center px-2">
-                        <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">assets</span>
-                        <button className="text-[10px] font-mono text-purple-400">view all</button>
-                      </div>
-
-                      {[
-                        { name: 'pharos', symbol: 'phar', balance: '1,240.50', color: 'from-purple-500' },
-                        { name: 'bitcoin', symbol: 'btc', balance: '0.042', color: 'from-orange-500' },
-                        { name: 'ethereum', symbol: 'eth', balance: '1.25', color: 'from-blue-500' }
-                      ].map((asset) => (
-                        <div key={asset.symbol} className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
-                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${asset.color} to-black/20`} />
-                          <div className="flex-1">
-                            <h4 className="text-sm font-bold lowercase">{asset.name}</h4>
-                            <span className="text-[10px] font-mono text-slate-500 uppercase">{asset.symbol}</span>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold font-mono">{asset.balance}</p>
-                            <p className="text-[10px] text-green-500/70">+2.4%</p>
-                          </div>
+                    {/* 2. transaction history */}
+                    <div className="mt-12 flex flex-col gap-4">
+                        <div className="flex justify-between items-center px-2">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
+                            {account && <a href={`https://testnet.pharosscan.io/address/${account}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
                         </div>
-                      ))}
+                        
+                        {[
+                            { type: 'receive', amount: '1200.5', status: 'success', hash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef' },
+                            { type: 'send', amount: '50.0', status: 'success', hash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' },
+                            { type: 'send', amount: '10.5', status: 'pending', hash: '0x67890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234' },
+                        ].map((tx, index) => (
+                            <a key={index} href={`https://testnet.pharosscan.io/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group">
+                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                                    {tx.type === 'receive' ? <ArrowDownLeft size={20} className="text-green-400" /> : <ArrowUpRight size={20} className="text-red-400" />}
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold lowercase">{tx.type}</h4>
+                                    <p className="text-[10px] text-slate-400 font-mono">{tx.amount} phar</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs font-mono lowercase ${tx.status === 'success' ? 'text-green-400/80' : 'text-yellow-400/80'}`}>{tx.status}</span>
+                                  {tx.status === 'success' ? <CheckCircle size={16} className="text-green-400/80" /> : <Clock size={16} className="text-yellow-400/80" />}
+                                </div>
+                            </a>
+                        ))}
                     </div>
+
                     <AnimatePresence>
                       {showReceiveModal && (
                         <motion.div 
@@ -667,11 +662,11 @@ export default function VibesphereApp() {
                             <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive phar</h3>
                             
                             <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                                <img 
+                                {account && <img 
                                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${account}`} 
                                     alt="wallet qr"
                                     className="w-full h-full object-contain"
-                                />
+                                />}
                             </div>
 
                             <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8 text-center">
