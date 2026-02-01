@@ -9,7 +9,7 @@ if (!projectId) {
 }
 
 export const metadata = {
-  name: 'vibesphere',
+  name: 'vibesphere atlantic',
   description: 'pharos social layer',
   url: 'https://web3modal.com',
   icons: ['https://avatars.githubusercontent.com/u/37784886']

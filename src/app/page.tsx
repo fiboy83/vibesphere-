@@ -93,6 +93,13 @@ export default function VibesphereApp() {
       alert("wallet address copied to clipboard!");
     }
   };
+  
+  const handleConnect = () => {
+    // Clear stale session data to prevent connection issues
+    localStorage.removeItem('walletconnect');
+    console.log("cleared walletconnect session data.");
+    openWeb3Modal();
+  };
 
   const handleSendPHAR = async () => {
     try {
@@ -194,7 +201,7 @@ export default function VibesphereApp() {
 
               <div className="w-full flex flex-col gap-4">
                 <button 
-                  onClick={() => openWeb3Modal()}
+                  onClick={handleConnect}
                   className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
                 >
                   connect wallet
