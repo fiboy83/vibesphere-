@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom } from 'viem';
+import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 
 
@@ -82,10 +82,11 @@ export default function VibesphereApp() {
       console.log("fetching balance for:", wallet.address);
       try {
         const publicClient = createPublicClient({
-          chain: pharosTestnet,
-          transport: http('https://rpc.atlantic.pharos.network', {
-            timeout: 10000,
-          }),
+            chain: pharosTestnet,
+            transport: fallback([
+                http('https://rpc.atlantic.pharos.network', { timeout: 10000 }),
+                http('https://rpc.iopn.io', { timeout: 10000 })
+            ]),
         });
         const balanceValue = await publicClient.getBalance({ address: wallet.address });
         setBalance(formatEther(balanceValue));
@@ -142,6 +143,7 @@ export default function VibesphereApp() {
   };
 
   const handleSend = async () => {
+    console.log("preparing vibe transaction...");
     if (!wallet || !recipient || !amount) {
       alert("recipient and amount are required.");
       return;
@@ -174,7 +176,7 @@ export default function VibesphereApp() {
       setAmount("");
     } catch (error) {
       console.warn("send phrs error:", error);
-      alert("transaction failed. check console for details.");
+      alert("vibe network busy. try again later.");
     } finally {
       setIsSending(false);
     }
