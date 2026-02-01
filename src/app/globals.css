@@ -58,6 +58,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  body.theme-transition,
+  body.theme-transition * {
+    transition: background-color 1s ease, color 1s ease, border-color 1s ease;
+  }
 }
 
 @layer utilities {

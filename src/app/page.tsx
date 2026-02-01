@@ -13,6 +13,16 @@ import { useToast } from "@/hooks/use-toast";
 const PHAROS_CHAIN_ID = 237;
 
 // --- Helper Functions ---
+function hexToRgb(hex: string): [number, number, number] | null {
+  if (!hex) return null;
+  const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.startsWith('#') ? hex.substring(1) : hex);
+  return result ? [
+      parseInt(result[1], 16),
+      parseInt(result[2], 16),
+      parseInt(result[3], 16)
+  ] : null;
+}
+
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -168,6 +178,16 @@ export default function VibesphereApp() {
       localStorage.setItem(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
     }
   }, [profile, wallet?.address]);
+
+  // --- GLOBAL THEME CONTROLLER ---
+  useEffect(() => {
+    if (profile.themeColor) {
+        document.documentElement.style.setProperty('--primary', profile.themeColor);
+        document.documentElement.style.setProperty('--primary-glow', profile.themeColor.replace(/ /g, ', '));
+        // Add a class to body for smooth transition
+        document.body.classList.add('theme-transition');
+    }
+  }, [profile.themeColor]);
   
   
   // --- REAL-TIME BALANCE ---
@@ -568,16 +588,34 @@ export default function VibesphereApp() {
                   className="flex flex-col items-center gap-12"
                 >
                   {feedData.map((item) => {
-                    const isMyPost = item.handle === profile.handle;
-                    const dynamicStyle = isMyPost && profile.themeColor 
-                      ? { 
-                          '--primary': profile.themeColor,
-                          '--primary-glow': profile.themeColor.replace(/ /g, ', '),
-                        } as React.CSSProperties
-                      : undefined;
+                    let cardColor = '262 100% 70%'; // Default purple fallback
+                    try {
+                        if (item.handle === profile.handle && profile.themeColor) {
+                            cardColor = profile.themeColor;
+                        } else if (item.avatar) {
+                            const url = new URL(item.avatar);
+                            const bgColorHex = url.searchParams.get('backgroundColor');
+                            if (bgColorHex) {
+                                const rgb = hexToRgb(bgColorHex);
+                                if (rgb) {
+                                    let [h, s, l] = rgbToHsl(...rgb);
+                                    s = Math.min(1, s * 1.5);
+                                    l = Math.max(0.4, Math.min(0.7, l));
+                                    cardColor = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
+                                }
+                            }
+                        }
+                    } catch(e) {
+                        console.warn("Could not parse card color, using default.");
+                    }
+
+                    const cardStyle = { 
+                        '--primary': cardColor,
+                        '--primary-glow': cardColor.replace(/ /g, ', '),
+                    } as React.CSSProperties;
                     
                     return (
-                      <ResonanceCard key={item.id} isShort={item.type === 'short'} style={dynamicStyle}>
+                      <ResonanceCard key={item.id} isShort={item.type === 'short'} style={cardStyle}>
                         <div className="flex justify-between items-start mb-5">
                           <div 
                             onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
@@ -675,7 +713,7 @@ export default function VibesphereApp() {
               )}
               {activeTab === 'profile' && (
                 <motion.div className="flex flex-col items-center">
-                   <ResonanceCard style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor?.replace(/ /g, ', ')}}>
+                   <ResonanceCard>
                     <div className="flex flex-col items-center text-center">
                       <div 
                         className="relative group mb-6 cursor-pointer"
