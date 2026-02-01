@@ -12,36 +12,89 @@ import { useToast } from "@/hooks/use-toast";
 // --- PHAROS CHAIN ID ---
 const PHAROS_CHAIN_ID = 237;
 
+// --- Helper Functions ---
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return [h * 360, s, l];
+}
+
+const getDominantColorFromImage = (imageUrl: string, onComplete: (hslString: string) => void) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = imageUrl;
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        canvas.width = 10;
+        canvas.height = 10;
+        ctx.drawImage(img, 0, 0, 10, 10);
+
+        const imageData = ctx.getImageData(0, 0, 10, 10);
+        const data = imageData.data;
+        let r = 0, g = 0, b = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+        }
+
+        const pixelCount = data.length / 4;
+        r = Math.floor(r / pixelCount);
+        g = Math.floor(g / pixelCount);
+        b = Math.floor(b / pixelCount);
+
+        let [h, s, l] = rgbToHsl(r, g, b);
+        
+        s = Math.min(1, s * 1.5); // Boost saturation
+        l = Math.max(0.4, Math.min(0.7, l)); // Normalize lightness
+
+        const newPrimary = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
+        const newPrimaryGlow = `${h.toFixed(0)}, ${(s * 100).toFixed(0)}%, ${(l * 100).toFixed(0)}%`;
+        
+        document.documentElement.style.setProperty('--primary', newPrimary);
+        document.documentElement.style.setProperty('--primary-glow', newPrimaryGlow);
+        
+        onComplete(`hsl(${newPrimary})`);
+    };
+};
+
 // --- COMPONENT: RESONANCE CARD ---
-const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
+const ResonanceCard = ({ children, isShort = false }: { children: React.ReactNode, isShort?: boolean }) => {
     return (
       <motion.div 
         variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
         whileHover={{ y: -8, scale: 1.01 }}
-        style={{ 
-          borderColor: `${themeColor}44`, 
-          boxShadow: `0 15px 40px -15px ${themeColor}33`,
-          transition: 'border-color 0.5s ease, box-shadow 0.5s ease',
-        }}
-        className={`relative p-8 rounded-[3rem] bg-white/[0.02] border backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] ${isShort ? 'self-start min-w-[320px]' : 'w-full'}`}
+        className={`relative p-8 rounded-[3rem] bg-white/[0.02] border border-primary/30 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md ${isShort ? 'self-start min-w-[320px]' : 'w-full'}`}
       >
         <div 
-          className="absolute -top-10 -right-10 w-32 h-32 blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"
-          style={{ backgroundColor: themeColor }}
+          className="absolute -top-10 -right-10 w-32 h-32 bg-primary blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"
         ></div>
         
         {children}
 
         <div 
-            className="absolute bottom-6 right-6 w-3 h-3 rounded-full opacity-50 transition-colors duration-500"
-            style={{
-              backgroundColor: themeColor,
-              boxShadow: `0 0 12px 2px ${themeColor}`
-            }}
+            className="absolute bottom-6 right-6 w-3 h-3 rounded-full bg-primary opacity-50 transition-colors duration-500 shadow-[0_0_12px_2px_hsl(var(--primary))]"
         ></div>
       </motion.div>
     );
 };
+
 
 // --- Sub-komponen untuk Sidebar Link ---
 const SidebarLink = ({ icon, label, onClick }: {icon: React.ReactNode, label: string, onClick: () => void}) => (
@@ -72,15 +125,13 @@ export default function VibesphereApp() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
   
-  const themeColors = ['#a855f7', '#06b6d4', '#ef4444', '#f59e0b', '#84cc16', '#3b82f6'];
-
   // --- PROFILE STATE ENGINE ---
   const [profile, setProfile] = useState({
     username: 'Sovereign_User',
     handle: 'user.opn',
     avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`,
     joinDate: 'vibing since now',
-    themeColor: '#a855f7',
+    themeColor: 'hsl(262 100% 70%)',
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
@@ -100,16 +151,26 @@ export default function VibesphereApp() {
       if (savedProfile) {
         const parsed = JSON.parse(savedProfile);
         if (!parsed.themeColor) {
-          parsed.themeColor = '#a855f7';
+            parsed.themeColor = 'hsl(262 100% 70%)';
         }
         setProfile(parsed);
+         // On load, apply the saved theme color to CSS variables
+        try {
+            const matches = parsed.themeColor.match(/hsl\((\d+)\s+(\d+)%\s+(\d+)%\)/);
+            if(matches) {
+                const [_, h, s, l] = matches;
+                document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`);
+                document.documentElement.style.setProperty('--primary-glow', `${h}, ${s}%, ${l}%`);
+            }
+        } catch(e) { console.warn(e) }
+
       } else {
         const defaultProfile = {
           username: 'Sovereign_User',
           handle: `${wallet.address.slice(0, 6)}.opn`,
           avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${wallet.address}&backgroundColor=a855f7`,
           joinDate: 'vibing since now',
-          themeColor: '#a855f7',
+          themeColor: 'hsl(262 100% 70%)',
         };
         setProfile(defaultProfile);
       }
@@ -198,7 +259,6 @@ export default function VibesphereApp() {
         transport: custom(provider),
       });
   
-      // Get account from wallet provider to ensure we use the active account
       const [address] = await walletClient.getAddresses();
   
       const transaction = {
@@ -230,16 +290,18 @@ export default function VibesphereApp() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const newColor = themeColors.filter(c => c !== profile.themeColor)[Math.floor(Math.random() * (themeColors.length - 1))];
+        const imageUrl = reader.result as string;
         
-        setProfile(prev => ({ 
-          ...prev, 
-          avatar: reader.result as string,
-          themeColor: newColor 
-        }));
+        getDominantColorFromImage(imageUrl, (newColor) => {
+            setProfile(prev => ({ 
+              ...prev, 
+              avatar: imageUrl,
+              themeColor: newColor,
+            }));
 
-        toast({
-          title: "vibe updated...",
+            toast({
+              title: "vibe updated...",
+            });
         });
       };
       reader.readAsDataURL(file);
@@ -290,13 +352,13 @@ export default function VibesphereApp() {
   };
   
   const feedData = [
-    { id: 1, postId: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", color: "#a855f7", content: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "short", commentCount: 12, repostCount: 5, likeCount: 42 },
-    { id: 2, postId: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", color: "#06b6d4", content: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "medium", commentCount: 8, repostCount: 2, likeCount: 28 },
-    { id: 3, postId: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", color: "#ef4444", 
+    { id: 1, postId: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", content: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "short", commentCount: 12, repostCount: 5, likeCount: 42 },
+    { id: 2, postId: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", content: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "medium", commentCount: 8, repostCount: 2, likeCount: 28 },
+    { id: 3, postId: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", 
       content: `New governance proposal PIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
       type: "long" , commentCount: 34, repostCount: 15, likeCount: 99
     },
-    { id: 4, postId: 4, userId: "chrono.opn", username: "Chrono_Trader", handle: "chrono.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", color: "#f59e0b", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
+    { id: 4, postId: 4, userId: "chrono.opn", username: "Chrono_Trader", handle: "chrono.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
   ];
   
   const marketData = [
@@ -485,7 +547,7 @@ export default function VibesphereApp() {
                 </nav>
                 <div className="mt-auto pt-6 border-t border-white/5">
                   <div className="flex items-center gap-3 mb-6 px-2">
-                    <img src={profile.avatar} alt="User Avatar" className="w-10 h-10 rounded-full border-2 border-white/10 object-cover" />
+                    <img src={profile.avatar} alt="User Avatar" className="w-10 h-10 rounded-full border-2 border-primary/50 object-cover transition-colors duration-500" />
                     <div>
                       <p className="font-bold text-sm text-white">{profile.username}</p>
                       <p className="text-xs text-slate-400 font-mono">@{profile.handle}</p>
@@ -520,24 +582,24 @@ export default function VibesphereApp() {
                   className="flex flex-col items-center gap-12"
                 >
                   {feedData.map((item) => (
-                    <ResonanceCard key={item.id} themeColor={item.color} isShort={item.type === 'short'}>
+                    <ResonanceCard key={item.id} isShort={item.type === 'short'}>
                       <div className="flex justify-between items-start mb-5">
                         <div 
                           onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
                           className="flex items-center gap-3 cursor-pointer group"
                         >
-                          <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-purple-500/50 transition-all">
+                          <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
                             <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold group-hover:text-purple-400 transition-colors">
+                            <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
                               {item.username}
                             </span>
                             <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                           </div>
                         </div>
                         <button className="group p-2 -mr-2 mt-1">
-                          <Share2 size={18} style={{ stroke: `${item.color}66`, strokeWidth: 1.5 }} className="group-hover:stroke-white transition-colors"/>
+                          <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                         </button>
                       </div>
 
@@ -549,7 +611,7 @@ export default function VibesphereApp() {
                         <div className="flex flex-col">
                           <button 
                             onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
-                            className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-purple-400' : 'text-slate-500 hover:text-purple-400'}`}
+                            className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                           >
                             <MessageSquare size={18} strokeWidth={1.5} />
                             <span className="text-[11px] font-mono">{item.commentCount}</span>
@@ -577,21 +639,21 @@ export default function VibesphereApp() {
                             <div className="mt-6 flex flex-col gap-4">
                               {/* input komentar baru */}
                               <div className="flex gap-3 items-center mb-2">
-                                <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 object-cover" />
+                                <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-primary/50 object-cover transition-colors duration-500" />
                                 <div className="relative flex-1 flex items-center">
                                   <input 
                                     value={commentText}
                                     onChange={(e) => setCommentText(e.target.value.toLowerCase())}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSendComment(item.id)}
                                     placeholder="write your vibe..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50 transition-all text-slate-200"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
                                   />
                                   
                                   <button 
                                     onClick={() => handleSendComment(item.id)}
                                     disabled={!commentText.trim()}
                                     className={`absolute right-3 transition-colors ${
-                                      commentText.trim() ? 'text-purple-500 hover:text-purple-400' : 'text-slate-700'
+                                      commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
                                     }`}
                                   >
                                     <Send size={14} strokeWidth={2} />
@@ -602,7 +664,7 @@ export default function VibesphereApp() {
                               {/* list komentar (placeholder) */}
                               <div className="pl-11 flex flex-col gap-4">
                                 <div className="flex flex-col gap-1">
-                                  <span className="text-[10px] font-bold text-purple-400">@sovereign_user</span>
+                                  <span className="text-[10px] font-bold text-primary transition-colors duration-500">@sovereign_user</span>
                                   <p className="text-[11px] text-slate-300 leading-relaxed">this vibe is real. 100% locked.</p>
                                 </div>
                               </div>
@@ -617,7 +679,7 @@ export default function VibesphereApp() {
               )}
               {activeTab === 'profile' && (
                 <motion.div className="flex flex-col items-center">
-                  <ResonanceCard themeColor={profile.themeColor}>
+                  <ResonanceCard>
                     <div className="flex flex-col items-center text-center">
                       <div 
                         className="relative group mb-6 cursor-pointer"
@@ -626,7 +688,7 @@ export default function VibesphereApp() {
                         <img 
                           src={profile.avatar} 
                           alt="User avatar" 
-                          className="w-32 h-32 rounded-full border-4 border-white/10 object-cover shadow-lg transition-all duration-300 group-hover:border-purple-500/50 group-hover:scale-105"
+                          className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg transition-all duration-500 group-hover:border-primary/50 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-white text-xs font-bold uppercase tracking-widest">change</span>
@@ -894,7 +956,7 @@ export default function VibesphereApp() {
                     <button 
                         onClick={handleProfileSave} 
                         disabled={tempProfile.username === profile.username && tempProfile.joinDate === profile.joinDate}
-                        className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all text-white disabled:opacity-50"
+                        className="flex-1 py-3 rounded-2xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(var(--primary-glow),0.4)] transition-all disabled:opacity-50"
                     >
                         save
                     </button>
@@ -918,7 +980,7 @@ export default function VibesphereApp() {
               <path d="M3 9.5L12 3L21 9.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V9.5Z" stroke="url(#paint0_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
                 <linearGradient id="paint0_linear" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#A855F7"/>
+                  <stop stopColor="hsl(var(--primary))"/>
                   <stop offset="1" stopColor="#3B82F6"/>
                 </linearGradient>
               </defs>
@@ -931,7 +993,7 @@ export default function VibesphereApp() {
               <path d="M3 18L9 12L13 16L21 8M21 8H16M21 8V13" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
                 <linearGradient id="paint1_linear" x1="3" y1="8" x2="21" y2="18" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#A855F7"/>
+                  <stop stopColor="hsl(var(--primary))"/>
                   <stop offset="1" stopColor="#3B82F6"/>
                 </linearGradient>
               </defs>
@@ -939,7 +1001,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* plus button - center focus */}
-          <button className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg shadow-purple-500/20 active:scale-90 transition-transform">
+          <button className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-500">
             <span className="text-3xl text-white font-light">+</span>
           </button>
 
@@ -949,7 +1011,7 @@ export default function VibesphereApp() {
               <path d="M3 7L12 13L21 7M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
                 <linearGradient id="paint2_linear" x1="2" y1="4" x2="22" y2="20" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#A855F7"/>
+                  <stop stopColor="hsl(var(--primary))"/>
                   <stop offset="1" stopColor="#3B82F6"/>
                 </linearGradient>
               </defs>
@@ -962,7 +1024,7 @@ export default function VibesphereApp() {
               <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="url(#paint3_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
                 <linearGradient id="paint3_linear" x1="2" y1="6" x2="20" y2="18" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#A855F7"/>
+                  <stop stopColor="hsl(var(--primary))"/>
                   <stop offset="1" stopColor="#3B82F6"/>
                 </linearGradient>
               </defs>
