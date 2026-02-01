@@ -31,7 +31,7 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [h * 360, s, l];
 }
 
-const getDominantColorFromImage = (imageUrl: string, onComplete: (hslString: string) => void) => {
+const getDominantColorFromImage = (imageUrl: string, onComplete: (hslValues: string) => void) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.src = imageUrl;
@@ -64,23 +64,19 @@ const getDominantColorFromImage = (imageUrl: string, onComplete: (hslString: str
         s = Math.min(1, s * 1.5); // Boost saturation
         l = Math.max(0.4, Math.min(0.7, l)); // Normalize lightness
 
-        const newPrimary = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
-        const newPrimaryGlow = `${h.toFixed(0)}, ${(s * 100).toFixed(0)}%, ${(l * 100).toFixed(0)}%`;
-        
-        document.documentElement.style.setProperty('--primary', newPrimary);
-        document.documentElement.style.setProperty('--primary-glow', newPrimaryGlow);
-        
-        onComplete(`hsl(${newPrimary})`);
+        const newPrimaryValues = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
+        onComplete(newPrimaryValues);
     };
 };
 
 // --- COMPONENT: RESONANCE CARD ---
-const ResonanceCard = ({ children, isShort = false }: { children: React.ReactNode, isShort?: boolean }) => {
+const ResonanceCard = ({ children, isShort = false, style }: { children: React.ReactNode, isShort?: boolean, style?: React.CSSProperties }) => {
     return (
       <motion.div 
         variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
         whileHover={{ y: -8, scale: 1.01 }}
         className={`relative p-8 rounded-[3rem] bg-white/[0.02] border border-primary/30 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md ${isShort ? 'self-start min-w-[320px]' : 'w-full'}`}
+        style={style}
       >
         <div 
           className="absolute -top-10 -right-10 w-32 h-32 bg-primary blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"
@@ -131,7 +127,7 @@ export default function VibesphereApp() {
     handle: 'user.opn',
     avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`,
     joinDate: 'vibing since now',
-    themeColor: 'hsl(262 100% 70%)',
+    themeColor: '262 100% 70%',
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
@@ -151,26 +147,16 @@ export default function VibesphereApp() {
       if (savedProfile) {
         const parsed = JSON.parse(savedProfile);
         if (!parsed.themeColor) {
-            parsed.themeColor = 'hsl(262 100% 70%)';
+            parsed.themeColor = '262 100% 70%';
         }
         setProfile(parsed);
-         // On load, apply the saved theme color to CSS variables
-        try {
-            const matches = parsed.themeColor.match(/hsl\((\d+)\s+(\d+)%\s+(\d+)%\)/);
-            if(matches) {
-                const [_, h, s, l] = matches;
-                document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`);
-                document.documentElement.style.setProperty('--primary-glow', `${h}, ${s}%, ${l}%`);
-            }
-        } catch(e) { console.warn(e) }
-
       } else {
         const defaultProfile = {
           username: 'Sovereign_User',
           handle: `${wallet.address.slice(0, 6)}.opn`,
           avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${wallet.address}&backgroundColor=a855f7`,
           joinDate: 'vibing since now',
-          themeColor: 'hsl(262 100% 70%)',
+          themeColor: '262 100% 70%',
         };
         setProfile(defaultProfile);
       }
@@ -292,11 +278,11 @@ export default function VibesphereApp() {
       reader.onloadend = () => {
         const imageUrl = reader.result as string;
         
-        getDominantColorFromImage(imageUrl, (newColor) => {
+        getDominantColorFromImage(imageUrl, (newColorValues) => {
             setProfile(prev => ({ 
               ...prev, 
               avatar: imageUrl,
-              themeColor: newColor,
+              themeColor: newColorValues,
             }));
 
             toast({
@@ -358,7 +344,7 @@ export default function VibesphereApp() {
       content: `New governance proposal PIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
       type: "long" , commentCount: 34, repostCount: 15, likeCount: 99
     },
-    { id: 4, postId: 4, userId: "chrono.opn", username: "Chrono_Trader", handle: "chrono.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
+    { id: 4, postId: 4, userId: "user.opn", username: "Sovereign_User", handle: "user.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
   ];
   
   const marketData = [
@@ -581,105 +567,115 @@ export default function VibesphereApp() {
                   variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                   className="flex flex-col items-center gap-12"
                 >
-                  {feedData.map((item) => (
-                    <ResonanceCard key={item.id} isShort={item.type === 'short'}>
-                      <div className="flex justify-between items-start mb-5">
-                        <div 
-                          onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
-                          className="flex items-center gap-3 cursor-pointer group"
-                        >
-                          <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                            <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
-                              {item.username}
-                            </span>
-                            <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
-                          </div>
-                        </div>
-                        <button className="group p-2 -mr-2 mt-1">
-                          <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
-                        </button>
-                      </div>
-
-                      <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
-                        <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.content}</p>
-                      </div>
-                      
-                      <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
-                        <div className="flex flex-col">
-                          <button 
-                            onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
-                            className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                  {feedData.map((item) => {
+                    const isMyPost = item.handle === profile.handle;
+                    const dynamicStyle = isMyPost && profile.themeColor 
+                      ? { 
+                          '--primary': profile.themeColor,
+                          '--primary-glow': profile.themeColor.replace(/ /g, ', '),
+                        } as React.CSSProperties
+                      : undefined;
+                    
+                    return (
+                      <ResonanceCard key={item.id} isShort={item.type === 'short'} style={dynamicStyle}>
+                        <div className="flex justify-between items-start mb-5">
+                          <div 
+                            onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
+                            className="flex items-center gap-3 cursor-pointer group"
                           >
-                            <MessageSquare size={18} strokeWidth={1.5} />
-                            <span className="text-[11px] font-mono">{item.commentCount}</span>
+                            <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
+                              <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
+                                {item.username}
+                              </span>
+                              <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                            </div>
+                          </div>
+                          <button className="group p-2 -mr-2 mt-1">
+                            <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                           </button>
                         </div>
+
+                        <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
+                          <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.content}</p>
+                        </div>
                         
-                        <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
-                          <Repeat2 size={20} strokeWidth={1.5} />
-                          <span className="text-[11px] font-mono">{item.repostCount}</span>
-                        </button>
+                        <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
+                          <div className="flex flex-col">
+                            <button 
+                              onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
+                              className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                            >
+                              <MessageSquare size={18} strokeWidth={1.5} />
+                              <span className="text-[11px] font-mono">{item.commentCount}</span>
+                            </button>
+                          </div>
+                          
+                          <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                            <Repeat2 size={20} strokeWidth={1.5} />
+                            <span className="text-[11px] font-mono">{item.repostCount}</span>
+                          </button>
 
-                        <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
-                          <Heart size={18} strokeWidth={1.5} />
-                          <span className="text-[11px] font-mono">{item.likeCount}</span>
-                        </button>
-                      </div>
-                      <AnimatePresence>
-                        {openCommentsId === item.id && (
-                          <motion.div 
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="mt-6 flex flex-col gap-4">
-                              {/* input komentar baru */}
-                              <div className="flex gap-3 items-center mb-2">
-                                <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-primary/50 object-cover transition-colors duration-500" />
-                                <div className="relative flex-1 flex items-center">
-                                  <input 
-                                    value={commentText}
-                                    onChange={(e) => setCommentText(e.target.value.toLowerCase())}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSendComment(item.id)}
-                                    placeholder="write your vibe..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
-                                  />
-                                  
-                                  <button 
-                                    onClick={() => handleSendComment(item.id)}
-                                    disabled={!commentText.trim()}
-                                    className={`absolute right-3 transition-colors ${
-                                      commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
-                                    }`}
-                                  >
-                                    <Send size={14} strokeWidth={2} />
-                                  </button>
+                          <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                            <Heart size={18} strokeWidth={1.5} />
+                            <span className="text-[11px] font-mono">{item.likeCount}</span>
+                          </button>
+                        </div>
+                        <AnimatePresence>
+                          {openCommentsId === item.id && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="mt-6 flex flex-col gap-4">
+                                {/* input komentar baru */}
+                                <div className="flex gap-3 items-center mb-2">
+                                  <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-primary/50 object-cover transition-colors duration-500" />
+                                  <div className="relative flex-1 flex items-center">
+                                    <input 
+                                      value={commentText}
+                                      onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                      onKeyDown={(e) => e.key === 'Enter' && handleSendComment(item.id)}
+                                      placeholder="write your vibe..."
+                                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
+                                    />
+                                    
+                                    <button 
+                                      onClick={() => handleSendComment(item.id)}
+                                      disabled={!commentText.trim()}
+                                      className={`absolute right-3 transition-colors ${
+                                        commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
+                                      }`}
+                                    >
+                                      <Send size={14} strokeWidth={2} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* list komentar (placeholder) */}
+                                <div className="pl-11 flex flex-col gap-4">
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-primary transition-colors duration-500">@sovereign_user</span>
+                                    <p className="text-[11px] text-slate-300 leading-relaxed">this vibe is real. 100% locked.</p>
+                                  </div>
                                 </div>
                               </div>
-
-                              {/* list komentar (placeholder) */}
-                              <div className="pl-11 flex flex-col gap-4">
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-[10px] font-bold text-primary transition-colors duration-500">@sovereign_user</span>
-                                  <p className="text-[11px] text-slate-300 leading-relaxed">this vibe is real. 100% locked.</p>
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </ResonanceCard>
-                  ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </ResonanceCard>
+                    )
+                  })}
                   <div className="h-20"></div>
                 </motion.div>
               )}
               {activeTab === 'profile' && (
                 <motion.div className="flex flex-col items-center">
-                  <ResonanceCard>
+                   <ResonanceCard style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor?.replace(/ /g, ', ')}}>
                     <div className="flex flex-col items-center text-center">
                       <div 
                         className="relative group mb-6 cursor-pointer"
