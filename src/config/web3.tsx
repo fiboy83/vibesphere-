@@ -1,15 +1,18 @@
-import { defaultWagmiConfig } from '@web3modal/wagmi/react';
+import { createConfig, http } from 'wagmi';
+import { walletConnect, injected } from 'wagmi/connectors';
 import { defineChain } from 'viem';
 
-// 1. Get projectID at https://cloud.walletconnect.com
 export const projectId = '8d221f109724c678bf97f2382983376c';
 
-// 2. Create wagmiConfig
+if (!projectId) {
+  throw new Error('VITE_PROJECT_ID is not set');
+}
+
 export const metadata = {
   name: 'vibesphere',
   description: 'pharos social layer',
-  url: 'https://web3modal.com', // origin must match your domain & subdomain
-  icons: []
+  url: 'https://web3modal.com',
+  icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
 const pharosTestnet = defineChain({
@@ -24,6 +27,9 @@ const pharosTestnet = defineChain({
     default: {
       http: ['https://rpc.atlantic.pharos.network'],
     },
+     public: {
+      http: ['https://rpc.atlantic.pharos.network'],
+    },
   },
   blockExplorers: {
     default: { name: 'Pharos Scan', url: 'https://pharos-testnet.socialscan.io' },
@@ -33,8 +39,14 @@ const pharosTestnet = defineChain({
 
 export const chains = [pharosTestnet] as const;
 
-export const wagmiConfig = defaultWagmiConfig({
+export const wagmiConfig = createConfig({
   chains,
-  projectId,
-  metadata,
+  transports: {
+    [pharosTestnet.id]: http()
+  },
+  connectors: [
+    walletConnect({ projectId, metadata, showQrModal: false }),
+    injected({ shimDisconnect: true }),
+  ],
+  ssr: true,
 });
