@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { createPublicClient, http, formatEther, parseEther } from 'viem';
+import { pharosTestnet } from '@/components/providers/privy-provider';
 
 
 // --- PHAROS CHAIN ID ---
@@ -63,6 +65,8 @@ export default function VibesphereApp() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [showSecurityHint, setShowSecurityHint] = useState(false);
+  const [balance, setBalance] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
   const { ready, authenticated, login, logout } = usePrivy();
@@ -70,8 +74,29 @@ export default function VibesphereApp() {
   const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
   const isConnected = ready && authenticated && !!wallet;
   
-  // As per instructions, display a static balance
-  const balanceData = isConnected ? { formatted: '0.01', symbol: 'PHRS' } : null;
+  // --- REAL-TIME BALANCE ---
+  useEffect(() => {
+    if (wallet?.address) {
+      const publicClient = createPublicClient({
+        chain: pharosTestnet,
+        transport: http('https://rpc.atlantic.pharos.network'),
+      });
+      const fetchBalance = async () => {
+        try {
+          const balanceValue = await publicClient.getBalance({ address: wallet.address });
+          setBalance(formatEther(balanceValue));
+        } catch (error) {
+          console.error("failed to fetch balance:", error);
+          setBalance('0.00');
+        }
+      }
+      fetchBalance();
+      const interval = setInterval(fetchBalance, 6000); // Poll every 6 seconds
+      return () => clearInterval(interval);
+    }
+  }, [wallet?.address]);
+
+  const balanceData = isConnected && balance !== null ? { formatted: balance, symbol: 'PHRS' } : null;
 
   const handleLogin = async () => {
     setShowSecurityHint(false);
@@ -106,22 +131,34 @@ export default function VibesphereApp() {
     }
   };
 
-  const handleSendPHAR = async () => {
+  const handleSend = async () => {
+    if (!wallet || !recipient || !amount) {
+      alert("recipient and amount are required.");
+      return;
+    }
+
+    setIsSending(true);
     try {
-      if (!recipient || !amount) {
-        alert("Recipient and amount are required.");
-        return;
-      }
-      console.log(`sending ${amount} PHRS to ${recipient}...`);
-      // In a real app, this is where you'd use the wallet's provider to send a transaction
-      // e.g., const provider = await wallet.getEthersProvider();
-      alert("transaction broadcasted to pharos testnet!");
+      await wallet.switchChain(PHAROS_CHAIN_ID);
+
+      const transaction = {
+        to: recipient as `0x${string}`,
+        chainId: PHAROS_CHAIN_ID,
+        value: parseEther(amount),
+      };
+      
+      const txHash = await wallet.sendTransaction(transaction);
+      console.log('transaction sent:', txHash);
+      alert(`transaction broadcasted!\nview on explorer: https://pharos-testnet.socialscan.io/tx/${txHash}`);
+      
       setShowSendModal(false);
       setRecipient("");
       setAmount("");
     } catch (error) {
-      console.error("Send PHRS Error:", error)
-      alert("transaction failed. check your balance.");
+      console.error("send phrs error:", error);
+      alert("transaction failed. check console for details.");
+    } finally {
+      setIsSending(false);
     }
   };
   
@@ -481,7 +518,7 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {balanceData ? parseFloat(balanceData.formatted).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '0.00'} <span className="text-sm font-light not-italic text-purple-400">{balanceData?.symbol}</span>
+                        {balanceData ? parseFloat(balanceData.formatted).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '...'} <span className="text-sm font-light not-italic text-purple-400">{balanceData?.symbol}</span>
                       </h3>
                       <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
 
@@ -519,30 +556,14 @@ export default function VibesphereApp() {
 
                     {/* 2. transaction history */}
                     <div className="mt-12 flex flex-col gap-4">
-                        <div className="flex justify-between items-center px-2">
-                            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
-                            {wallet?.address && <a href={`https://pharos-testnet.socialscan.io/address/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
-                        </div>
-                        
-                        {[
-                            { type: 'receive', amount: '1200.5', status: 'success', hash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef' },
-                            { type: 'send', amount: '50.0', status: 'success', hash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' },
-                            { type: 'send', amount: '10.5', status: 'pending', hash: '0x67890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234' },
-                        ].map((tx, index) => (
-                            <a key={index} href={`https://pharos-testnet.socialscan.io/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                                    {tx.type === 'receive' ? <ArrowDownLeft size={20} className="text-green-400" /> : <ArrowUpRight size={20} className="text-red-400" />}
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-sm font-bold lowercase">{tx.type}</h4>
-                                    <p className="text-[10px] text-slate-400 font-mono">{tx.amount} PHRS</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-xs font-mono lowercase ${tx.status === 'success' ? 'text-green-400/80' : 'text-yellow-400/80'}`}>{tx.status}</span>
-                                  {tx.status === 'success' ? <CheckCircle size={16} className="text-green-400/80" /> : <Clock size={16} className="text-yellow-400/80" />}
-                                </div>
-                            </a>
-                        ))}
+                      <div className="flex justify-between items-center px-2">
+                          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
+                          {wallet?.address && <a href={`https://pharos-testnet.socialscan.io/address/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all on explorer</a>}
+                      </div>
+                      
+                      <div className="flex items-center gap-4 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group justify-center text-center">
+                        <p className="text-sm text-slate-400 font-mono lowercase">full transaction history is available on the block explorer.</p>
+                      </div>
                     </div>
 
                     <AnimatePresence>
@@ -620,7 +641,13 @@ export default function VibesphereApp() {
                               onChange={(e) => setAmount(e.target.value)}
                               className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-6 text-[10px] font-mono focus:outline-none focus:border-purple-500"
                             />
-                            <button onClick={handleSendPHAR} className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest">confirm send</button>
+                            <button 
+                              onClick={handleSend} 
+                              disabled={isSending}
+                              className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                            >
+                              {isSending ? 'sending...' : 'confirm send'}
+                            </button>
                             <button onClick={() => setShowSendModal(false)} className="w-full mt-4 text-[10px] font-mono text-slate-500 uppercase">cancel</button>
                           </motion.div>
                         </motion.div>

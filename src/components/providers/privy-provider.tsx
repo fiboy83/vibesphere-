@@ -4,7 +4,7 @@ import { PrivyProvider } from '@privy-io/react-auth';
 import { defineChain } from 'viem';
 import { useState, useEffect } from 'react';
 
-const pharosTestnet = defineChain({
+export const pharosTestnet = defineChain({
   id: 237,
   name: 'Pharos Atlantic Testnet',
   nativeCurrency: {
