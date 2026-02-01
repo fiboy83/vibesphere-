@@ -66,7 +66,7 @@ export default function VibesphereApp() {
 
   // --- CORE SESSION & PROFILE ENGINE (WAGMI + Web3Modal) ---
   const { open: openWeb3Modal } = useWeb3Modal();
-  const { address, isConnected, chainId } = useAccount();
+  const { address, isConnected, isConnecting, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const { data: balanceData } = useBalance({ address });
   const { switchChain } = useSwitchChain();
@@ -95,9 +95,8 @@ export default function VibesphereApp() {
   };
   
   const handleConnect = async () => {
-    // Clear stale session data to prevent connection issues
-    localStorage.removeItem('walletconnect');
-    console.log("cleared walletconnect session data.");
+    // localStorage cleanup is now in config/web3.tsx
+    console.log("attempting to connect...");
     try {
       // Delay to ensure window focus before modal is triggered
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -211,11 +210,16 @@ export default function VibesphereApp() {
               </p>
 
               <div className="w-full flex flex-col gap-4">
-                <button 
+                <button
                   onClick={handleConnect}
-                  className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
+                  disabled={isConnecting}
+                  className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-70"
                 >
-                  connect wallet
+                  {isConnecting ? (
+                    <span className="font-light lowercase tracking-widest">connecting...</span>
+                  ) : (
+                    <span className="text-xs font-bold uppercase tracking-[0.2em]">connect wallet</span>
+                  )}
                 </button>
               </div>
 

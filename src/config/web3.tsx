@@ -2,6 +2,11 @@ import { createConfig, http } from 'wagmi';
 import { walletConnect, injected } from 'wagmi/connectors';
 import { defineChain } from 'viem';
 
+// Clean up old session storage
+if (typeof window !== 'undefined') {
+  ['wagmi.store', 'wagmi.connected', 'walletconnect', '@w3m/connected_wallet'].forEach(key => localStorage.removeItem(key));
+}
+
 export const projectId = '8d221f109724c678bf97f2382983376c';
 
 if (!projectId) {
@@ -42,11 +47,12 @@ export const chains = [pharosTestnet] as const;
 export const wagmiConfig = createConfig({
   chains,
   transports: {
-    [pharosTestnet.id]: http()
+    [pharosTestnet.id]: http('https://rpc.atlantic.pharos.network', { batch: false })
   },
   connectors: [
     walletConnect({ projectId, metadata, showQrModal: false }),
     injected({ shimDisconnect: true }),
   ],
   ssr: true,
+  multiInjectedProviderDiscovery: false,
 });
