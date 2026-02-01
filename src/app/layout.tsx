@@ -2,9 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { Web3Provider } from '@/components/providers/web3-provider';
-import { headers } from 'next/headers';
-import { wagmiConfig } from '@/config/web3';
+import { PrivyClientProvider } from '@/components/providers/privy-provider';
 
 
 export const metadata: Metadata = {
@@ -37,9 +35,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <Web3Provider>
+        <PrivyClientProvider>
           {children}
-        </Web3Provider>
+        </PrivyClientProvider>
         <Toaster />
       </body>
     </html>

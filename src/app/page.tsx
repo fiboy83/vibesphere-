@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
-import { useAccount, useDisconnect, useBalance, useSwitchChain, useConnect } from 'wagmi';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 
 // --- PHAROS CHAIN ID ---
@@ -63,31 +63,25 @@ export default function VibesphereApp() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
 
-  // --- CORE SESSION & PROFILE ENGINE (WAGMI) ---
-  const { address, isConnected, chainId } = useAccount();
-  const { disconnect } = useDisconnect();
-  const { data: balanceData } = useBalance({ address, watch: true });
-  const { switchChain } = useSwitchChain();
-  const { connect, connectors, error: connectError, isPending: isConnecting } = useConnect();
-
-  useEffect(() => {
-    if (connectError && connectError.message.includes('User rejected')) {
-      console.log("vibe check failed, try again");
-    } else if (connectError) {
-      console.error("connection failed", connectError);
-    }
-  }, [connectError]);
+  // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const wallet = wallets[0];
+  const isConnected = ready && authenticated && !!wallet;
   
-  // --- Auto-switch to Pharos Testnet ---
-  useEffect(() => {
-    if (isConnected && chainId !== PHAROS_CHAIN_ID) {
-      switchChain?.({ chainId: PHAROS_CHAIN_ID });
-    }
-  }, [isConnected, chainId, switchChain]);
+  // As per instructions, display a static balance
+  const balanceData = isConnected ? { formatted: '0.01', symbol: 'PHRS' } : null;
 
-  const disconnectWallet = () => {
+  // Auto-switch chain if the connected wallet is on the wrong chain
+  useEffect(() => {
+    if (isConnected && wallet.chainId !== `eip155:${PHAROS_CHAIN_ID}`) {
+      wallet.switchChain(PHAROS_CHAIN_ID);
+    }
+  }, [isConnected, wallet]);
+
+  const disconnectWallet = async () => {
     if (window.confirm("exit vibesphere? your sovereignty remains on-chain.")) {
-      disconnect();
+      await logout();
       setIsSidebarOpen(false);
       console.log("disconnected from nexus.");
     }
@@ -95,8 +89,8 @@ export default function VibesphereApp() {
 
   // --- WALLET FUNCTIONS ---
   const copyAddress = () => {
-    if (address) {
-      navigator.clipboard.writeText(address);
+    if (wallet?.address) {
+      navigator.clipboard.writeText(wallet.address);
       alert("wallet address copied to clipboard!");
     }
   };
@@ -108,7 +102,8 @@ export default function VibesphereApp() {
         return;
       }
       console.log(`sending ${amount} PHRS to ${recipient}...`);
-      // In a real app, this is where you'd use the walletClient to send a transaction
+      // In a real app, this is where you'd use the wallet's provider to send a transaction
+      // e.g., const provider = await wallet.getEthersProvider();
       alert("transaction broadcasted to pharos testnet!");
       setShowSendModal(false);
       setRecipient("");
@@ -168,6 +163,9 @@ export default function VibesphereApp() {
     { symbol: 'usdt', price: '$1.00', change: '0.0%', color: 'text-slate-400' },
   ];
 
+  if (!ready) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans">
@@ -200,25 +198,14 @@ export default function VibesphereApp() {
               </p>
 
               <div className="w-full flex flex-col gap-4">
-                {connectors.map((connector) => (
                   <button
-                    key={connector.id}
-                    onClick={() => {
-                        if (!connectors) return;
-                        connect({ connector });
-                    }}
-                    disabled={isConnecting}
-                    className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-70"
+                    onClick={login}
+                    className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
                   >
-                    {isConnecting ? (
-                      <span className="font-light lowercase tracking-widest">connecting...</span>
-                    ) : (
                       <span className="text-xs font-bold uppercase tracking-[0.2em]">
-                        {connector.name === 'Injected' ? 'connect browser wallet' : `connect with ${connector.name}`}
+                        connect wallet
                       </span>
-                    )}
                   </button>
-                ))}
               </div>
 
               <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
@@ -425,7 +412,7 @@ export default function VibesphereApp() {
                             <div className="mt-6 flex flex-col gap-4">
                               {/* input komentar baru */}
                               <div className="flex gap-3 items-center mb-2">
-                                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${address}`} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
+                                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${wallet?.address}`} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
                                 <div className="relative flex-1 flex items-center">
                                   <input 
                                     value={commentText}
@@ -477,7 +464,7 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {parseFloat(balanceData?.formatted || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">{balanceData?.symbol}</span>
+                        {balanceData ? parseFloat(balanceData.formatted).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '0.00'} <span className="text-sm font-light not-italic text-purple-400">{balanceData?.symbol}</span>
                       </h3>
                       <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
 
@@ -485,7 +472,7 @@ export default function VibesphereApp() {
                         <div className="flex flex-col">
                           <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
                           <code className="text-[10px] font-mono text-purple-300">
-                            {address && `${address.slice(0, 6)}...${address.slice(-4)}`}
+                            {wallet?.address && `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`}
                           </code>
                         </div>
                         <button 
@@ -517,7 +504,7 @@ export default function VibesphereApp() {
                     <div className="mt-12 flex flex-col gap-4">
                         <div className="flex justify-between items-center px-2">
                             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
-                            {address && <a href={`https://pharos-testnet.socialscan.io/address/${address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
+                            {wallet?.address && <a href={`https://pharos-testnet.socialscan.io/address/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
                         </div>
                         
                         {[
@@ -559,8 +546,8 @@ export default function VibesphereApp() {
                             <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive PHRS</h3>
                             
                             <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
-                                {address && <img 
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`} 
+                                {wallet?.address && <img 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${wallet.address}`} 
                                     alt="wallet qr"
                                     className="w-full h-full object-contain"
                                 />}
@@ -568,7 +555,7 @@ export default function VibesphereApp() {
 
                             <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8 text-center">
                               <p className="text-[10px] font-mono text-slate-400 break-all lowercase">
-                                {address}
+                                {wallet?.address}
                               </p>
                             </div>
 
