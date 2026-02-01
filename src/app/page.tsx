@@ -83,7 +83,9 @@ export default function VibesphereApp() {
       try {
         const publicClient = createPublicClient({
           chain: pharosTestnet,
-          transport: http('https://rpc.atlantic.pharos.network'),
+          transport: http('https://rpc.atlantic.pharos.network', {
+            timeout: 10000,
+          }),
         });
         const balanceValue = await publicClient.getBalance({ address: wallet.address });
         setBalance(formatEther(balanceValue));
