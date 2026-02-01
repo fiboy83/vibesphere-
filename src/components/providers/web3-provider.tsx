@@ -14,9 +14,9 @@ const projectId = '8d221f109724c678bf97f2382983376c';
 
 // 2. Create wagmiConfig
 const metadata = {
-  name: 'Vibesphere',
-  description: 'Decentralized Social-Finance DApp on Pharos Network',
-  url: 'https://vibesphere.app', // origin must match your domain & subdomain
+  name: 'vibesphere',
+  description: 'pharos social layer',
+  url: 'https://localhost:3000', // origin must match your domain & subdomain
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
