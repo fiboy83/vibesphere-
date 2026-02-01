@@ -16,7 +16,7 @@ const projectId = '8d221f109724c678bf97f2382983376c';
 const metadata = {
   name: 'vibesphere',
   description: 'pharos social layer',
-  url: 'https://localhost:3000', // origin must match your domain & subdomain
+  url: 'https://web3modal.com', // origin must match your domain & subdomain
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
@@ -45,11 +45,16 @@ const wagmiConfig = defaultWagmiConfig({
   chains,
   projectId,
   metadata,
-  //...wagmiOptions // Optional - Override createConfig parameters
 });
 
 // 3. Create modal
-createWeb3Modal({ wagmiConfig, projectId, chains });
+createWeb3Modal({
+  wagmiConfig,
+  projectId,
+  chains,
+  enableAnalytics: false,
+  enableOnramp: false,
+});
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   return (
