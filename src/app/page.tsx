@@ -62,19 +62,30 @@ export default function VibesphereApp() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
+  const [showSecurityHint, setShowSecurityHint] = useState(false);
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
   const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
-  const wallet = wallets[0];
+  const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
   const isConnected = ready && authenticated && !!wallet;
   
   // As per instructions, display a static balance
   const balanceData = isConnected ? { formatted: '0.01', symbol: 'PHRS' } : null;
 
+  const handleLogin = async () => {
+    setShowSecurityHint(false);
+    try {
+      await login();
+    } catch (error) {
+      console.error("Privy login error, possibly due to cross-origin restrictions:", error);
+      setShowSecurityHint(true);
+    }
+  };
+
   // Auto-switch chain if the connected wallet is on the wrong chain
   useEffect(() => {
-    if (isConnected && wallet.chainId !== `eip155:${PHAROS_CHAIN_ID}`) {
+    if (isConnected && wallet && wallet.chainId !== `eip155:${PHAROS_CHAIN_ID}`) {
       wallet.switchChain(PHAROS_CHAIN_ID);
     }
   }, [isConnected, wallet]);
@@ -199,7 +210,7 @@ export default function VibesphereApp() {
 
               <div className="w-full flex flex-col gap-4">
                   <button
-                    onClick={login}
+                    onClick={handleLogin}
                     className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
                   >
                       <span className="text-xs font-bold uppercase tracking-[0.2em]">
@@ -207,6 +218,12 @@ export default function VibesphereApp() {
                       </span>
                   </button>
               </div>
+
+              {showSecurityHint && (
+                <p className="mt-6 text-center text-[11px] font-light text-slate-500 lowercase">
+                  please open in a new tab for the best experience.
+                </p>
+              )}
 
               <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                 <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
