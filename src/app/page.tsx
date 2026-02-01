@@ -809,41 +809,63 @@ export default function VibesphereApp() {
           variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 100, opacity: 0 } }}
           animate={(isScrolling || isSidebarOpen) ? "hidden" : "visible"}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-lg border-t border-white/5 z-[80]"
+          className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-xl border-t border-white/5 z-[80]"
         >
-          {/* home icon */}
-          <button className="opacity-70 hover:opacity-100 transition-all">
-            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-white/60 rounded-sm"></div>
-            </div>
+          {/* home - familiar house icon */}
+          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 9.5L12 3L21 9.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V9.5Z" stroke="url(#paint0_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <defs>
+                <linearGradient id="paint0_linear" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#A855F7"/>
+                  <stop offset="1" stopColor="#3B82F6"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </button>
 
-          {/* market icon */}
-          <button className="opacity-70 hover:opacity-100 transition-all">
-            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
-              <div className="w-5 h-3 border-b-2 border-r-2 border-white/60 rotate-45"></div>
-            </div>
+          {/* market - familiar chart/trading icon */}
+          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 18L9 12L13 16L21 8M21 8H16M21 8V13" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <defs>
+                <linearGradient id="paint1_linear" x1="3" y1="8" x2="21" y2="18" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#A855F7"/>
+                  <stop offset="1" stopColor="#3B82F6"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </button>
 
-          {/* plus button (center) */}
-          <button className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-xl shadow-blue-500/20 active:scale-95 transition-transform">
+          {/* plus button - center focus */}
+          <button className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg shadow-purple-500/20 active:scale-90 transition-transform">
             <span className="text-3xl text-white font-light">+</span>
           </button>
 
-          {/* inbok icon */}
-          <button className="opacity-70 hover:opacity-100 transition-all">
-            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
-              <div className="w-5 h-4 border-2 border-white/60 rounded-sm relative">
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/60 mt-1"></div>
-              </div>
-            </div>
+          {/* inbok - familiar mail icon */}
+          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 7L12 13L21 7M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <defs>
+                <linearGradient id="paint2_linear" x1="2" y1="4" x2="22" y2="20" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#A855F7"/>
+                  <stop offset="1" stopColor="#3B82F6"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </button>
 
-          {/* wallet icon */}
-          <button className="opacity-70 hover:opacity-100 transition-all">
-            <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
-              <div className="w-5 h-5 rounded-full border-2 border-white/60"></div>
-            </div>
+          {/* wallet - familiar card/wallet icon */}
+          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="url(#paint3_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <defs>
+                <linearGradient id="paint3_linear" x1="2" y1="6" x2="20" y2="18" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#A855F7"/>
+                  <stop offset="1" stopColor="#3B82F6"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </button>
         </motion.div>
       </>
