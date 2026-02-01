@@ -4,6 +4,10 @@ import React from 'react';
 import { createWeb3Modal, defaultWagmiConfig } from '@web3modal/wagmi/react';
 import { WagmiProvider } from 'wagmi';
 import { defineChain } from 'viem';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// 0. Set up a QueryClient
+const queryClient = new QueryClient();
 
 // 1. Get projectID at https://cloud.walletconnect.com
 const projectId = '8d221f109724c678bf97f2382983376c';
@@ -48,5 +52,11 @@ const wagmiConfig = defaultWagmiConfig({
 createWeb3Modal({ wagmiConfig, projectId, chains });
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
-  return <WagmiProvider config={wagmiConfig}>{children}</WagmiProvider>;
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
-import { useAccount, useDisconnect, useBalance, useSwitchNetwork, useNetwork } from 'wagmi';
+import { useAccount, useDisconnect, useBalance, useSwitchChain } from 'wagmi';
 
 
 // --- PHAROS CHAIN ID ---
@@ -69,14 +69,14 @@ export default function VibesphereApp() {
   const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const { data: balanceData } = useBalance({ address });
-  const { switchNetwork } = useSwitchNetwork();
+  const { switchChain } = useSwitchChain();
   
   // --- Auto-switch to Pharos Testnet ---
   useEffect(() => {
     if (isConnected && chainId !== PHAROS_CHAIN_ID) {
-      switchNetwork?.(PHAROS_CHAIN_ID);
+      switchChain?.({ chainId: PHAROS_CHAIN_ID });
     }
-  }, [isConnected, chainId, switchNetwork]);
+  }, [isConnected, chainId, switchChain]);
 
   const disconnectWallet = () => {
     if (window.confirm("exit vibesphere? your sovereignty remains on-chain.")) {
