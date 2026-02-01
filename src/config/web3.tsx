@@ -1,11 +1,8 @@
-import { createConfig, http } from 'wagmi';
+'use client';
+
+import { createConfig, http, createStorage } from 'wagmi';
 import { walletConnect, injected } from 'wagmi/connectors';
 import { defineChain } from 'viem';
-
-// Clean up old session storage
-if (typeof window !== 'undefined') {
-  ['wagmi.store', 'wagmi.connected', 'walletconnect', '@w3m/connected_wallet'].forEach(key => localStorage.removeItem(key));
-}
 
 export const projectId = '8d221f109724c678bf97f2382983376c';
 
@@ -14,8 +11,8 @@ if (!projectId) {
 }
 
 export const metadata = {
-  name: 'vibesphere atlantic',
-  description: 'pharos social layer',
+  name: 'vibesphere_atlantic',
+  description: 'Vibesphere on Pharos Atlantic',
   url: 'https://web3modal.com',
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
@@ -53,6 +50,10 @@ export const wagmiConfig = createConfig({
     walletConnect({ projectId, metadata, showQrModal: false }),
     injected({ shimDisconnect: true }),
   ],
+  storage: createStorage({
+    storage: typeof window !== 'undefined' ? window.localStorage : ({ getItem: () => null, setItem: () => {}, removeItem: () => {} }),
+    key: 'vibesphere_v2',
+  }),
   ssr: true,
   multiInjectedProviderDiscovery: false,
 });
