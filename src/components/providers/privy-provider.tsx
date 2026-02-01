@@ -14,7 +14,11 @@ export const pharosTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc.atlantic.pharos.network'],
+      http: [
+        'https://rpc.evm.pharos.testnet.cosmostation.io',
+        'https://atlantic.dplabs-internal.com',
+        'https://rpc.atlantic.pharos.network',
+      ],
     },
   },
   blockExplorers: {
