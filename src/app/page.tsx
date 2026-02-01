@@ -149,31 +149,34 @@ export default function VibesphereApp() {
       alert("Wallet address not found.");
       return;
     }
-
+  
     setIsSending(true);
     try {
-        const provider = await wallet.getEthereumProvider();
-        const walletClient = createWalletClient({
-            account: wallet.address as `0x${string}`,
-            chain: pharosTestnet,
-            transport: custom(provider)
-        });
-
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+  
+      // Get account from wallet provider to ensure we use the active account
+      const [address] = await walletClient.getAddresses();
+  
       const transaction = {
+        account: address,
         to: recipient as `0x${string}`,
         value: parseEther(amount),
       };
-      
+  
       const txHash = await walletClient.sendTransaction(transaction);
       console.log('transaction sent:', txHash);
       alert(`transaction broadcasted!\nview on explorer: https://pharos-testnet.socialscan.io/tx/${txHash}`);
-      
+  
       setShowSendModal(false);
-      setRecipient("");
-      setAmount("");
+      setRecipient('');
+      setAmount('');
     } catch (error) {
-      console.warn("send phrs error:", error);
-      alert("vibe network busy. try again later.");
+      console.warn('send phrs error:', error);
+      alert('network is tight. try opening in a new tab.');
     } finally {
       setIsSending(false);
     }
