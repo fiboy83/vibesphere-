@@ -259,6 +259,12 @@ export default function VibesphereApp() {
     },
     { id: 4, postId: 4, userId: "chrono.opn", username: "Chrono_Trader", handle: "chrono.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", color: "#f59e0b", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
   ];
+  
+  const marketData = [
+    { symbol: 'opn', price: '$1.24', change: '+5.2%', color: 'text-green-400' },
+    { symbol: 'eth', price: '$2,450.12', change: '-1.4%', color: 'text-red-400' },
+    { symbol: 'usdt', price: '$1.00', change: '0.0%', color: 'text-slate-400' },
+  ];
 
 
   return (
@@ -800,6 +806,25 @@ export default function VibesphereApp() {
                     </AnimatePresence>
                   </motion.div>
               )}
+              {activeTab === 'market' && (
+                <motion.div
+                  className="w-full max-w-md mx-auto flex flex-col gap-4"
+                >
+                  <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Iopn Testnet</h2>
+                  {marketData.map((coin) => (
+                    <div key={coin.symbol} className="p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 flex justify-between items-center">
+                      <div className="text-left">
+                        <p className="text-2xl font-light tracking-widest lowercase">{coin.symbol}</p>
+                        <p className="text-sm font-mono text-slate-400">{coin.price}</p>
+                      </div>
+                      <p className={`text-lg font-mono font-light ${coin.color}`}>{coin.change}</p>
+                    </div>
+                  ))}
+                  <p className="text-center text-xs font-mono text-blue-400 mt-12">
+                    connected to rpc iopn testnet
+                  </p>
+                </motion.div>
+              )}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -812,7 +837,7 @@ export default function VibesphereApp() {
           className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-xl border-t border-white/5 z-[80]"
         >
           {/* home - familiar house icon */}
-          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+          <button onClick={() => setActiveTab('home')} className={`p-2 transition-all ${activeTab === 'home' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 9.5L12 3L21 9.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V9.5Z" stroke="url(#paint0_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
@@ -825,7 +850,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* market - familiar chart/trading icon */}
-          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+          <button onClick={() => setActiveTab('market')} className={`p-2 transition-all ${activeTab === 'market' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 18L9 12L13 16L21 8M21 8H16M21 8V13" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
@@ -856,7 +881,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* wallet - familiar card/wallet icon */}
-          <button className="p-2 opacity-80 hover:opacity-100 transition-all">
+          <button onClick={() => setActiveTab('wallet')} className={`p-2 transition-all ${activeTab === 'wallet' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="url(#paint3_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
