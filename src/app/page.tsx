@@ -81,19 +81,13 @@ export default function VibesphereApp() {
       if (!wallet?.address) return;
       console.log("fetching balance for:", wallet.address);
       try {
-        const publicClient = createPublicClient({
-            chain: pharosTestnet,
-            transport: fallback([
-                http('https://rpc.evm.pharos.testnet.cosmostation.io'),
-                http('https://atlantic.dplabs-internal.com'),
-                http('https://rpc.atlantic.pharos.network')
-            ], {
-              rank: true,
-            }),
-        });
-        const balanceValue = await publicClient.getBalance({ address: wallet.address });
-        setBalance(formatEther(balanceValue));
-        console.log("balance updated:", formatEther(balanceValue));
+        const response = await fetch(`/api/balance?address=${wallet.address}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setBalance(data.balance);
+        console.log("balance updated:", data.balance);
       } catch (error) {
         console.warn("vibe check failed, rpc error:", error);
         setBalance('0.01'); // Fallback balance on error
