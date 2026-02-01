@@ -262,7 +262,7 @@ export default function VibesphereApp() {
 
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#050505] text-white font-sans">
       
       <AnimatePresence>
         {isAuthenticating && (
@@ -497,8 +497,28 @@ export default function VibesphereApp() {
                   </button>
                   <h2 className="text-2xl font-black lowercase italic bg-gradient-to-tr from-white to-purple-500 bg-clip-text text-transparent">vibesphere</h2>
                 </div>
-                <nav className="flex flex-col gap-8 flex-1">
-                  
+                <nav className="flex-1">
+                  <div className="flex flex-col gap-6 px-6 mt-10">
+                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                      <span className="text-xl font-light tracking-wide text-white lowercase">profil</span>
+                    </button>
+                    
+                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                      <span className="text-xl font-light tracking-wide text-white lowercase">bookmark</span>
+                    </button>
+                    
+                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                      <span className="text-xl font-light tracking-wide text-white lowercase">defi</span>
+                    </button>
+                    
+                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                      <span className="text-xl font-light tracking-wide text-white lowercase">swap</span>
+                    </button>
+                    
+                    <button className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
+                      <span className="text-xl font-light tracking-wide text-white lowercase">seting</span>
+                    </button>
+                  </div>
                 </nav>
                 <div className="mt-auto pt-6 border-t border-white/5">
                   <button onClick={handleLogout} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
