@@ -34,7 +34,7 @@ export function PrivyClientProvider({ children }: { children: React.ReactNode })
         appearance: {
           theme: 'dark',
           accentColor: '#FFFFFF',
-          showWalletLoginFirst: true,
+          showWalletLoginFirst: false,
         },
         loginMethods: ['wallet'],
         defaultChain: pharosTestnet,
