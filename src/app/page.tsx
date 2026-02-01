@@ -6,6 +6,7 @@ import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X,
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
+import { useToast } from "@/hooks/use-toast";
 
 
 // --- PHAROS CHAIN ID ---
@@ -20,18 +21,19 @@ const ResonanceCard = ({ children, themeColor, isShort = false }: { children: Re
         style={{ 
           borderColor: `${themeColor}44`, 
           boxShadow: `0 15px 40px -15px ${themeColor}33`,
+          transition: 'border-color 0.5s ease, box-shadow 0.5s ease',
         }}
         className={`relative p-8 rounded-[3rem] bg-white/[0.02] border backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] ${isShort ? 'self-start min-w-[320px]' : 'w-full'}`}
       >
         <div 
-          className="absolute -top-10 -right-10 w-32 h-32 blur-[80px] rounded-full opacity-20 pointer-events-none"
+          className="absolute -top-10 -right-10 w-32 h-32 blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"
           style={{ backgroundColor: themeColor }}
         ></div>
         
         {children}
 
         <div 
-            className="absolute bottom-6 right-6 w-3 h-3 rounded-full opacity-50"
+            className="absolute bottom-6 right-6 w-3 h-3 rounded-full opacity-50 transition-colors duration-500"
             style={{
               backgroundColor: themeColor,
               boxShadow: `0 0 12px 2px ${themeColor}`
@@ -68,13 +70,17 @@ export default function VibesphereApp() {
   const [balance, setBalance] = useState('0.00');
   const [isSending, setIsSending] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { toast } = useToast();
   
+  const themeColors = ['#a855f7', '#06b6d4', '#ef4444', '#f59e0b', '#84cc16', '#3b82f6'];
+
   // --- PROFILE STATE ENGINE ---
   const [profile, setProfile] = useState({
     username: 'Sovereign_User',
     handle: 'user.opn',
     avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`,
-    joinDate: 'vibing since now'
+    joinDate: 'vibing since now',
+    themeColor: '#a855f7',
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
@@ -92,13 +98,18 @@ export default function VibesphereApp() {
     if (wallet?.address) {
       const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
       if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
+        const parsed = JSON.parse(savedProfile);
+        if (!parsed.themeColor) {
+          parsed.themeColor = '#a855f7';
+        }
+        setProfile(parsed);
       } else {
         const defaultProfile = {
           username: 'Sovereign_User',
           handle: `${wallet.address.slice(0, 6)}.opn`,
           avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${wallet.address}&backgroundColor=a855f7`,
-          joinDate: 'vibing since now'
+          joinDate: 'vibing since now',
+          themeColor: '#a855f7',
         };
         setProfile(defaultProfile);
       }
@@ -135,7 +146,6 @@ export default function VibesphereApp() {
   }, [isConnected, wallet?.address]);
 
   const handleLogin = async () => {
-    console.log("triggering login...");
     setShowSecurityHint(false);
     setIsLoggingIn(true);
     try {
@@ -159,7 +169,6 @@ export default function VibesphereApp() {
     if (window.confirm("exit vibesphere? your sovereignty remains on-chain.")) {
       await logout();
       setIsSidebarOpen(false);
-      console.log("disconnected from nexus.");
     }
   };
 
@@ -172,7 +181,6 @@ export default function VibesphereApp() {
   };
 
   const handleSend = async () => {
-    console.log("preparing vibe transaction...");
     if (!wallet || !recipient || !amount) {
       alert("recipient and amount are required.");
       return;
@@ -218,13 +226,21 @@ export default function VibesphereApp() {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("Avatar upload process started...");
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfile(prev => ({ ...prev, avatar: reader.result as string }));
-        console.log("Avatar state updated and will be saved to localStorage.");
+        const newColor = themeColors.filter(c => c !== profile.themeColor)[Math.floor(Math.random() * (themeColors.length - 1))];
+        
+        setProfile(prev => ({ 
+          ...prev, 
+          avatar: reader.result as string,
+          themeColor: newColor 
+        }));
+
+        toast({
+          title: "vibe updated...",
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -601,7 +617,7 @@ export default function VibesphereApp() {
               )}
               {activeTab === 'profile' && (
                 <motion.div className="flex flex-col items-center">
-                  <ResonanceCard themeColor="#a855f7">
+                  <ResonanceCard themeColor={profile.themeColor}>
                     <div className="flex flex-col items-center text-center">
                       <div 
                         className="relative group mb-6 cursor-pointer"
@@ -877,7 +893,8 @@ export default function VibesphereApp() {
                     </button>
                     <button 
                         onClick={handleProfileSave} 
-                        className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all text-white"
+                        disabled={tempProfile.username === profile.username && tempProfile.joinDate === profile.joinDate}
+                        className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all text-white disabled:opacity-50"
                     >
                         save
                     </button>
