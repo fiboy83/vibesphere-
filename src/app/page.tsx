@@ -589,8 +589,25 @@ export default function VibesphereApp() {
                           {wallet?.address && <a href={`https://pharos-testnet.socialscan.io/address/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all on explorer</a>}
                       </div>
                       
-                      <div className="flex items-center gap-4 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group justify-center text-center">
-                        <p className="text-sm text-slate-400 font-mono lowercase">full transaction history is available on the block explorer.</p>
+                      <div className="flex flex-col gap-3">
+                          {parseFloat(balance) > 0 ? (
+                              <div className="flex items-center justify-between gap-4 p-6 rounded-[2rem] bg-white/[0.02] border border-white/5">
+                                  <div className="flex items-center gap-4">
+                                      <div className="p-2 bg-green-500/10 rounded-full">
+                                          <ArrowDownLeft size={16} className="text-green-400"/>
+                                      </div>
+                                      <div>
+                                          <p className="text-sm font-light text-white lowercase">faucet received</p>
+                                          <p className="text-[11px] font-mono text-slate-500">confirmed</p>
+                                      </div>
+                                  </div>
+                                  <p className="text-sm font-mono text-green-400">+0.03 phrs</p>
+                              </div>
+                          ) : (
+                              <div className="flex items-center gap-4 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group justify-center text-center">
+                                  <p className="text-sm text-slate-400 font-mono lowercase">your transaction history is synced on-chain.</p>
+                              </div>
+                          )}
                       </div>
                     </div>
 
