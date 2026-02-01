@@ -78,7 +78,7 @@ export default function VibesphereApp() {
     try {
       await login();
     } catch (error) {
-      console.error("Privy login error, possibly due to cross-origin restrictions:", error);
+      console.error("vibe check error:", error);
       setShowSecurityHint(true);
     }
   };

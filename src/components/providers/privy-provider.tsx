@@ -2,6 +2,7 @@
 
 import { PrivyProvider } from '@privy-io/react-auth';
 import { defineChain } from 'viem';
+import { useState, useEffect } from 'react';
 
 const pharosTestnet = defineChain({
   id: 237,
@@ -23,6 +24,9 @@ const pharosTestnet = defineChain({
 });
 
 export function PrivyClientProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <PrivyProvider
       appId="cml3q7qoi00btkw0cm7usfh1k"
@@ -37,7 +41,7 @@ export function PrivyClientProvider({ children }: { children: React.ReactNode })
         supportedChains: [pharosTestnet],
       }}
     >
-      {children}
+      {mounted ? children : null}
     </PrivyProvider>
   );
 }
