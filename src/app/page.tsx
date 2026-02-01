@@ -67,6 +67,7 @@ export default function VibesphereApp() {
   const [showSecurityHint, setShowSecurityHint] = useState(false);
   const [balance, setBalance] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
   const { ready, authenticated, login, logout } = usePrivy();
@@ -101,11 +102,14 @@ export default function VibesphereApp() {
   const handleLogin = async () => {
     console.log("triggering login...");
     setShowSecurityHint(false);
+    setIsLoggingIn(true);
     try {
       await login();
     } catch (error) {
       console.error("vibe check error:", error);
       setShowSecurityHint(true);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -249,11 +253,18 @@ export default function VibesphereApp() {
               <div className="w-full flex flex-col gap-4">
                   <button
                     onClick={handleLogin}
-                    className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
+                    disabled={isLoggingIn}
+                    className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-70"
                   >
+                    {isLoggingIn ? (
+                      <span className="text-xs font-light lowercase tracking-widest">
+                        connecting...
+                      </span>
+                    ) : (
                       <span className="text-xs font-bold uppercase tracking-[0.2em]">
                         connect wallet
                       </span>
+                    )}
                   </button>
               </div>
 
