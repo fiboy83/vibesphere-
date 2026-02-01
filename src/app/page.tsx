@@ -498,9 +498,7 @@ export default function VibesphereApp() {
                   <h2 className="text-2xl font-black lowercase italic bg-gradient-to-tr from-white to-purple-500 bg-clip-text text-transparent">vibesphere</h2>
                 </div>
                 <nav className="flex flex-col gap-8 flex-1">
-                  <SidebarLink icon={<User size={18} strokeWidth={1.5}/>} label="profile" onClick={() => handleNavigation('profile')} />
-                  <SidebarLink icon={<Bookmark size={18} strokeWidth={1.5}/>} label="bookmark" onClick={() => handleNavigation('bookmark')} />
-                  <SidebarLink icon={<Settings size={18} strokeWidth={1.5}/>} label="settings" onClick={() => handleNavigation('settings')} />
+                  
                 </nav>
                 <div className="mt-auto pt-6 border-t border-white/5">
                   <button onClick={handleLogout} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
@@ -782,12 +780,6 @@ export default function VibesphereApp() {
                     </AnimatePresence>
                   </motion.div>
               )}
-              {activeTab !== 'home' && activeTab !== 'wallet' && (
-                <div className="text-center pt-20">
-                  <h2 className="text-4xl font-black uppercase tracking-widest bg-gradient-to-r from-slate-300 to-slate-600 bg-clip-text text-transparent">{activeTab}</h2>
-                  <p className="text-slate-500 mt-4 font-mono">Resonance field stabilizing... content will materialize shortly.</p>
-                </div>
-              )}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -801,10 +793,8 @@ export default function VibesphereApp() {
             className="pointer-events-auto px-6 py-4 bg-black/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex gap-8 items-center shadow-2xl"
           >
             <button onClick={() => setActiveTab('home')} className={activeTab === 'home' ? "text-purple-400" : "text-slate-500"}><Home size={22} strokeWidth={1.5} /></button>
-            <button onClick={() => setActiveTab('market')} className={activeTab === 'market' ? "text-purple-400" : "text-slate-500"}><BarChart3 size={22} strokeWidth={1.5} /></button>
             <div className="bg-gradient-to-tr from-purple-500 to-cyan-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.4)]"><Plus size={24} strokeWidth={2} className="text-white" /></div>
             <button onClick={() => setActiveTab('wallet')} className={activeTab === 'wallet' ? "text-purple-400" : "text-slate-500"}><Wallet size={22} strokeWidth={1.5} /></button>
-            <button onClick={() => setActiveTab('notif')} className={activeTab === 'notif' ? "text-purple-400" : "text-slate-500"}><Bell size={22} strokeWidth={1.5} /></button>
           </motion.nav>
         </div>
       </>
