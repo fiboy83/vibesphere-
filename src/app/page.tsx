@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft, Edit2 } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -68,12 +68,49 @@ export default function VibesphereApp() {
   const [balance, setBalance] = useState('0.00');
   const [isSending, setIsSending] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // --- PROFILE STATE ENGINE ---
+  const [profile, setProfile] = useState({
+    username: 'Sovereign_User',
+    handle: 'user.opn',
+    avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`,
+    joinDate: 'vibing since now'
+  });
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
   const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
   const isConnected = ready && authenticated && !!wallet;
+  
+  // --- LOCALSTORAGE & PROFILE SYNC ---
+  useEffect(() => {
+    if (wallet?.address) {
+      const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile));
+      } else {
+        const defaultProfile = {
+          username: 'Sovereign_User',
+          handle: `${wallet.address.slice(0, 6)}.opn`,
+          avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${wallet.address}&backgroundColor=a855f7`,
+          joinDate: 'vibing since now'
+        };
+        setProfile(defaultProfile);
+      }
+    }
+  }, [wallet?.address]);
+
+  useEffect(() => {
+    if (wallet?.address && profile.handle !== 'user.opn') {
+      localStorage.setItem(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
+    }
+  }, [profile, wallet?.address]);
+  
   
   // --- REAL-TIME BALANCE ---
   useEffect(() => {
@@ -131,7 +168,7 @@ export default function VibesphereApp() {
     }
   };
 
-  // --- WALLET FUNCTIONS ---
+  // --- WALLET & PROFILE FUNCTIONS ---
   const copyAddress = () => {
     if (wallet?.address) {
       navigator.clipboard.writeText(wallet.address);
@@ -181,6 +218,32 @@ export default function VibesphereApp() {
       setIsSending(false);
     }
   };
+  
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfile(prev => ({ ...prev, avatar: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const openProfileModal = () => {
+    setTempProfile({ username: profile.username, joinDate: profile.joinDate });
+    setIsProfileModalOpen(true);
+  };
+
+  const handleProfileSave = () => {
+    setProfile(prev => ({ ...prev, username: tempProfile.username, joinDate: tempProfile.joinDate }));
+    setIsProfileModalOpen(false);
+  };
+
   
   // --- SCROLL HANDLING ---
   useEffect(() => {
@@ -299,6 +362,8 @@ export default function VibesphereApp() {
         </div>
       ) : (
       <>
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept="image/*" />
+        
         {/* --- HEADER --- */}
         <motion.header
           animate={{ y: isScrolling ? -100 : 0 }}
@@ -407,6 +472,13 @@ export default function VibesphereApp() {
                   </div>
                 </nav>
                 <div className="mt-auto pt-6 border-t border-white/5">
+                  <div className="flex items-center gap-3 mb-6 px-2">
+                    <img src={profile.avatar} alt="User Avatar" className="w-10 h-10 rounded-full border-2 border-white/10 object-cover" />
+                    <div>
+                      <p className="font-bold text-sm text-white">{profile.username}</p>
+                      <p className="text-xs text-slate-400 font-mono">@{profile.handle}</p>
+                    </div>
+                  </div>
                   <button onClick={disconnectWallet} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="1.5">
                       <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15M10 17L15 12L10 7M15 12H3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -493,7 +565,7 @@ export default function VibesphereApp() {
                             <div className="mt-6 flex flex-col gap-4">
                               {/* input komentar baru */}
                               <div className="flex gap-3 items-center mb-2">
-                                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${wallet?.address}`} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
+                                <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 object-cover" />
                                 <div className="relative flex-1 flex items-center">
                                   <input 
                                     value={commentText}
@@ -529,6 +601,36 @@ export default function VibesphereApp() {
                     </ResonanceCard>
                   ))}
                   <div className="h-20"></div>
+                </motion.div>
+              )}
+              {activeTab === 'profile' && (
+                <motion.div className="flex flex-col items-center">
+                  <ResonanceCard themeColor="#a855f7">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="relative group mb-6">
+                        <img 
+                          src={profile.avatar} 
+                          alt="User avatar" 
+                          className="w-32 h-32 rounded-full border-4 border-white/10 object-cover shadow-lg cursor-pointer transition-all duration-300 group-hover:border-purple-500/50 group-hover:scale-105"
+                          onClick={handleAvatarClick}
+                        />
+                        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-white text-xs font-bold uppercase tracking-widest">change</span>
+                        </div>
+                      </div>
+                      <h2 className="text-3xl font-black lowercase italic tracking-tighter text-white">{profile.username}</h2>
+                      <p className="text-sm font-mono text-slate-400">@{profile.handle}</p>
+                      <p className="text-xs font-mono text-slate-500 mt-4 lowercase">{profile.joinDate}</p>
+                      
+                      <button 
+                        onClick={openProfileModal}
+                        className="mt-8 flex items-center gap-2 py-2 px-6 bg-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                      >
+                        <Edit2 size={14} />
+                        edit profile
+                      </button>
+                    </div>
+                  </ResonanceCard>
                 </motion.div>
               )}
               {activeTab === 'wallet' && (
@@ -732,6 +834,60 @@ export default function VibesphereApp() {
               </p>
           </div>
         )}
+
+        <AnimatePresence>
+          {isProfileModalOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setIsProfileModalOpen(false)}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
+              >
+                <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">edit profile</h3>
+                <div className='flex flex-col gap-4'>
+                  <div>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>username</label>
+                    <input 
+                      value={tempProfile.username}
+                      onChange={(e) => setTempProfile(p => ({...p, username: e.target.value}))}
+                      className="w-full mt-1 p-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>join date</label>
+                    <input 
+                      value={tempProfile.joinDate}
+                      onChange={(e) => setTempProfile(p => ({...p, joinDate: e.target.value}))}
+                      className="w-full mt-1 p-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 mt-8">
+                    <button 
+                        onClick={() => setIsProfileModalOpen(false)}
+                        className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all text-white"
+                    >
+                        cancel
+                    </button>
+                    <button 
+                        onClick={handleProfileSave} 
+                        className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all text-white"
+                    >
+                        save
+                    </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
 
         {/* --- DOCK MENU --- */}
