@@ -8,19 +8,19 @@ import { formatEther, createWalletClient, custom, defineChain, http, createPubli
 // --- Pharos Testnet Configuration ---
 const pharosTestnet = defineChain({
   id: 237,
-  name: 'Pharos Testnet',
+  name: 'Pharos Atlantic Testnet',
   nativeCurrency: {
     decimals: 18,
     name: 'PHAROS',
-    symbol: 'PHAR',
+    symbol: 'PHRS',
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc.testnet.pharos.network'],
+      http: ['https://rpc.atlantic.pharos.network'],
     },
   },
   blockExplorers: {
-    default: { name: 'Pharos Scan', url: 'https://testnet.pharosscan.io' },
+    default: { name: 'Pharos Scan', url: 'https://pharos-testnet.socialscan.io' },
   },
   testnet: true,
 });
@@ -192,14 +192,14 @@ export default function VibesphereApp() {
         alert("Recipient and amount are required.");
         return;
       }
-      console.log(`sending ${amount} phar to ${recipient}...`);
+      console.log(`sending ${amount} PHRS to ${recipient}...`);
       // In a real app, this is where you'd use the walletClient to send a transaction
       alert("transaction broadcasted to pharos testnet!");
       setShowSendModal(false);
       setRecipient("");
       setAmount("");
     } catch (error) {
-      console.error("Send PHAR Error:", error)
+      console.error("Send PHRS Error:", error)
       alert("transaction failed. check your balance.");
     }
   };
@@ -248,7 +248,7 @@ export default function VibesphereApp() {
   ];
   
   const marketData = [
-    { symbol: 'phar', price: '$1.24', change: '+5.2%', color: 'text-green-400' },
+    { symbol: 'phrs', price: '$1.24', change: '+5.2%', color: 'text-green-400' },
     { symbol: 'eth', price: '$2,450.12', change: '-1.4%', color: 'text-red-400' },
     { symbol: 'usdt', price: '$1.00', change: '0.0%', color: 'text-slate-400' },
   ];
@@ -580,7 +580,7 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {parseFloat(balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">phar</span>
+                        {parseFloat(balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">PHRS</span>
                       </h3>
                       <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
 
@@ -634,7 +634,7 @@ export default function VibesphereApp() {
                                 </div>
                                 <div className="flex-1">
                                     <h4 className="text-sm font-bold lowercase">{tx.type}</h4>
-                                    <p className="text-[10px] text-slate-400 font-mono">{tx.amount} phar</p>
+                                    <p className="text-[10px] text-slate-400 font-mono">{tx.amount} PHRS</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className={`text-xs font-mono lowercase ${tx.status === 'success' ? 'text-green-400/80' : 'text-yellow-400/80'}`}>{tx.status}</span>
@@ -659,7 +659,7 @@ export default function VibesphereApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 flex flex-col items-center shadow-2xl"
                           >
-                            <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive phar</h3>
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive PHRS</h3>
                             
                             <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
                                 {account && <img 
@@ -705,7 +705,7 @@ export default function VibesphereApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
                           >
-                            <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">send phar</h3>
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">send PHRS</h3>
                             <input 
                               placeholder="recipient address (0x...)"
                               value={recipient}
@@ -731,7 +731,7 @@ export default function VibesphereApp() {
                 <motion.div
                   className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
-                  <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Testnet</h2>
+                  <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Atlantic Testnet</h2>
                   {marketData.map((coin) => (
                     <div key={coin.symbol} className="p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 flex justify-between items-center">
                       <div className="text-left">
@@ -756,7 +756,7 @@ export default function VibesphereApp() {
         {account && (
           <div className="fixed bottom-24 left-6 z-50 pointer-events-none">
               <p className="text-blue-400 text-[10px] font-mono lowercase bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-blue-400/20">
-                  network: pharos testnet
+                  network: pharos atlantic testnet
               </p>
           </div>
         )}
