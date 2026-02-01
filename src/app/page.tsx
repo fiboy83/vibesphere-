@@ -5,22 +5,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ClipboardList } from 'lucide-react';
 import { formatEther, createWalletClient, custom, defineChain, http } from 'viem';
 
-// --- IOPN Testnet Configuration ---
-const iopnTestnet = defineChain({
-  id: 4202,
-  name: 'IOPN Testnet',
+// --- Pharos Testnet Configuration ---
+const pharosTestnet = defineChain({
+  id: 237,
+  name: 'Pharos Testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'IOPN',
-    symbol: 'OPN',
+    name: 'PHAROS',
+    symbol: 'PHAR',
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc-testnet.iopn.io'],
+      http: ['https://rpc.testnet.pharos.network'],
     },
   },
   blockExplorers: {
-    default: { name: 'IOPN Explorer', url: 'https://explorer-testnet.iopn.io' },
+    default: { name: 'Pharos Scan', url: 'https://testnet.pharosscan.io' },
   },
   testnet: true,
 });
@@ -103,13 +103,13 @@ export default function VibesphereApp() {
       const [address] = await walletClient.requestAddresses();
       
       const chainId = await walletClient.getChainId();
-      if (chainId !== iopnTestnet.id) {
+      if (chainId !== pharosTestnet.id) {
         try {
-          await walletClient.switchChain({ id: iopnTestnet.id });
+          await walletClient.switchChain({ id: pharosTestnet.id });
         } catch (switchError: any) {
           // This error code indicates that the chain has not been added to MetaMask.
           if (switchError.code === 4902) {
-            await walletClient.addChain({ chain: iopnTestnet });
+            await walletClient.addChain({ chain: pharosTestnet });
           } else {
             throw switchError;
           }
@@ -140,7 +140,7 @@ export default function VibesphereApp() {
     if (account) {
       const fetchBalance = async () => {
         try {
-          const rpcTarget = "https://rpc-testnet.iopn.io";
+          const rpcTarget = "https://rpc.testnet.pharos.network";
           const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rpcTarget)}`;
 
           const response = await fetch(proxyUrl, {
@@ -158,7 +158,7 @@ export default function VibesphereApp() {
               const json = await response.json();
               if (json.error) throw new Error(`RPC Error: ${json.error.message}`);
               setBalance(formatEther(BigInt(json.result)));
-              console.log("balance synced from iopn.");
+              console.log("balance synced from pharos.");
           } else {
               throw new Error(`RPC request failed with status ${response.status}`);
           }
@@ -199,20 +199,20 @@ export default function VibesphereApp() {
     }
   };
 
-  const handleSendOPN = async () => {
+  const handleSendPHAR = async () => {
     try {
       if (!recipient || !amount) {
         alert("Recipient and amount are required.");
         return;
       }
-      console.log(`sending ${amount} opn to ${recipient}...`);
+      console.log(`sending ${amount} phar to ${recipient}...`);
       // In a real app, this is where you'd use the walletClient to send a transaction
-      alert("transaction broadcasted to iopn testnet!");
+      alert("transaction broadcasted to pharos testnet!");
       setShowSendModal(false);
       setRecipient("");
       setAmount("");
     } catch (error) {
-      console.error("Send OPN Error:", error)
+      console.error("Send PHAR Error:", error)
       alert("transaction failed. check your balance.");
     }
   };
@@ -251,17 +251,17 @@ export default function VibesphereApp() {
   };
   
   const feedData = [
-    { id: 1, postId: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", color: "#a855f7", content: "GM OPN Fam! The sovereign vibes are strong today.", type: "short", commentCount: 12, repostCount: 5, likeCount: 42 },
-    { id: 2, postId: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", color: "#06b6d4", content: "Just deployed a new DApp on OPN... the speed is unreal. Year 3000 is now.", type: "medium", commentCount: 8, repostCount: 2, likeCount: 28 },
+    { id: 1, postId: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", color: "#a855f7", content: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "short", commentCount: 12, repostCount: 5, likeCount: 42 },
+    { id: 2, postId: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", color: "#06b6d4", content: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "medium", commentCount: 8, repostCount: 2, likeCount: 28 },
     { id: 3, postId: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", color: "#ef4444", 
-      content: `New governance proposal OIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
+      content: `New governance proposal PIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
       type: "long" , commentCount: 34, repostCount: 15, likeCount: 99
     },
     { id: 4, postId: 4, userId: "chrono.opn", username: "Chrono_Trader", handle: "chrono.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", color: "#f59e0b", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
   ];
   
   const marketData = [
-    { symbol: 'opn', price: '$1.24', change: '+5.2%', color: 'text-green-400' },
+    { symbol: 'phar', price: '$1.24', change: '+5.2%', color: 'text-green-400' },
     { symbol: 'eth', price: '$2,450.12', change: '-1.4%', color: 'text-red-400' },
     { symbol: 'usdt', price: '$1.00', change: '0.0%', color: 'text-slate-400' },
   ];
@@ -587,7 +587,7 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {parseFloat(balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">opn</span>
+                        {parseFloat(balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">phar</span>
                       </h3>
                       <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
 
@@ -632,7 +632,7 @@ export default function VibesphereApp() {
                       </div>
 
                       {[
-                        { name: 'sovereign', symbol: 'opn', balance: '1,240.50', color: 'from-purple-500' },
+                        { name: 'pharos', symbol: 'phar', balance: '1,240.50', color: 'from-purple-500' },
                         { name: 'bitcoin', symbol: 'btc', balance: '0.042', color: 'from-orange-500' },
                         { name: 'ethereum', symbol: 'eth', balance: '1.25', color: 'from-blue-500' }
                       ].map((asset) => (
@@ -664,7 +664,7 @@ export default function VibesphereApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 flex flex-col items-center shadow-2xl"
                           >
-                            <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive opn</h3>
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive phar</h3>
                             
                             <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
                                 <img 
@@ -710,7 +710,7 @@ export default function VibesphereApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
                           >
-                            <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">send opn</h3>
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">send phar</h3>
                             <input 
                               placeholder="recipient address (0x...)"
                               value={recipient}
@@ -724,7 +724,7 @@ export default function VibesphereApp() {
                               onChange={(e) => setAmount(e.target.value)}
                               className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-6 text-[10px] font-mono focus:outline-none focus:border-purple-500"
                             />
-                            <button onClick={handleSendOPN} className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest">confirm send</button>
+                            <button onClick={handleSendPHAR} className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest">confirm send</button>
                             <button onClick={() => setShowSendModal(false)} className="w-full mt-4 text-[10px] font-mono text-slate-500 uppercase">cancel</button>
                           </motion.div>
                         </motion.div>
@@ -736,7 +736,7 @@ export default function VibesphereApp() {
                 <motion.div
                   className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
-                  <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Iopn Testnet</h2>
+                  <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Testnet</h2>
                   {marketData.map((coin) => (
                     <div key={coin.symbol} className="p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 flex justify-between items-center">
                       <div className="text-left">
@@ -761,7 +761,7 @@ export default function VibesphereApp() {
         {account && (
           <div className="fixed bottom-24 left-6 z-50 pointer-events-none">
               <p className="text-blue-400 text-[10px] font-mono lowercase bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-blue-400/20">
-                  network: iopn testnet
+                  network: pharos testnet
               </p>
           </div>
         )}
@@ -836,3 +836,5 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
