@@ -87,7 +87,7 @@ export default function VibesphereApp() {
           setBalance(formatEther(balanceValue));
         } catch (error) {
           console.error("failed to fetch balance:", error);
-          setBalance('0.00');
+          setBalance(null);
         }
       }
       fetchBalance();
@@ -518,9 +518,9 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {balanceData ? parseFloat(balanceData.formatted).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '...'} <span className="text-sm font-light not-italic text-purple-400">{balanceData?.symbol}</span>
+                        {balanceData ? parseFloat(balanceData.formatted).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '---'} <span className="text-sm font-light not-italic text-purple-400">{balanceData ? balanceData.symbol : 'phrs'}</span>
                       </h3>
-                      <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
+                      {balanceData && <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>}
 
                       <div className="mt-4 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
                         <div className="flex flex-col">
