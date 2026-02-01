@@ -86,8 +86,8 @@ export default function VibesphereApp() {
           const balanceValue = await publicClient.getBalance({ address: wallet.address });
           setBalance(formatEther(balanceValue));
         } catch (error) {
-          console.error("failed to fetch balance:", error);
-          setBalance(null);
+          console.error("vibe check failed, rpc error:", error);
+          setBalance('0.00');
         }
       }
       fetchBalance();
@@ -99,6 +99,7 @@ export default function VibesphereApp() {
   const balanceData = isConnected && balance !== null ? { formatted: balance, symbol: 'PHRS' } : null;
 
   const handleLogin = async () => {
+    console.log("triggering login...");
     setShowSecurityHint(false);
     try {
       await login();
