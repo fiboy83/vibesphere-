@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft, Edit2 } from 'lucide-react';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -131,6 +131,16 @@ export default function VibesphereApp() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
   
+  // --- COMPOSER STATE ---
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [composerTab, setComposerTab] = useState<'media' | 'tekt' | 'artikel'>('tekt');
+  const [composerText, setComposerText] = useState('');
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+
+  
   // --- PROFILE STATE ENGINE ---
   const [profile, setProfile] = useState({
     username: 'Sovereign_User',
@@ -143,6 +153,18 @@ export default function VibesphereApp() {
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- FEED STATE ---
+  const initialFeedData = [
+    { id: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 12, repostCount: 5, likeCount: 42, media: null },
+    { id: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", text: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "tekt", commentCount: 8, repostCount: 2, likeCount: 28, media: null },
+    { id: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", 
+      text: `New governance proposal PIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
+      type: "artikel" , commentCount: 34, repostCount: 15, likeCount: 99, media: null
+    },
+    { id: 4, userId: "user.opn", username: "Sovereign_User", handle: "user.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", text: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "tekt", commentCount: 18, repostCount: 3, likeCount: 66, media: null },
+  ];
+  const [feed, setFeed] = useState(initialFeedData);
+
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
   const { ready, authenticated, login, logout } = usePrivy();
@@ -150,15 +172,12 @@ export default function VibesphereApp() {
   const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
   const isConnected = ready && authenticated && !!wallet;
   
-  // --- LOCALSTORAGE & PROFILE SYNC ---
+  // --- LOCALSTORAGE & PROFILE/FEED SYNC ---
   useEffect(() => {
     if (wallet?.address) {
       const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
       if (savedProfile) {
         const parsed = JSON.parse(savedProfile);
-        if (!parsed.themeColor) {
-            parsed.themeColor = '262 100% 70%';
-        }
         setProfile(parsed);
       } else {
         const defaultProfile = {
@@ -170,6 +189,10 @@ export default function VibesphereApp() {
         };
         setProfile(defaultProfile);
       }
+      const savedFeed = localStorage.getItem(`vibesphere_feed_${wallet.address}`);
+      if(savedFeed) {
+        setFeed(JSON.parse(savedFeed));
+      }
     }
   }, [wallet?.address]);
 
@@ -178,6 +201,13 @@ export default function VibesphereApp() {
       localStorage.setItem(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
     }
   }, [profile, wallet?.address]);
+
+  useEffect(() => {
+    if (wallet?.address && feed !== initialFeedData) {
+      localStorage.setItem(`vibesphere_feed_${wallet.address}`, JSON.stringify(feed));
+    }
+  }, [feed, wallet?.address]);
+
 
   // --- GLOBAL THEME CONTROLLER ---
   useEffect(() => {
@@ -291,7 +321,7 @@ export default function VibesphereApp() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -349,29 +379,67 @@ export default function VibesphereApp() {
   
   const handleSendComment = (postId: number) => {
     if (commentText.trim() === "") return;
-    
-    // logika pengiriman: saat ini kita tampilkan di konsol sebagai bukti fungsi aktif
     console.log(`vibe sent to post ${postId}: ${commentText}`);
-    
-    // reset input setelah berhasil "terkirim"
     setCommentText("");
   };
+
+  const handlePost = () => {
+    let newPost: any = {
+      id: Date.now(),
+      userId: profile.handle,
+      username: profile.username,
+      handle: profile.handle,
+      avatar: profile.avatar,
+      time: 'now',
+      commentCount: 0,
+      repostCount: 0,
+      likeCount: 0,
+      vibe_color: profile.themeColor,
+      text: composerText,
+      media: null,
+    };
+
+    if (composerTab === 'media' && mediaPreview) {
+      newPost.type = 'media';
+      newPost.media = { url: mediaPreview, type: mediaType };
+    } else if (composerTab === 'tekt') {
+      newPost.type = 'tekt';
+    } else if (composerTab === 'artikel') {
+      newPost.type = 'artikel';
+    } else {
+      return; // No content
+    }
+
+    setFeed(prevFeed => [newPost, ...prevFeed]);
+    setIsComposerOpen(false);
+    resetComposer();
+  };
+
+  const resetComposer = () => {
+    setComposerText('');
+    setMediaFile(null);
+    setMediaPreview(null);
+    setMediaType(null);
+    setComposerTab('tekt');
+  };
+
+  const handleMediaFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setMediaFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMediaPreview(reader.result as string);
+        if (file.type.startsWith('video')) {
+          setMediaType('video');
+        } else {
+          setMediaType('image');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   
-  const feedData = [
-    { id: 1, postId: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", content: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "short", commentCount: 12, repostCount: 5, likeCount: 42 },
-    { id: 2, postId: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", content: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "medium", commentCount: 8, repostCount: 2, likeCount: 28 },
-    { id: 3, postId: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", 
-      content: `New governance proposal PIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
-      type: "long" , commentCount: 34, repostCount: 15, likeCount: 99
-    },
-    { id: 4, postId: 4, userId: "user.opn", username: "Sovereign_User", handle: "user.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", content: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "short", commentCount: 18, repostCount: 3, likeCount: 66 },
-  ];
-  
-  const marketData = [
-    { symbol: 'phrs', price: '$1.24', change: '+5.2%', color: 'text-green-400' },
-    { symbol: 'eth', price: '$2,450.12', change: '-1.4%', color: 'text-red-400' },
-    { symbol: 'usdt', price: '$1.00', change: '0.0%', color: 'text-slate-400' },
-  ];
 
   if (!ready) {
     return null; // or a loading spinner
@@ -442,7 +510,8 @@ export default function VibesphereApp() {
         </div>
       ) : (
       <>
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept="image/*" />
+        <input type="file" ref={fileInputRef} onChange={handleProfileFileChange} style={{ display: 'none' }} accept="image/*" />
+        <input type="file" ref={mediaInputRef} onChange={handleMediaFileChange} style={{ display: 'none' }} accept="image/*,video/*" />
         
         {/* --- HEADER --- */}
         <motion.header
@@ -587,10 +656,10 @@ export default function VibesphereApp() {
                   variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                   className="flex flex-col items-center gap-12"
                 >
-                  {feedData.map((item) => {
+                  {feed.map((item) => {
                     let cardColor = '262 100% 70%'; // Default purple fallback
                     try {
-                        if (item.handle === profile.handle && profile.themeColor) {
+                        if (item.handle === profile.handle) {
                             cardColor = profile.themeColor;
                         } else if (item.avatar) {
                             const url = new URL(item.avatar);
@@ -615,7 +684,7 @@ export default function VibesphereApp() {
                     } as React.CSSProperties;
                     
                     return (
-                      <ResonanceCard key={item.id} isShort={item.type === 'short'} style={cardStyle}>
+                      <ResonanceCard key={item.id} isShort={item.type === 'tekt'} style={cardStyle}>
                         <div className="flex justify-between items-start mb-5">
                           <div 
                             onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
@@ -636,8 +705,14 @@ export default function VibesphereApp() {
                           </button>
                         </div>
 
-                        <div className={item.type === 'long' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
-                          <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.content}</p>
+                        <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
+                          {item.media && (
+                             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                               {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
+                               {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                             </div>
+                          )}
+                          <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
                         </div>
                         
                         <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
@@ -945,6 +1020,88 @@ export default function VibesphereApp() {
           </div>
         )}
 
+        {/* --- COMPOSER MODAL --- */}
+        <AnimatePresence>
+          {isComposerOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setIsComposerOpen(false)}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 flex flex-col shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full border border-primary/50 object-cover" />
+                    <span className="text-sm font-bold lowercase">{profile.username}</span>
+                  </div>
+                  <button onClick={() => setIsComposerOpen(false)} className="p-2 rounded-full hover:bg-white/10 text-slate-400">
+                    <X size={18} />
+                  </button>
+                </div>
+                
+                {/* Composer Tabs */}
+                <div className="flex gap-2 mb-4 p-1 bg-white/5 rounded-full">
+                  <button onClick={() => setComposerTab('media')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'media' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><FileUp size={14}/>media</button>
+                  <button onClick={() => setComposerTab('tekt')} className={`flex-1 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'tekt' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><Type size={14}/>tekt</button>
+                  <button onClick={() => setComposerTab('artikel')} className={`flex-1 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'artikel' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><FileText size={14}/>artikel</button>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1">
+                  <textarea
+                    value={composerText}
+                    onChange={e => setComposerText(e.target.value)}
+                    placeholder={
+                      composerTab === 'media' ? 'add a vibe to your media...' :
+                      composerTab === 'tekt' ? 'what is your vibe...' :
+                      'share your sovereign thoughts...'
+                    }
+                    className="w-full bg-transparent text-lg text-slate-200 resize-none focus:outline-none placeholder:text-slate-600"
+                    rows={composerTab === 'artikel' ? 8 : 4}
+                  />
+
+                  {composerTab === 'media' && (
+                    <div className="mt-4">
+                      {mediaPreview ? (
+                        <div className="relative group rounded-2xl overflow-hidden border border-white/10">
+                          {mediaType === 'image' && <img src={mediaPreview} alt="media preview" className="w-full h-auto max-h-60 object-contain" />}
+                          {mediaType === 'video' && <video src={mediaPreview} className="w-full h-auto max-h-60" autoPlay muted loop playsInline />}
+                          <button onClick={() => { setMediaFile(null); setMediaPreview(null); }} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => mediaInputRef.current?.click()} className="w-full h-32 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-slate-500 hover:border-primary/50 hover:text-primary transition-colors">
+                          <Video size={24}/>
+                          <span className="text-xs font-light lowercase mt-2">upload photo or video</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                   <button 
+                      onClick={handlePost} 
+                      disabled={!composerText.trim() && !mediaFile}
+                      className="py-3 px-8 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(var(--primary-glow),0.4)] transition-all disabled:opacity-50 disabled:shadow-none"
+                    >
+                      post
+                    </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence>
           {isProfileModalOpen && (
             <motion.div 
@@ -1035,7 +1192,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* plus button - center focus */}
-          <button className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-500">
+          <button onClick={() => setIsComposerOpen(true)} className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-500">
             <span className="text-3xl text-white font-light">+</span>
           </button>
 
