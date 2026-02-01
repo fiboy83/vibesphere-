@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy } from 'lucide-react';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft } from 'lucide-react';
 import { formatEther, createWalletClient, custom, defineChain, http, createPublicClient } from 'viem';
 
 // --- Pharos Testnet Configuration ---
@@ -620,7 +620,7 @@ export default function VibesphereApp() {
                     <div className="mt-12 flex flex-col gap-4">
                         <div className="flex justify-between items-center px-2">
                             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
-                            {account && <a href={`https://testnet.pharosscan.io/address/${account}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
+                            {account && <a href={`https://pharos-testnet.socialscan.io/address/${account}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all</a>}
                         </div>
                         
                         {[
@@ -628,7 +628,7 @@ export default function VibesphereApp() {
                             { type: 'send', amount: '50.0', status: 'success', hash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' },
                             { type: 'send', amount: '10.5', status: 'pending', hash: '0x67890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234' },
                         ].map((tx, index) => (
-                            <a key={index} href={`https://testnet.pharosscan.io/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group">
+                            <a key={index} href={`https://pharos-testnet.socialscan.io/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group">
                                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
                                     {tx.type === 'receive' ? <ArrowDownLeft size={20} className="text-green-400" /> : <ArrowUpRight size={20} className="text-red-400" />}
                                 </div>
@@ -831,5 +831,7 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
 
     
