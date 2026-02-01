@@ -1,7 +1,7 @@
 'use client';
 
 import { createConfig, http } from 'wagmi';
-import { walletConnect, injected } from 'wagmi/connectors';
+import { injected, walletConnect, safe } from 'wagmi/connectors';
 import { defineChain } from 'viem';
 
 export const projectId = '8d221f109724c678bf97f2382983376c';
@@ -49,6 +49,7 @@ export const wagmiConfig = createConfig({
   connectors: [
     injected({ shimDisconnect: true }),
     walletConnect({ projectId, metadata, showQrModal: true }),
+    safe(),
   ],
   ssr: true,
   multiInjectedProviderDiscovery: false,

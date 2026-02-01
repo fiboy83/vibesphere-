@@ -100,12 +100,6 @@ export default function VibesphereApp() {
       alert("wallet address copied to clipboard!");
     }
   };
-  
-  const handleConnect = () => {
-    if (connectors[0]) {
-      connect({ connector: connectors[0] });
-    }
-  };
 
   const handleSendPHAR = async () => {
     try {
@@ -206,17 +200,25 @@ export default function VibesphereApp() {
               </p>
 
               <div className="w-full flex flex-col gap-4">
-                <button
-                  onClick={handleConnect}
-                  disabled={isConnecting}
-                  className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-70"
-                >
-                  {isConnecting ? (
-                    <span className="font-light lowercase tracking-widest">connecting...</span>
-                  ) : (
-                    <span className="text-xs font-bold uppercase tracking-[0.2em]">connect wallet</span>
-                  )}
-                </button>
+                {connectors.map((connector) => (
+                  <button
+                    key={connector.id}
+                    onClick={() => {
+                        if (!connectors) return;
+                        connect({ connector });
+                    }}
+                    disabled={isConnecting}
+                    className="w-full h-14 flex items-center justify-center py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-70"
+                  >
+                    {isConnecting ? (
+                      <span className="font-light lowercase tracking-widest">connecting...</span>
+                    ) : (
+                      <span className="text-xs font-bold uppercase tracking-[0.2em]">
+                        {connector.name === 'Injected' ? 'connect browser wallet' : `connect with ${connector.name}`}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
 
               <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
