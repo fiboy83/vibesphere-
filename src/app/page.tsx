@@ -3,8 +3,27 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BarChart3, Plus, Wallet, Bell, User, Bookmark, Settings, LogOut, ArrowLeft, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ClipboardList } from 'lucide-react';
-import { formatEther } from 'viem';
-import { mnemonicToAccount } from 'viem/accounts';
+import { formatEther, createWalletClient, custom, defineChain, http } from 'viem';
+
+// --- IOPN Testnet Configuration ---
+const iopnTestnet = defineChain({
+  id: 4202,
+  name: 'IOPN Testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'IOPN',
+    symbol: 'OPN',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc-testnet.iopn.io'],
+    },
+  },
+  blockExplorers: {
+    default: { name: 'IOPN Explorer', url: 'https://explorer-testnet.iopn.io' },
+  },
+  testnet: true,
+});
 
 // --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, themeColor, isShort = false }: { children: React.ReactNode, themeColor: string, isShort?: boolean }) => {
@@ -61,134 +80,121 @@ export default function VibesphereApp() {
   const [amount, setAmount] = useState("");
 
   // --- CORE SESSION & PROFILE ENGINE ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userProfile, setUserProfile] = useState({
-    username: "sovereign_viber",
-    address: "",
-    avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=vibe",
-    balance: "0.00"
-  });
-  const [authStep, setAuthStep] = useState('gateway'); // gateway, create, import, show-mnemonic
-  const [mnemonic, setMnemonic] = useState("");
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [account, setAccount] = useState<`0x${string}` | null>(null);
+  const [balance, setBalance] = useState("0.00");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-
-  // --- AUTH FUNCTIONS ---
-  const handleAuthSuccess = async (seedPhrase: string) => {
-    const cleanMnemonic = seedPhrase.trim().toLowerCase().replace(/\s+/g, ' ');
-
-    if (cleanMnemonic.split(/\s+/).length !== 12) {
-        alert("check your vibe: seed phrase must be 12 words.");
-        setIsAuthenticating(false); // Stop animation on error
-        return;
-    }
-    
-    try {
-        // 1. GENERATE WALLET LOCALLY
-        const account = mnemonicToAccount(cleanMnemonic);
-        
-        // 2. LOGIN IMMEDIATELY with local data
-        setUserProfile({
-            username: "viber_" + account.address.slice(2, 8),
-            address: account.address,
-            avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${account.address}`,
-            balance: "0.00"
-        });
-        setMnemonic(cleanMnemonic);
-        setIsLoggedIn(true);
-        setAuthStep('gateway');
-        console.log("local nexus active. syncing with iopn in background...");
-
-        // 3. BACKGROUND SYNC
-        try {
-            const rpcTarget = "https://rpc-testnet.iopn.io";
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rpcTarget)}`;
-
-            const response = await fetch(proxyUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    jsonrpc: "2.0",
-                    method: "eth_getBalance",
-                    params: [account.address, "latest"],
-                    id: 1
-                })
-            });
-
-            if (response.ok) {
-                const json = await response.json();
-                if (json.error) {
-                    throw new Error(`RPC Error: ${json.error.message}`);
-                }
-                const rawBalance = json.result;
-                const formattedBalance = formatEther(BigInt(rawBalance));
-
-                // Update profile with real balance from RPC
-                setUserProfile(prev => ({ ...prev, balance: formattedBalance }));
-                console.log("balance synced from iopn.");
-            } else {
-                const errorBody = await response.text();
-                throw new Error(`RPC request failed with status ${response.status}: ${errorBody}`);
-            }
-        } catch (bgError) {
-            console.warn("RPC sync failed in background, using local balance.", bgError);
-        }
-
-    } catch (error) {
-        console.error("Critical Auth Error:", error);
-        alert("vibe check failed. could not derive wallet from seed phrase.");
-        setIsAuthenticating(false); // Stop animation on error
-    }
-  };
-
-  const handleAuthWithVibe = async (mnemonic: string) => {
-    setIsAuthenticating(true);
-    
-    setTimeout(() => {
-      handleAuthSuccess(mnemonic);
-      // isAuthenticating will be set to false when isLoggedIn becomes true
-    }, 2500); 
-  };
+  // --- Viem Wallet Client ---
+  const walletClient = typeof window !== 'undefined' && window.ethereum ? createWalletClient({
+      transport: custom(window.ethereum)
+  }) : null;
   
-  const handleLogout = () => {
+  // --- AUTH FUNCTIONS ---
+  const connectWallet = async () => {
+    if (!walletClient) {
+      setError("wallet not detected. please install a browser wallet like metamask.");
+      return;
+    }
+    
+    setIsConnecting(true);
+    setError(null);
+    try {
+      const [address] = await walletClient.requestAddresses();
+      
+      const chainId = await walletClient.getChainId();
+      if (chainId !== iopnTestnet.id) {
+        try {
+          await walletClient.switchChain({ id: iopnTestnet.id });
+        } catch (switchError: any) {
+          // This error code indicates that the chain has not been added to MetaMask.
+          if (switchError.code === 4902) {
+            await walletClient.addChain({ chain: iopnTestnet });
+          } else {
+            throw switchError;
+          }
+        }
+      }
+      
+      setAccount(address);
+      console.log("nexus connected:", address);
+    } catch (err: any) {
+      setError(err.message || "an unexpected error occurred during connection.");
+      console.error("Connection Error:", err);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const disconnectWallet = () => {
     if (window.confirm("exit vibesphere? your sovereignty remains on-chain.")) {
-      setIsLoggedIn(false);
+      setAccount(null);
+      setBalance("0.00");
       setIsSidebarOpen(false);
-      setAuthStep('gateway'); // Reset auth flow for next login
-      setIsAuthenticating(false); // Ensure auth screen is hidden
       console.log("disconnected from nexus.");
     }
   };
 
+  // --- Fetch Balance on Account Change ---
+  useEffect(() => {
+    if (account) {
+      const fetchBalance = async () => {
+        try {
+          const rpcTarget = "https://rpc-testnet.iopn.io";
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rpcTarget)}`;
+
+          const response = await fetch(proxyUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                  jsonrpc: "2.0",
+                  method: "eth_getBalance",
+                  params: [account, "latest"],
+                  id: 1
+              })
+          });
+
+          if (response.ok) {
+              const json = await response.json();
+              if (json.error) throw new Error(`RPC Error: ${json.error.message}`);
+              setBalance(formatEther(BigInt(json.result)));
+              console.log("balance synced from iopn.");
+          } else {
+              throw new Error(`RPC request failed with status ${response.status}`);
+          }
+        } catch (bgError) {
+          console.warn("balance sync failed, showing 0.", bgError);
+          setBalance("0.00");
+        }
+      };
+      fetchBalance();
+    }
+  }, [account]);
+
+  // --- Listen for account changes ---
+  useEffect(() => {
+    if (typeof window.ethereum !== 'undefined') {
+      const handleAccountsChanged = (accounts: string[]) => {
+        if (accounts.length > 0) {
+          setAccount(accounts[0] as `0x${string}`);
+        } else {
+          setAccount(null);
+          setBalance("0.00");
+        }
+      };
+
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      return () => {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      };
+    }
+  }, []);
+
+
   // --- WALLET FUNCTIONS ---
-  const handleCreateWallet = () => {
-    // simulasi generate 12 kata (seed phrase)
-    const dummyMnemonic = "vibe soul orbit neon spark pulse crypto sovereign nexus logic flow wave";
-    setMnemonic(dummyMnemonic);
-    setAuthStep('show-mnemonic'); // pindah ke layar tampilkan seed phrase
-    console.log("new wallet generated locally.");
-  };
-
-  const copyToClipboard = () => {
-    if (mnemonic) {
-      navigator.clipboard.writeText(mnemonic);
-      alert("seed phrase copied to clipboard. stay safe, vibe coder.");
-    }
-  };
-
-  const pasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      setMnemonic(text);
-      console.log("seed phrase pasted.");
-    } catch (err) {
-      alert("failed to paste. please allow clipboard access.");
-    }
-  };
-
   const copyAddress = () => {
-    if (userProfile.address) {
-      navigator.clipboard.writeText(userProfile.address);
+    if (account) {
+      navigator.clipboard.writeText(account);
       alert("wallet address copied to clipboard!");
     }
   };
@@ -200,7 +206,7 @@ export default function VibesphereApp() {
         return;
       }
       console.log(`sending ${amount} opn to ${recipient}...`);
-      // In a real app, this is where you'd use a wallet client to send a transaction
+      // In a real app, this is where you'd use the walletClient to send a transaction
       alert("transaction broadcasted to iopn testnet!");
       setShowSendModal(false);
       setRecipient("");
@@ -213,7 +219,7 @@ export default function VibesphereApp() {
   
   // --- SCROLL HANDLING ---
   useEffect(() => {
-    if (!isLoggedIn) return; // Only run scroll listener when logged in
+    if (!account) return; // Only run scroll listener when logged in
     const handleScroll = () => {
       const currentY = window.scrollY;
       if (currentY > lastY && currentY > 100) {
@@ -225,13 +231,7 @@ export default function VibesphereApp() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastY, isLoggedIn]);
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      setIsAuthenticating(false);
-    }
-  }, [isLoggedIn]);
+  }, [lastY, account]);
 
 
   const handleNavigation = (target: string, params?: any) => {
@@ -271,7 +271,7 @@ export default function VibesphereApp() {
     <div className="min-h-screen bg-[#050505] text-white font-sans">
       
       <AnimatePresence>
-        {isAuthenticating && (
+        {isConnecting && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -285,7 +285,7 @@ export default function VibesphereApp() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="text-xl font-black italic lowercase tracking-[0.5em] text-white"
             >
-              vibe of sovereign
+              connecting nexus...
             </motion.h2>
             <motion.div 
               animate={{ scaleX: [0, 1, 0] }}
@@ -296,126 +296,52 @@ export default function VibesphereApp() {
         )}
       </AnimatePresence>
 
-      {!isLoggedIn ? (
+      {!account ? (
         <div className="flex items-center justify-center min-h-screen">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={authStep}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-sm mx-auto flex flex-col items-center justify-center p-8"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-sm mx-auto flex flex-col items-center justify-center p-8"
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full flex flex-col items-center"
             >
-              {authStep === 'gateway' && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="w-full flex flex-col items-center"
-                  >
-                    <div className="mb-12 relative">
-                      <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full" />
-                      <Wallet size={64} strokeWidth={1} className="text-white relative z-10" />
-                    </div>
+              <div className="mb-12 relative">
+                <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full" />
+                <Wallet size={64} strokeWidth={1} className="text-white relative z-10" />
+              </div>
 
-                    <h2 className="text-2xl font-black italic lowercase tracking-tighter mb-2">
-                      nexus login
-                    </h2>
-                    <p className="text-[11px] font-mono text-slate-500 mb-12 text-center leading-relaxed">
-                      secure your sovereignty. <br/> no email. no password. just vibe.
-                    </p>
+              <h2 className="text-2xl font-black italic lowercase tracking-tighter mb-2">
+                nexus login
+              </h2>
+              <p className="text-[11px] font-mono text-slate-500 mb-12 text-center leading-relaxed">
+                connect your sovereignty. <br/> no email. no password. just vibe.
+              </p>
 
-                    <div className="w-full flex flex-col gap-4">
-                      <button 
-                        onClick={handleCreateWallet}
-                        className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all"
-                      >
-                        create new wallet
-                      </button>
-
-                      <button 
-                        onClick={() => setAuthStep('import')}
-                        className="w-full py-4 rounded-[2rem] bg-white/5 border border-white/10 text-slate-300 text-xs font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-all"
-                      >
-                        import existing wallet
-                      </button>
-                    </div>
-
-                    <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                      <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
-                        *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
-                      </p>
-                    </div>
-                  </motion.div>
-              )}
-              {authStep === 'show-mnemonic' && (
-                <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    className="w-full"
+              <div className="w-full flex flex-col gap-4">
+                <button 
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                  className="w-full py-4 rounded-[2rem] bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all disabled:opacity-50"
                 >
-                  <motion.div className="w-full p-6 bg-white/[0.02] border border-purple-500/20 rounded-[2rem]">
-                    <h3 className="text-xs font-mono text-purple-400 mb-4 lowercase tracking-[0.2em]">your seed phrase:</h3>
-                    <div className="grid grid-cols-3 gap-2 mb-6">
-                      {mnemonic.split(' ').map((word, i) => (
-                        <div key={i} className="bg-white/5 p-2 rounded-lg text-center text-[10px] font-mono text-slate-300">
-                          {word}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <button 
-                      onClick={copyToClipboard}
-                      className="w-full py-3 mb-3 bg-white/5 border border-white/10 text-purple-400 text-[10px] font-bold uppercase rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
-                    >
-                      <Copy size={14} /> copy seed phrase
-                    </button>
-                    
-                    <button onClick={() => handleAuthWithVibe(mnemonic)} className="w-full py-3 bg-white text-black text-[10px] font-bold uppercase rounded-xl">
-                      i've saved it
-                    </button>
-                  </motion.div>
-                  <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                    <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
-                      *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
-                    </p>
-                  </div>
-                </motion.div>
+                  connect wallet
+                </button>
+              </div>
+
+              {error && (
+                  <p className="text-red-400 text-xs text-center mt-8 font-mono lowercase">{error}</p>
               )}
-              {authStep === 'import' && (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    className="w-full"
-                >
-                    <div className="relative">
-                      <textarea 
-                        value={mnemonic}
-                        onChange={(e) => setMnemonic(e.target.value)}
-                        placeholder="enter your 12 word seed phrase..."
-                        className="w-full h-32 bg-white/5 border border-white/10 rounded-[2rem] p-6 text-xs font-mono lowercase focus:outline-none focus:border-purple-500/50"
-                      />
-                      <button 
-                        onClick={pasteFromClipboard}
-                        className="absolute bottom-4 right-6 text-[10px] font-mono text-purple-400 hover:text-white uppercase flex items-center gap-1"
-                      >
-                        <ClipboardList size={14} /> paste
-                      </button>
-                    </div>
-                    
-                    <button onClick={() => handleAuthWithVibe(mnemonic)} className="w-full mt-4 py-4 bg-purple-600 text-white text-[10px] font-bold uppercase rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                      verify & import
-                    </button>
-                     <button onClick={() => setAuthStep('gateway')} className="w-full mt-4 text-purple-400 font-mono text-sm p-2 rounded-lg hover:bg-purple-500/10 transition-colors">Back to Gateway</button>
-                  <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                    <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
-                      *vibesphere does not store your seed phrase. 100% on-chain & non-custodial.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+
+              <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
+                <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                  *vibesphere is a decentralized application. 100% on-chain & non-custodial.
+                </p>
+              </div>
             </motion.div>
-          </AnimatePresence>
+          </motion.div>
         </div>
       ) : (
       <>
@@ -527,7 +453,7 @@ export default function VibesphereApp() {
                   </div>
                 </nav>
                 <div className="mt-auto pt-6 border-t border-white/5">
-                  <button onClick={handleLogout} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
+                  <button onClick={disconnectWallet} className="flex items-center gap-4 text-red-500/60 hover:text-red-500 transition">
                     <LogOut size={18} strokeWidth={1.5} />
                     <span className="text-[11px] font-mono uppercase tracking-widest">logout</span>
                   </button>
@@ -611,7 +537,7 @@ export default function VibesphereApp() {
                             <div className="mt-6 flex flex-col gap-4">
                               {/* input komentar baru */}
                               <div className="flex gap-3 items-center mb-2">
-                                <img src={userProfile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
+                                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${account}`} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
                                 <div className="relative flex-1 flex items-center">
                                   <input 
                                     value={commentText}
@@ -661,7 +587,7 @@ export default function VibesphereApp() {
                       
                       <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
                       <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {parseFloat(userProfile.balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">opn</span>
+                        {parseFloat(balance || '0.00').toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} <span className="text-sm font-light not-italic text-purple-400">opn</span>
                       </h3>
                       <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>
 
@@ -669,7 +595,7 @@ export default function VibesphereApp() {
                         <div className="flex flex-col">
                           <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
                           <code className="text-[10px] font-mono text-purple-300">
-                            {userProfile.address.slice(0, 6)}...{userProfile.address.slice(-4)}
+                            {account.slice(0, 6)}...{account.slice(-4)}
                           </code>
                         </div>
                         <button 
@@ -742,7 +668,7 @@ export default function VibesphereApp() {
                             
                             <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
                                 <img 
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${userProfile.address}`} 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${account}`} 
                                     alt="wallet qr"
                                     className="w-full h-full object-contain"
                                 />
@@ -750,7 +676,7 @@ export default function VibesphereApp() {
 
                             <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8 text-center">
                               <p className="text-[10px] font-mono text-slate-400 break-all lowercase">
-                                {userProfile.address}
+                                {account}
                               </p>
                             </div>
 
@@ -820,9 +746,11 @@ export default function VibesphereApp() {
                       <p className={`text-lg font-mono font-light ${coin.color}`}>{coin.change}</p>
                     </div>
                   ))}
-                  <p className="text-center text-xs font-mono text-blue-400 mt-12">
-                    connected to rpc iopn testnet
-                  </p>
+                  {account && (
+                    <p className="text-center text-xs font-mono text-blue-400 mt-12">
+                      connected to rpc iopn testnet
+                    </p>
+                  )}
                 </motion.div>
               )}
             </motion.div>
