@@ -8,6 +8,8 @@ import { wagmiConfig, projectId } from '@/config/web3';
 
 const queryClient = new QueryClient();
 
+// createWeb3Modal is called outside the component to ensure it's executed once
+// when the module is loaded on the client.
 createWeb3Modal({
   wagmiConfig,
   projectId,
