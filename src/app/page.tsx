@@ -574,6 +574,7 @@ export default function VibesphereApp() {
   }
 
   const focusedPostAuraColor = focusedPost ? getPostAuraColor(focusedPost.type === 'revibe' ? focusedPost.quotedPost : focusedPost) : '262 100% 70%';
+  const isFocusedPostBookmarked = focusedPost ? bookmarkedPosts.includes(focusedPost.id) : false;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans">
@@ -787,71 +788,129 @@ export default function VibesphereApp() {
         <main className="w-full max-w-4xl mx-auto pb-48 pt-28 px-6 min-h-screen">
           <AnimatePresence mode="wait">
             {focusedPost ? (
-              <motion.div
+               <motion.div
                 key="detail"
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
                 className="relative"
               >
-                <button
+                 <button
                     onClick={() => setFocusedPost(null)}
-                    className="absolute top-0 left-0 flex items-center gap-2 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
+                    className="absolute -top-10 left-0 p-2 rounded-full transition-colors hover:bg-white/10"
                     style={{color: `hsl(${focusedPostAuraColor})`}}
                 >
-                    <ArrowLeft size={16} />
-                    back
+                    <ArrowLeft size={22} strokeWidth={1.5} />
                 </button>
 
                 <div 
-                    className="relative p-8 rounded-[3rem] border mt-12"
-                    style={{
-                      '--primary': focusedPostAuraColor,
-                      '--primary-glow': focusedPostAuraColor.replace(/ /g, ', '),
-                      borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.3)`,
-                      boxShadow: `0 0 40px 0px hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.2)`
-                    } as React.CSSProperties}
+                    className="relative"
+                    style={{'--primary': focusedPostAuraColor } as React.CSSProperties}
                 >
                     <div 
                         onClick={(e) => { e.stopPropagation(); setFocusedPost(null); const userToView = {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPostAuraColor}; setViewingProfile(userToView); setActiveTab('user-profile');}}
-                        className="flex items-center gap-4 mb-6 cursor-pointer group"
+                        className="flex items-center gap-4 mb-4 cursor-pointer group"
                     >
-                        <img src={focusedPost.avatar} alt="avatar" className="w-16 h-16 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${focusedPostAuraColor})`}} />
+                        <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${focusedPostAuraColor})`}} />
                         <div>
-                        <h2 className="text-2xl font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${focusedPostAuraColor})`}}>{focusedPost.username}</h2>
-                        <p className="text-sm font-mono text-slate-400">@{focusedPost.handle} &bull; {focusedPost.time}</p>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${focusedPostAuraColor})`}}>{focusedPost.username}</h2>
+                          </div>
+                          <p className="text-sm font-mono text-slate-400">@{focusedPost.handle}</p>
                         </div>
                     </div>
-                    
-                    {focusedPost.media && (
-                        <div className="mb-6 rounded-2xl overflow-hidden border border-white/10">
-                        {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                        {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                        </div>
-                    )}
 
-                    <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                    <div className='pl-16'>
+                      {focusedPost.media && (
+                          <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                          {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                          {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                          </div>
+                      )}
+
+                      <p className="text-xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                      
+                      <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
+
+                      <div 
+                        className="flex justify-between items-center my-6 py-6 border-y"
+                        style={{borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.1)`}}
+                      >
+                          <div className="flex items-center gap-10">
+                              <button 
+                                onClick={() => {}} // Future comment focus
+                                className={`group flex items-center gap-2 transition-all text-slate-500 hover:text-primary`}
+                              >
+                                <MessageSquare size={20} strokeWidth={1.5} />
+                                <span className="text-sm font-mono">{focusedPost.commentCount}</span>
+                              </button>
+                            
+                              <button onClick={() => handleRepost(focusedPost.id)} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                                <Repeat size={22} strokeWidth={1.5} />
+                                <span className="text-sm font-mono">{focusedPost.repostCount}</span>
+                              </button>
+
+                              <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                                <Heart size={20} strokeWidth={1.5} />
+                                <span className="text-sm font-mono">{focusedPost.likeCount}</span>
+                              </button>
+                          </div>
+                          <button 
+                                onClick={() => handleToggleBookmark(focusedPost.id)}
+                                className={`group flex items-center gap-2 transition-all ${isFocusedPostBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                              >
+                                <Bookmark 
+                                  size={20} 
+                                  strokeWidth={1.5} 
+                                  className="transition-all duration-300"
+                                  fill={isFocusedPostBookmarked ? 'currentColor' : 'none'}
+                                />
+                            </button>
+                      </div>
                     
-                    <div className="mt-12 border-t border-white/[0.05] pt-8">
-                        <h3 className="text-lg font-bold lowercase tracking-widest text-slate-400 mb-6">vibe thread</h3>
-                        <div className="flex flex-col gap-4">
+                        <h3 className="text-base font-bold lowercase tracking-widest text-slate-400 mb-6">replies</h3>
+                        <div className="flex flex-col gap-6">
+                            {/* New Comment Input */}
                             <div className="flex gap-3 items-start">
-                                <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
+                                <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
                                 <div className="flex-1">
-                                    <div className="bg-white/5 p-4 rounded-xl">
-                                    <div className='flex items-center gap-2'>
-                                        <span className="text-xs font-bold" style={{color: `hsl(${profile.themeColor})`}}>@{profile.handle}</span>
-                                        <p className="text-xs text-slate-500 font-mono">&bull; now</p>
+                                    <div className="relative flex items-center">
+                                      <textarea 
+                                        value={commentText}
+                                        onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id))}
+                                        placeholder="post your reply..."
+                                        className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
+                                        rows={1}
+                                      />
+                                      <button 
+                                        onClick={() => handleSendComment(focusedPost.id)}
+                                        disabled={!commentText.trim()}
+                                        className={`absolute right-1 bottom-1 transition-colors ${
+                                          commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
+                                        }`}
+                                      >
+                                        <Send size={16} strokeWidth={2} />
+                                      </button>
                                     </div>
-                                    <p className="text-sm text-slate-300 leading-relaxed mt-1">this vibe is real. 100% locked.</p>
-                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Vibe Thread */}
+                            <div className="flex gap-3 items-start">
+                                <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${getPostAuraColor({avatar: profile.avatar, handle: profile.handle})})`}}/>
+                                <div className="flex-1">
+                                  <div className='flex items-center gap-2'>
+                                      <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor({avatar: profile.avatar, handle: profile.handle})})`}}>{profile.username}</span>
+                                      <span className="text-xs text-slate-500 font-mono">@{profile.handle} &bull; now</span>
+                                  </div>
+                                  <p className="text-base text-slate-300 leading-relaxed mt-1 font-light">this vibe is real. 100% locked.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
               </motion.div>
             ) : (
             <motion.div
@@ -909,8 +968,6 @@ export default function VibesphereApp() {
                         '--primary-glow': postAuraColor.replace(/ /g, ', '),
                     } as React.CSSProperties;
 
-                    const isBookmarked = bookmarkedPosts.includes(item.id);
-                    
                     return (
                       <ResonanceCard 
                         key={item.id} 
@@ -953,7 +1010,7 @@ export default function VibesphereApp() {
                           </button>
                         </div>
                         
-                        <div className="min-h-[40px]" onClick={(e) => {if (!focusedPost) { e.stopPropagation(); setFocusedPost(item); } }}>
+                        <div className="min-h-[40px]">
                             {item.type === 'revibe' ? (
                                 <div 
                                     className="mt-4 p-4 rounded-3xl border border-white/10" 
@@ -986,84 +1043,6 @@ export default function VibesphereApp() {
                                 </div>
                             )}
                         </div>
-                        
-                        <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]" onClick={(e) => e.stopPropagation()}>
-                           <div className="flex items-center gap-10">
-                              <button 
-                                onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
-                                className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
-                              >
-                                <MessageSquare size={18} strokeWidth={1.5} />
-                                <span className="text-[11px] font-mono">{item.commentCount}</span>
-                              </button>
-                            
-                              <button onClick={() => handleRepost(item.id)} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
-                                <Repeat size={20} strokeWidth={1.5} />
-                                <span className="text-[11px] font-mono">{item.repostCount}</span>
-                              </button>
-
-                              <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
-                                <Heart size={18} strokeWidth={1.5} />
-                                <span className="text-[11px] font-mono">{item.likeCount}</span>
-                              </button>
-                           </div>
-                           <button 
-                                onClick={() => handleToggleBookmark(item.id)}
-                                className={`group flex items-center gap-2 transition-all ${isBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
-                              >
-                                <Bookmark 
-                                  size={18} 
-                                  strokeWidth={1.5} 
-                                  className="transition-all duration-300"
-                                  fill={isBookmarked ? 'currentColor' : 'none'}
-                                />
-                            </button>
-                        </div>
-                        <AnimatePresence>
-                          {openCommentsId === item.id && (
-                            <motion.div 
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="mt-6 flex flex-col gap-4">
-                                {/* input komentar baru */}
-                                <div className="flex gap-3 items-center mb-2">
-                                  <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-primary/50 object-cover transition-colors duration-500" />
-                                  <div className="relative flex-1 flex items-center">
-                                    <input 
-                                      value={commentText}
-                                      onChange={(e) => setCommentText(e.target.value.toLowerCase())}
-                                      onKeyDown={(e) => e.key === 'Enter' && handleSendComment(item.id)}
-                                      placeholder="write your vibe..."
-                                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-xs font-mono lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
-                                    />
-                                    
-                                    <button 
-                                      onClick={() => handleSendComment(item.id)}
-                                      disabled={!commentText.trim()}
-                                      className={`absolute right-3 transition-colors ${
-                                        commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
-                                      }`}
-                                    >
-                                      <Send size={14} strokeWidth={2} />
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* list komentar (placeholder) */}
-                                <div className="pl-11 flex flex-col gap-4">
-                                  <div className="flex flex-col gap-1">
-                                    <span className="text-[10px] font-bold text-primary transition-colors duration-500">@sovereign_user</span>
-                                    <p className="text-[11px] text-slate-300 leading-relaxed">this vibe is real. 100% locked.</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </ResonanceCard>
                     )
                   })}
