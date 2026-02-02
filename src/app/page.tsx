@@ -155,12 +155,12 @@ export default function VibesphereApp() {
   // --- FEED & BOOKMARK STATE ---
   const initialFeedData = [
     { id: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 4, repostCount: 5, likeCount: 42, media: null, comments: [
+        { id: 201, userId: "alpha_vibes.opn", username: "Alpha_Vibes", handle: "alpha_vibes.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=alpha_vibes.opn&backgroundColor=10b981`, time: "5m", text: "kedaulatan digital!", commentCount: 0, repostCount: 0, likeCount: 2, bookmarked: false, comments: [] },
+        { id: 202, userId: "beta_coder.opn", username: "Beta_Coder", handle: "beta_coder.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=beta_coder.opn&backgroundColor=3b82f6`, time: "3m", text: "layout mantap bro", commentCount: 0, repostCount: 0, likeCount: 5, bookmarked: false, comments: [] },
+        { id: 203, userId: "gamma_soul.opn", username: "Gamma_Soul", handle: "gamma_soul.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gamma_soul.opn&backgroundColor=f97316`, time: "1m", text: "cek pharos rpc", commentCount: 1, repostCount: 1, likeCount: 1, bookmarked: false, comments: [] },
         { id: 101, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "1m", text: "this is fire. the future is now.", commentCount: 1, repostCount: 0, likeCount: 3, bookmarked: false, comments: [
              { id: 1011, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "now", text: "indeed it is!", commentCount: 0, repostCount: 0, likeCount: 1, bookmarked: false, comments: [] }
-        ] },
-        { id: 201, userId: "alpha_vibes.opn", username: "Alpha_Vibes", handle: "alpha_vibes.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=alpha_vibes.opn&backgroundColor=10b981`, time: "5m", text: "kedaulatan digital adalah kunci. 🚀", commentCount: 0, repostCount: 0, likeCount: 2, bookmarked: false, comments: [] },
-        { id: 202, userId: "beta_coder.opn", username: "Beta_Coder", handle: "beta_coder.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=beta_coder.opn&backgroundColor=3b82f6`, time: "3m", text: "setuju banget, vibesphere makin solid layoutnya.", commentCount: 0, repostCount: 0, likeCount: 5, bookmarked: false, comments: [] },
-        { id: 203, userId: "gamma_soul.opn", username: "Gamma_Soul", handle: "gamma_soul.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gamma_soul.opn&backgroundColor=f97316`, time: "1m", text: "apakah ini sudah terkoneksi ke pharos atlantic testnet?", commentCount: 0, repostCount: 1, likeCount: 1, bookmarked: false, comments: [] }
+        ] }
     ] },
     { id: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", text: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "tekt", commentCount: 0, repostCount: 2, likeCount: 28, media: null, comments: [] },
     { id: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", 
@@ -187,8 +187,8 @@ export default function VibesphereApp() {
   const currentView = viewStack[viewStack.length - 1];
   const { tab: activeTab, viewingProfile, focusedPost } = currentView;
   const parentView = viewStack[viewStack.length - 2];
-  const isCommentView = focusedPost && !focusedPost.type;
-  const parentPostForCommentView = isCommentView && parentView?.focusedPost ? parentView.focusedPost : null;
+  const isCommentView = focusedPost && parentView?.focusedPost;
+  const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
 
 
   const pushView = (newView: Partial<typeof currentView>) => {
@@ -467,8 +467,26 @@ export default function VibesphereApp() {
   };
 
   const handleRepost = (postId: number) => {
-    const originalPost = feed.find(p => p.id === postId);
-    if (!originalPost) return;
+    let originalPost: any = null;
+
+    // Recursive function to find a post or comment by ID
+    const findPostRecursive = (posts: any[], id: number): any | null => {
+        for (const post of posts) {
+            if (post.id === id) return post;
+            if (post.comments && post.comments.length > 0) {
+                const found = findPostRecursive(post.comments, id);
+                if (found) return found;
+            }
+        }
+        return null;
+    };
+
+    originalPost = findPostRecursive(feed, postId);
+
+    if (!originalPost) {
+        toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
+        return;
+    }
 
     const newPost = {
         id: Date.now(),
@@ -485,10 +503,21 @@ export default function VibesphereApp() {
         quotedPost: originalPost,
     };
 
+    // Recursive function to update the repost count
+    const updateFeedRecursive = (posts: any[]): any[] => {
+         return posts.map(p => {
+            if (p.id === postId) {
+                return { ...p, repostCount: p.repostCount + 1 };
+            }
+            if (p.comments && p.comments.length > 0) {
+                return { ...p, comments: updateFeedRecursive(p.comments) };
+            }
+            return p;
+        });
+    }
+
     setFeed(prevFeed => {
-        const updatedFeed = prevFeed.map(p => 
-            p.id === postId ? { ...p, repostCount: p.repostCount + 1 } : p
-        );
+        const updatedFeed = updateFeedRecursive(prevFeed);
         return [newPost, ...updatedFeed];
     });
 
@@ -796,6 +825,7 @@ export default function VibesphereApp() {
                 initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 className="fixed inset-y-0 left-0 w-64 bg-[#050505] z-[100] border-r border-white/5 p-8 flex flex-col"
+                style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor.replace(/ /g, ', ') } as React.CSSProperties}
               >
                 <div className="flex flex-col gap-6 mb-12">
                    <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors duration-500">
@@ -1090,11 +1120,11 @@ export default function VibesphereApp() {
                                             <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
                                             {/* Interaction bar for comments */}
                                             <div className="flex items-center gap-6 mt-3 -ml-2" onClick={e => e.stopPropagation()} style={{'--primary': getPostAuraColor(comment)} as React.CSSProperties}>
-                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
+                                                <button onClick={() => pushView({ focusedPost: comment })} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
                                                     <MessageSquare size={16} strokeWidth={1.5} />
                                                     <span className="text-xs font-mono">{comment.commentCount}</span>
                                                 </button>
-                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
+                                                <button onClick={() => handleRepost(comment.id)} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
                                                     <Repeat size={18} strokeWidth={1.5} />
                                                     <span className="text-xs font-mono">{comment.repostCount}</span>
                                                 </button>
@@ -1102,8 +1132,8 @@ export default function VibesphereApp() {
                                                     <Heart size={16} strokeWidth={1.5} />
                                                     <span className="text-xs font-mono">{comment.likeCount}</span>
                                                 </button>
-                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
-                                                    <Bookmark size={16} strokeWidth={1.5} />
+                                                <button onClick={() => handleToggleBookmark(comment.id)} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
+                                                    <Bookmark size={16} strokeWidth={1.5} fill={bookmarkedPosts.includes(comment.id) ? 'currentColor' : 'none'} />
                                                 </button>
                                             </div>
                                         </div>
@@ -1161,7 +1191,7 @@ export default function VibesphereApp() {
                       </ResonanceCard>
                   )}
                   {displayedFeed.map((item) => {
-                    const postAuraColor = getPostAuraColor(item.type === 'revibe' ? item.quotedPost : item);
+                    const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
                     const cardStyle = { 
                         '--primary': postAuraColor,
                         '--primary-glow': postAuraColor.replace(/ /g, ', '),
@@ -1189,8 +1219,8 @@ export default function VibesphereApp() {
                           <div 
                             onClick={(e) => { 
                                 e.stopPropagation(); 
-                                const userToView = item.type === 'revibe' ? {username: item.username, handle: item.handle, avatar: item.avatar} : {username: item.username, handle: item.handle, avatar: item.avatar}; 
-                                pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
+                                const userToView = item.type === 'revibe' ? item.quotedPost.user : item;
+                                pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
                             }}
                             className="flex items-center gap-3 cursor-pointer group"
                           >
@@ -1218,7 +1248,6 @@ export default function VibesphereApp() {
                             {item.type === 'revibe' ? (
                                 <div 
                                     className="mt-4 p-4 rounded-3xl border border-white/10" 
-                                    onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: item.quotedPost }); }}
                                     style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
                                 >
                                     <div className="flex items-center gap-3 mb-3">
@@ -1250,7 +1279,7 @@ export default function VibesphereApp() {
                         </div>
 
                         <div className="flex justify-between items-center mt-4 -mx-4">
-                            <button onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item, viewingProfile: viewingProfile }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                            <button onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <MessageSquare size={18} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{item.commentCount}</span>
                             </button>
