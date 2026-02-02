@@ -93,10 +93,6 @@ const ResonanceCard = ({ children, isShort = false, style }: { children: React.R
         ></div>
         
         {children}
-
-        <div 
-            className="absolute top-3 right-3 w-3 h-3 rounded-full bg-primary opacity-50 transition-colors duration-500 shadow-[0_0_12px_2px_hsl(var(--primary))]"
-        ></div>
       </motion.div>
     );
 };
@@ -730,9 +726,14 @@ export default function VibesphereApp() {
                               <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                             </div>
                             <div className="flex flex-col">
-                              <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
-                                {item.username}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
+                                  {item.username}
+                                </span>
+                                <div 
+                                    className="w-2 h-2 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
+                                ></div>
+                              </div>
                               <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                             </div>
                           </div>
@@ -1274,5 +1275,6 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
 
 
