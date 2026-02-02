@@ -124,7 +124,6 @@ export default function VibesphereApp() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
-  const [showSecurityHint, setShowSecurityHint] = useState(false);
   const [balance, setBalance] = useState('0.00');
   const [isSending, setIsSending] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -345,12 +344,15 @@ export default function VibesphereApp() {
   }, [isConnected, wallet?.address]);
 
   const handleLogin = async () => {
-    setShowSecurityHint(false);
     setIsLoggingIn(true);
     try {
       await login();
     } catch (error) {
-      setShowSecurityHint(true);
+      toast({
+        variant: "destructive",
+        title: "no sovereign wallet found.",
+        description: "try mises browser for a better vibe.",
+      });
     } finally {
       setIsLoggingIn(false);
     }
@@ -917,12 +919,6 @@ export default function VibesphereApp() {
                     )}
                   </button>
               </div>
-
-              {showSecurityHint && (
-                <p className="mt-6 text-center text-[11px] font-light text-slate-500 lowercase">
-                  please open in a new tab for the best experience.
-                </p>
-              )}
 
               <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                 <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
@@ -1764,8 +1760,7 @@ export default function VibesphereApp() {
 
                         </ResonanceCard>
                         )
-                    })
-                  )}
+                    }))}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
