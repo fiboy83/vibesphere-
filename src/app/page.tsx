@@ -1576,7 +1576,7 @@ export default function VibesphereApp() {
                             />
                         )}
                       
-                      <h2 className="text-3xl font-black lowercase italic tracking-tighter text-primary">{profileToShow.username}</h2>
+                      <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})` }}>{profileToShow.username}</h2>
                       <p className="text-sm font-mono text-slate-400">@{profileToShow.handle}</p>
                       
                       {profileToShow.handle === profile.handle && (
@@ -1670,9 +1670,9 @@ export default function VibesphereApp() {
                                     <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                     </div>
                                     <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-primary transition-colors duration-500">
-                                        {item.username}
+                                          {item.username}
                                         </span>
                                         <div 
                                             className="w-2 h-2 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
