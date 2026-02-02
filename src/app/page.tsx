@@ -1146,24 +1146,6 @@ export default function VibesphereApp() {
                                                 <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
                                             </div>
                                             <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
-                                            {/* Interaction bar for comments */}
-                                            <div className="flex items-center gap-6 mt-3 -ml-2" onClick={e => e.stopPropagation()} style={{'--primary': getPostAuraColor(comment)} as React.CSSProperties}>
-                                                <button onClick={() => pushView({ focusedPost: comment })} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
-                                                    <MessageSquare size={16} strokeWidth={1.5} />
-                                                    <span className="text-xs font-mono">{comment.commentCount}</span>
-                                                </button>
-                                                <button onClick={() => handleRepost(comment.id)} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
-                                                    <Repeat size={18} strokeWidth={1.5} />
-                                                    <span className="text-xs font-mono">{comment.repostCount}</span>
-                                                </button>
-                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
-                                                    <Heart size={16} strokeWidth={1.5} />
-                                                    <span className="text-xs font-mono">{comment.likeCount}</span>
-                                                </button>
-                                                <button onClick={() => handleToggleBookmark(comment.id)} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
-                                                    <Bookmark size={16} strokeWidth={1.5} fill={bookmarkedPosts.includes(comment.id) ? 'currentColor' : 'none'} />
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                 ))
@@ -1247,7 +1229,7 @@ export default function VibesphereApp() {
                           <div 
                             onClick={(e) => { 
                                 e.stopPropagation(); 
-                                const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost.user : item;
+                                const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
                                 pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
                             }}
                             className="flex items-center gap-3 cursor-pointer group"
