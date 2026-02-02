@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Link as LinkIcon, Landmark, Network } from 'lucide-react';
+import { Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -195,8 +195,6 @@ export default function VibesphereApp() {
 
 
   const pushView = (newView: Partial<typeof currentView>) => {
-    // Merge with the previous view to carry over properties like the tab when opening a focused post
-    // But if we are changing tabs (e.g. from home to profile), we want a clean slate.
     const isNewTab = newView.tab && newView.tab !== currentView.tab;
     const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null } : currentView;
     
@@ -223,13 +221,56 @@ export default function VibesphereApp() {
   const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
   const isConnected = ready && authenticated && !!wallet;
   
+  // --- STORAGE HELPERS ---
+  const safeLocalStorageSet = (key: string, value: string) => {
+    try {
+        localStorage.setItem(key, value);
+    } catch (e: any) {
+        if (e.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota exceeded. Clearing 50% of old feed data to make space.');
+            toast({
+                variant: "destructive",
+                title: "Local cache full",
+                description: "Clearing older posts to make space.",
+            });
+            
+            try {
+                const feedKey = `vibesphere_feed_${wallet?.address}`;
+                const currentFeedStr = localStorage.getItem(feedKey);
+                if (currentFeedStr) {
+                    const currentFeed = JSON.parse(currentFeedStr);
+                    if(Array.isArray(currentFeed) && currentFeed.length > 1) {
+                        const halfIndex = Math.ceil(currentFeed.length / 2);
+                        const newStoredFeed = currentFeed.slice(halfIndex); // Keep the newer half
+                        localStorage.setItem(feedKey, JSON.stringify(newStoredFeed));
+                    } else {
+                       localStorage.removeItem(feedKey);
+                    }
+                }
+                localStorage.setItem(key, value); // Retry
+            } catch (cleanupError) {
+                console.error('Failed to save to localStorage even after cleanup:', cleanupError);
+            }
+        } else {
+            console.error('Failed to save to localStorage:', e);
+        }
+    }
+  }
+
+  const saveFeedToStorage = (currentFeed: any[]) => {
+      if (!wallet?.address) return;
+      const feedToSave = currentFeed.slice(0, 20); // Keep only the 20 most recent posts
+      safeLocalStorageSet(`vibesphere_feed_${wallet.address}`, JSON.stringify(feedToSave));
+  }
+
+
   // --- LOCALSTORAGE & PROFILE/FEED/BOOKMARK SYNC ---
   useEffect(() => {
     if (wallet?.address) {
+      // Load Profile
       const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
       if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        setProfile(parsed);
+        setProfile(JSON.parse(savedProfile));
       } else {
         const defaultProfile = {
           username: 'Sovereign_User',
@@ -240,21 +281,26 @@ export default function VibesphereApp() {
         };
         setProfile(defaultProfile);
       }
+      
+      // Load Feed
       const savedFeed = localStorage.getItem(`vibesphere_feed_${wallet.address}`);
-        if (savedFeed) {
-            try {
-                const parsedFeed = JSON.parse(savedFeed);
-                setFeed(parsedFeed);
-            } catch (e) {
-                console.error("Failed to parse feed from localStorage, resetting.", e);
-                localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
-                setFeed(initialFeedData);
-            }
-        }
+      if (savedFeed) {
+          try {
+              setFeed(JSON.parse(savedFeed));
+          } catch (e) {
+              console.error("Failed to parse feed from localStorage, resetting.", e);
+              localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
+              setFeed(initialFeedData);
+          }
+      }
+      
+      // Load Bookmarks
       const savedBookmarks = localStorage.getItem(`vibesphere_bookmarks_${wallet.address}`);
       if (savedBookmarks) {
         setBookmarkedPosts(JSON.parse(savedBookmarks));
       }
+
+      // Load Likes
       const savedLikes = localStorage.getItem(`vibesphere_likes_${wallet.address}`);
       if (savedLikes) {
         setLikedPosts(JSON.parse(savedLikes));
@@ -264,66 +310,9 @@ export default function VibesphereApp() {
 
   useEffect(() => {
     if (wallet?.address && profile.handle !== 'user.opn') {
-      localStorage.setItem(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
+      safeLocalStorageSet(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
     }
   }, [profile, wallet?.address]);
-
-  useEffect(() => {
-    if (wallet?.address && feed !== initialFeedData) {
-        try {
-            const feedToSave = feed.slice(0, 20);
-            localStorage.setItem(`vibesphere_feed_${wallet.address}`, JSON.stringify(feedToSave));
-        } catch (e: any) {
-            if (e.name === 'QuotaExceededError') {
-                console.warn('LocalStorage quota exceeded. Clearing 50% of old feed data to make space.');
-                toast({
-                    variant: "destructive",
-                    title: "Local cache full",
-                    description: "Clearing older posts to make space.",
-                });
-                
-                try {
-                    const feedKey = `vibesphere_feed_${wallet.address}`;
-                    const currentFeedStr = localStorage.getItem(feedKey);
-                    if (currentFeedStr) {
-                        const currentFeed = JSON.parse(currentFeedStr);
-                        if(Array.isArray(currentFeed) && currentFeed.length > 1) {
-                            const halfIndex = Math.floor(currentFeed.length / 2);
-                            const newStoredFeed = currentFeed.slice(0, halfIndex);
-                            localStorage.setItem(feedKey, JSON.stringify(newStoredFeed));
-                        } else {
-                           localStorage.removeItem(feedKey);
-                        }
-                    }
-                    
-                    // Now retry saving the current state (which includes the new re-vibe)
-                    const feedToSave = feed.slice(0, 20);
-                    localStorage.setItem(feedKey, JSON.stringify(feedToSave));
-
-                } catch (cleanupError) {
-                    console.error('Failed to save feed to localStorage even after cleanup:', cleanupError);
-                     // Last resort: wipe the feed if cleanup fails
-                    localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
-                }
-
-            } else {
-                console.error('Failed to save feed to localStorage:', e);
-            }
-        }
-    }
-  }, [feed, wallet?.address, toast]);
-
-  useEffect(() => {
-    if (wallet?.address) {
-        localStorage.setItem(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(bookmarkedPosts));
-    }
-  }, [bookmarkedPosts, wallet?.address]);
-  
-  useEffect(() => {
-    if (wallet?.address) {
-        localStorage.setItem(`vibesphere_likes_${wallet.address}`, JSON.stringify(likedPosts));
-    }
-  }, [likedPosts, wallet?.address]);
 
 
   // --- GLOBAL THEME CONTROLLER ---
@@ -526,7 +515,6 @@ export default function VibesphereApp() {
                 return { ...item, comments: updatedComments };
             }
         }
-        // Also check in quoted post
         if (item.quotedPost) {
           const [updatedQuotedPost, quotedFound] = updateItemInFeed([item.quotedPost], itemId, updateFn);
           if (quotedFound) {
@@ -540,8 +528,11 @@ export default function VibesphereApp() {
   };
 
   // --- SOCIAL ACTIONS ---
-  const handleSendComment = (postId: number) => {
+  const handleSendComment = async (postId: number) => {
     if (commentText.trim() === "") return;
+
+    const originalFeed = JSON.parse(JSON.stringify(feed));
+    const originalFocusedPost = focusedPost ? JSON.parse(JSON.stringify(focusedPost)) : null;
 
     const newComment = {
         id: Date.now(),
@@ -582,53 +573,87 @@ export default function VibesphereApp() {
       }
     }
     setCommentText("");
+
+    try {
+        await new Promise(r => setTimeout(r, 300));
+        saveFeedToStorage(updatedFeed);
+    } catch (error) {
+        setFeed(originalFeed);
+        if (originalFocusedPost) {
+            setViewStack(prev => {
+                const newStack = [...prev];
+                newStack[newStack.length - 1] = { ...newStack[newStack.length - 1], focusedPost: originalFocusedPost };
+                return newStack;
+            });
+        }
+        toast({
+            variant: "destructive",
+            title: "vibration failed to sync. try again.",
+        });
+    }
   };
 
 
   const handleToggleBookmark = (postId: number) => {
-    setBookmarkedPosts(prev => {
-        const isBookmarked = prev.includes(postId);
-        if (isBookmarked) {
-            return prev.filter(id => id !== postId);
-        } else {
-            return [...prev, postId];
-        }
-    });
+    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
+      ? bookmarkedPosts.filter(id => id !== postId)
+      : [...bookmarkedPosts, postId];
+    
+    setBookmarkedPosts(newBookmarkedPosts);
+    if (wallet?.address) {
+      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
+    }
   };
   
-  const handleToggleLike = (postId: number) => {
+  const handleToggleLike = async (postId: number) => {
     const isLiked = likedPosts.includes(postId);
+    const originalLikedPosts = [...likedPosts];
+    const originalFeed = JSON.parse(JSON.stringify(feed)); // Deep copy for rollback
 
-    setLikedPosts(prev => {
-        if (isLiked) {
-            return prev.filter(id => id !== postId);
-        } else {
-            return [...prev, postId];
-        }
-    });
+    // Optimistic UI Update
+    const newLikedPosts = isLiked ? originalLikedPosts.filter(id => id !== postId) : [...originalLikedPosts, postId];
+    setLikedPosts(newLikedPosts);
 
     const [updatedFeed] = updateItemInFeed(feed, postId, (item) => ({
         ...item,
         likeCount: isLiked ? item.likeCount - 1 : item.likeCount + 1,
     }));
-
     setFeed(updatedFeed);
+
+    try {
+        await new Promise(r => setTimeout(r, 300));
+        if (wallet?.address) {
+            safeLocalStorageSet(`vibesphere_likes_${wallet.address}`, JSON.stringify(newLikedPosts));
+        }
+    } catch (error) {
+        setLikedPosts(originalLikedPosts);
+        setFeed(originalFeed);
+        toast({
+            variant: "destructive",
+            title: "vibration failed to sync. try again.",
+        });
+    }
   };
 
-  const handleRepost = (postId: number) => {
+  const handleRepost = async (postId: number) => {
+    const originalFeed = JSON.parse(JSON.stringify(feed));
     let originalPost: any = null;
 
-    const findItemRecursive = (items: any[]): any => {
+    const findItemRecursive = (items: any[], id: number): any => {
       for (const item of items) {
-        if (item.id === postId) return item;
+        if (item.id === id) return item;
         if (item.comments && item.comments.length > 0) {
-          const found = findItemRecursive(item.comments);
+          const found = findItemRecursive(item.comments, id);
           if (found) return found;
+        }
+        if (item.quotedPost) {
+            const found = findItemRecursive([item.quotedPost], id);
+            if(found) return found;
         }
       }
       return null;
     };
-    originalPost = findItemRecursive(feed);
+    originalPost = findItemRecursive(feed, postId);
 
     if (!originalPost) {
         toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
@@ -656,8 +681,16 @@ export default function VibesphereApp() {
     }));
     
     if (itemFound) {
-      setFeed([newPost, ...feedWithUpdatedCount]);
+      const newFeed = [newPost, ...feedWithUpdatedCount];
+      setFeed(newFeed);
       toast({ title: "vibe re-shared" });
+      try {
+          await new Promise(r => setTimeout(r, 300));
+          saveFeedToStorage(newFeed);
+      } catch (error) {
+          setFeed(originalFeed);
+          toast({ variant: "destructive", title: "vibration failed to sync. try again." });
+      }
     } else {
       toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
     }
@@ -695,7 +728,7 @@ export default function VibesphereApp() {
     setShowShareModal(false);
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     let newPost: any = {
       id: Date.now(),
       userId: profile.handle,
@@ -719,12 +752,26 @@ export default function VibesphereApp() {
     } else if (composerTab === 'artikel') {
       newPost.type = 'artikel';
     } else {
-      return; // No content
+      return; 
     }
 
-    setFeed(prevFeed => [newPost, ...prevFeed]);
+    const originalFeed = JSON.parse(JSON.stringify(feed));
+    const newFeed = [newPost, ...feed];
+    
+    setFeed(newFeed);
     setIsComposerOpen(false);
     resetComposer();
+
+    try {
+        await new Promise(r => setTimeout(r, 300));
+        saveFeedToStorage(newFeed);
+    } catch (error) {
+        setFeed(originalFeed);
+        toast({
+            variant: "destructive",
+            title: "vibration failed to sync. try again.",
+        });
+    }
   };
 
   const resetComposer = () => {
@@ -1932,7 +1979,7 @@ export default function VibesphereApp() {
                               <div className="flex items-center justify-between gap-4 p-6 rounded-[2rem] bg-white/[0.02] border border-white/5">
                                   <div className="flex items-center gap-4">
                                       <div className="p-2 bg-green-500/10 rounded-full">
-                                          <ArrowDownLeft size={16} className="text-green-400"/>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400"><path d="M12 5L12 19M19 12L12 19L5 12"/></svg>
                                       </div>
                                       <div>
                                           <p className="text-sm font-light text-white lowercase">faucet received</p>
