@@ -95,7 +95,7 @@ const ResonanceCard = ({ children, isShort = false, style }: { children: React.R
         {children}
 
         <div 
-            className="absolute bottom-6 right-6 w-3 h-3 rounded-full bg-primary opacity-50 transition-colors duration-500 shadow-[0_0_12px_2px_hsl(var(--primary))]"
+            className="absolute top-3 right-3 w-3 h-3 rounded-full bg-primary opacity-50 transition-colors duration-500 shadow-[0_0_12px_2px_hsl(var(--primary))]"
         ></div>
       </motion.div>
     );
@@ -1274,4 +1274,5 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
 
