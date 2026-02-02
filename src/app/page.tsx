@@ -85,7 +85,7 @@ const ResonanceCard = ({ children, style, onClick }: { children: React.ReactNode
       <motion.div 
         variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
         whileHover={onClick ? { y: -8, scale: 1.01 } : {}}
-        className="relative p-8 rounded-[3rem] bg-white/[0.02] border border-primary/30 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md w-full"
+        className="relative px-8 py-5 rounded-[3rem] bg-white/[0.02] border border-primary/30 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md w-full"
         style={style}
       >
         <div 
@@ -1073,7 +1073,7 @@ export default function VibesphereApp() {
                 <motion.div 
                   initial="hidden" animate="show"
                   variants={{ show: { transition: { staggerChildren: 0.15 } } }}
-                  className="flex flex-col items-center gap-12"
+                  className="flex flex-col items-center gap-8"
                 >
                   {(activeTab === 'bookmarks' || activeTab === 'user-profile') && displayedFeed.length === 0 && (
                       <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
@@ -1119,7 +1119,7 @@ export default function VibesphereApp() {
                                 <span>re-vibed by @{item.handle}</span>
                             </div>
                         )}
-                        <div className="flex justify-between items-start mb-5">
+                        <div className="flex justify-between items-start mb-4">
                           <div 
                             onClick={(e) => { 
                                 e.stopPropagation(); 
@@ -1182,7 +1182,7 @@ export default function VibesphereApp() {
                             )}
                         </div>
 
-                        <div className="flex justify-between items-center mt-6 -mx-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mt-4 -mx-4" onClick={(e) => e.stopPropagation()}>
                             <button onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item, viewingProfile: viewingProfile }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <MessageSquare size={18} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{item.commentCount}</span>
