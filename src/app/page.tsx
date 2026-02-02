@@ -80,11 +80,11 @@ const getDominantColorFromImage = (imageUrl: string, onComplete: (hslValues: str
 };
 
 // --- COMPONENT: RESONANCE CARD ---
-const ResonanceCard = ({ children, isShort = false, style }: { children: React.ReactNode, isShort?: boolean, style?: React.CSSProperties }) => {
-    return (
+const ResonanceCard = ({ children, isShort = false, style, onClick }: { children: React.ReactNode, isShort?: boolean, style?: React.CSSProperties, onClick?: () => void }) => {
+    const cardContent = (
       <motion.div 
         variants={{ hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } }}
-        whileHover={{ y: -8, scale: 1.01 }}
+        whileHover={onClick ? { y: -8, scale: 1.01 } : {}}
         className={`relative p-8 rounded-[3rem] bg-white/[0.02] border border-primary/30 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md ${isShort ? 'self-start min-w-[320px]' : 'w-full'}`}
         style={style}
       >
@@ -95,6 +95,12 @@ const ResonanceCard = ({ children, isShort = false, style }: { children: React.R
         {children}
       </motion.div>
     );
+
+    if (onClick) {
+        return <div onClick={onClick} className="cursor-pointer">{cardContent}</div>
+    }
+
+    return cardContent;
 };
 
 
@@ -165,6 +171,9 @@ export default function VibesphereApp() {
   // --- SOCIAL ACTION STATE ---
   const [showShareModal, setShowShareModal] = useState(false);
   const [postToShare, setPostToShare] = useState<any | null>(null);
+
+  // --- FOCUS MODE STATE ---
+  const [focusedPost, setFocusedPost] = useState<any | null>(null);
 
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
@@ -557,6 +566,8 @@ export default function VibesphereApp() {
     return null; // or a loading spinner
   }
 
+  const focusedPostAuraColor = focusedPost ? getPostAuraColor(focusedPost.type === 'revibe' ? focusedPost.quotedPost : focusedPost) : '262 100% 70%';
+
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans">
       
@@ -768,6 +779,67 @@ export default function VibesphereApp() {
         {/* --- MAIN CONTENT --- */}
         <main className="w-full max-w-4xl mx-auto pb-48 pt-28 px-6 min-h-screen">
           <AnimatePresence mode="wait">
+            {focusedPost ? (
+              <motion.div
+                key="detail"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                className="relative p-8 rounded-[3rem] border"
+                style={{
+                  '--primary': focusedPostAuraColor,
+                  '--primary-glow': focusedPostAuraColor.replace(/ /g, ', '),
+                  borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.3)`,
+                  boxShadow: `0 0 40px 0px hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.2)`
+                } as React.CSSProperties}
+              >
+                <button
+                    onClick={() => setFocusedPost(null)}
+                    className="absolute top-8 left-8 flex items-center gap-2 text-xs font-mono uppercase tracking-widest transition-colors"
+                    style={{color: `hsl(${profile.themeColor})`}}
+                >
+                    <ArrowLeft size={16} />
+                    back
+                </button>
+
+                <div className="pt-16 pb-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <img src={focusedPost.avatar} alt="avatar" className="w-16 h-16 rounded-full border-2" style={{borderColor: `hsl(${focusedPostAuraColor})`}} />
+                    <div>
+                      <h2 className="text-2xl font-bold text-white" style={{color: `hsl(${focusedPostAuraColor})`}}>{focusedPost.username}</h2>
+                      <p className="text-sm font-mono text-slate-400">@{focusedPost.handle} &bull; {focusedPost.time}</p>
+                    </div>
+                  </div>
+                  
+                  {focusedPost.media && (
+                     <div className="mb-6 rounded-2xl overflow-hidden border border-white/10">
+                       {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                       {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                     </div>
+                  )}
+
+                  <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                
+                  <div className="mt-12 border-t border-white/[0.05] pt-8">
+                    <h3 className="text-lg font-bold lowercase tracking-widest text-slate-400 mb-6">vibe thread</h3>
+                    {/* Comments section placeholder */}
+                     <div className="flex flex-col gap-4">
+                        <div className="flex gap-3 items-start">
+                            <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full bg-white/5 border border-primary/50 object-cover transition-colors duration-500" />
+                            <div className="flex-1">
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    <span className="text-[10px] font-bold" style={{color: `hsl(${profile.themeColor})`}}>@{profile.handle}</span>
+                                    <p className="text-[11px] text-slate-300 leading-relaxed mt-1">this vibe is real. 100% locked.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
+              </motion.div>
+            ) : (
             <motion.div
               key={activeTab}
               initial={{ opacity: 0, y: 20 }}
@@ -798,7 +870,12 @@ export default function VibesphereApp() {
                     const isBookmarked = bookmarkedPosts.includes(item.id);
                     
                     return (
-                      <ResonanceCard key={item.id} isShort={item.type === 'tekt'} style={cardStyle}>
+                      <ResonanceCard 
+                        key={item.id} 
+                        isShort={item.type === 'tekt'} 
+                        style={cardStyle}
+                        onClick={() => setFocusedPost(item)}
+                      >
                         {item.type === 'revibe' && (
                             <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2">
                                 <Repeat size={14} />
@@ -807,7 +884,7 @@ export default function VibesphereApp() {
                         )}
                         <div className="flex justify-between items-start mb-5">
                           <div 
-                            onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
+                            onClick={(e) => { e.stopPropagation(); handleNavigation('user-profile', { userId: item.userId }); }}
                             className="flex items-center gap-3 cursor-pointer group"
                           >
                             <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
@@ -825,65 +902,67 @@ export default function VibesphereApp() {
                               <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                             </div>
                           </div>
-                          <button onClick={() => handleOpenShareModal(item)} className="group p-2 -mr-2 mt-1">
+                          <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item)}} className="group p-2 -mr-2 mt-1">
                             <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                           </button>
                         </div>
                         
-                        {item.type === 'revibe' ? (
-                            <div 
-                                className="mt-4 p-4 rounded-3xl border border-white/10" 
-                                style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
-                            >
-                                <div className="flex items-center gap-3 mb-3">
-                                    <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
-                                    <div>
-                                        <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
-                                        <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                        <div onClick={(e) => e.stopPropagation()}>
+                            {item.type === 'revibe' ? (
+                                <div 
+                                    className="mt-4 p-4 rounded-3xl border border-white/10" 
+                                    style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
+                                >
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
+                                        <div>
+                                            <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
+                                            <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                                        </div>
                                     </div>
+                                    {item.quotedPost.media && (
+                                        <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
+                                            {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                            {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                        </div>
+                                    )}
+                                    <p className="text-slate-300 text-base leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
                                 </div>
-                                {item.quotedPost.media && (
-                                    <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
-                                        {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                                        {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                                    </div>
-                                )}
-                                <p className="text-slate-300 text-base leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
-                            </div>
-                        ) : (
-                            <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
-                              {item.media && (
-                                 <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-                                   {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
-                                   {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                                 </div>
-                              )}
-                              <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
-                            </div>
-                        )}
+                            ) : (
+                                <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
+                                  {item.media && (
+                                     <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                                       {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
+                                       {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                     </div>
+                                  )}
+                                  <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
+                                </div>
+                            )}
+                        </div>
                         
                         <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]">
                            <div className="flex items-center gap-10">
                               <button 
-                                onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
+                                onClick={(e) => { e.stopPropagation(); setOpenCommentsId(openCommentsId === item.id ? null : item.id); }}
                                 className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                               >
                                 <MessageSquare size={18} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.commentCount}</span>
                               </button>
                             
-                              <button onClick={() => handleRepost(item.id)} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                              <button onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
                                 <Repeat size={20} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.repostCount}</span>
                               </button>
 
-                              <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                              <button onClick={(e) => e.stopPropagation()} className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
                                 <Heart size={18} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.likeCount}</span>
                               </button>
                            </div>
                            <button 
-                                onClick={() => handleToggleBookmark(item.id)}
+                                onClick={(e) => { e.stopPropagation(); handleToggleBookmark(item.id); }}
                                 className={`group flex items-center gap-2 transition-all ${isBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                               >
                                 <Bookmark 
@@ -901,6 +980,7 @@ export default function VibesphereApp() {
                               animate={{ height: "auto", opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
                               className="overflow-hidden"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div className="mt-6 flex flex-col gap-4">
                                 {/* input komentar baru */}
@@ -1206,6 +1286,7 @@ export default function VibesphereApp() {
                 </motion.div>
               )}
             </motion.div>
+            )}
           </AnimatePresence>
         </main>
         
@@ -1391,7 +1472,7 @@ export default function VibesphereApp() {
         {/* --- DOCK MENU --- */}
         <motion.div
           variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 100, opacity: 0 } }}
-          animate={(isScrolling || isSidebarOpen) ? "hidden" : "visible"}
+          animate={(isScrolling || isSidebarOpen || focusedPost) ? "hidden" : "visible"}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-xl border-t border-white/5 z-[80]"
         >
