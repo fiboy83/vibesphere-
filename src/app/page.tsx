@@ -176,11 +176,15 @@ export default function VibesphereApp() {
   // --- NAVIGATION STATE ---
   const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
   const currentView = viewStack[viewStack.length - 1];
-  const { activeTab, viewingProfile, focusedPost } = currentView;
+  const { tab: activeTab, viewingProfile, focusedPost } = currentView;
 
   const pushView = (newView: Partial<typeof currentView>) => {
-    // We merge with the previous view to carry over properties like the tab when opening a focused post
-    setViewStack(prev => [...prev, { ...prev[prev.length - 1], ...newView }]);
+    // Merge with the previous view to carry over properties like the tab when opening a focused post
+    // But if we are changing tabs (e.g. from home to profile), we want a clean slate.
+    const isNewTab = newView.tab && newView.tab !== currentView.tab;
+    const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null } : currentView;
+
+    setViewStack(prev => [...prev, { ...baseView, ...newView }]);
     setIsSidebarOpen(false); // Always close sidebar on navigation
     if (newView.focusedPost) {
         setIsCommentSectionVisible(false); // Reset comment visibility when focusing a new post
@@ -1351,7 +1355,7 @@ export default function VibesphereApp() {
                 </motion.div>
               ) : activeTab === 'inbox' ? (
                 <motion.div className="text-center py-20">
-                  <h2 className="text-xl font-black lowercase italic tracking-[0.3em]">inbok</h2>
+                  <h2 className="text-xl font-black lowercase italic tracking-[0.3em]">inbox</h2>
                   <p className="text-slate-500 font-mono mt-2">your sovereign messages will appear here.</p>
                 </motion.div>
               ) : null}
