@@ -175,6 +175,7 @@ export default function VibesphereApp() {
 
   // --- FOCUS MODE STATE ---
   const [focusedPost, setFocusedPost] = useState<any | null>(null);
+  const [isCommentSectionVisible, setIsCommentSectionVisible] = useState(false);
 
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
@@ -567,7 +568,7 @@ export default function VibesphereApp() {
     ? feed.filter(item => item.handle === viewingProfile.handle)
     : feed;
   
-  const viewingProfileAura = viewingProfile ? viewingProfile.themeColor : profile.themeColor;
+  const viewingProfileAura = viewingProfile ? getPostAuraColor({avatar: viewingProfile.avatar, handle: viewingProfile.handle}) : profile.themeColor;
 
   if (!ready) {
     return null; // or a loading spinner
@@ -651,13 +652,24 @@ export default function VibesphereApp() {
           className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
         >
           {/* menu toggle (hide when search is active) */}
-          {!isSearchOpen && (
+          {!isSearchOpen && !focusedPost &&(
             <motion.button 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               onClick={() => setIsSidebarOpen(true)} 
               className="p-2 hover:bg-white/10 rounded-full transition"
             >
               <Menu size={22} className="text-slate-400" />
+            </motion.button>
+          )}
+
+          {focusedPost && (
+            <motion.button
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              onClick={() => setFocusedPost(null)}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors h-10 w-10 flex items-center justify-center"
+              style={{color: `hsl(${focusedPostAuraColor})`}}
+            >
+              <ArrowLeft size={22} strokeWidth={1.5} />
             </motion.button>
           )}
 
@@ -726,13 +738,13 @@ export default function VibesphereApp() {
                     <ArrowLeft size={18} strokeWidth={1.5} />
                     <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
                   </button>
-                  <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow">vibesphere</h2>
+                  <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow" style={{color: 'hsl(var(--primary))'}}>vibesphere</h2>
                 </div>
                 <nav className="flex-1">
                 <div className="flex flex-col gap-6 px-6 mt-10">
-                    <button onClick={() => handleNavigation('profile')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
-                        <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'profile' ? 'text-white' : 'text-white'} transition-colors duration-500`}>profile</span>
+                    <button onClick={() => { setActiveTab('profile'); setViewingProfile(null); setIsSidebarOpen(false); }} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                        <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' && !viewingProfile ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'profile' && !viewingProfile ? 'text-white' : 'text-white'} transition-colors duration-500`}>profile</span>
                     </button>
                     
                     <button onClick={() => handleNavigation('bookmarks')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
@@ -796,20 +808,18 @@ export default function VibesphereApp() {
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className="relative"
               >
-                 <button
-                    onClick={() => setFocusedPost(null)}
-                    className="absolute -top-10 left-0 p-2 rounded-full transition-colors hover:bg-white/10"
-                    style={{color: `hsl(${focusedPostAuraColor})`}}
-                >
-                    <ArrowLeft size={22} strokeWidth={1.5} />
-                </button>
-
+                 <div
+                    className="absolute inset-x-0 -top-20 h-96"
+                    style={{
+                      background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.05), transparent 70%)`
+                    }}
+                 />
                 <div 
                     className="relative"
                     style={{'--primary': focusedPostAuraColor } as React.CSSProperties}
                 >
                     <div 
-                        onClick={(e) => { e.stopPropagation(); setFocusedPost(null); const userToView = {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPostAuraColor}; setViewingProfile(userToView); setActiveTab('user-profile');}}
+                        onClick={(e) => { e.stopPropagation(); setFocusedPost(null); const userToView = {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar}; setViewingProfile(userToView); setActiveTab('user-profile');}}
                         className="flex items-center gap-4 mb-4 cursor-pointer group"
                     >
                         <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${focusedPostAuraColor})`}} />
@@ -829,35 +839,35 @@ export default function VibesphereApp() {
                           </div>
                       )}
 
-                      <p className="text-xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                      <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
                       
                       <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
 
                       <div 
-                        className="flex justify-between items-center my-6 py-6 border-y"
+                        className="flex justify-between items-center my-6 py-4 border-y"
                         style={{borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.1)`}}
                       >
                           <div className="flex items-center gap-10">
                               <button 
-                                onClick={() => {}} // Future comment focus
+                                onClick={(e) => { e.stopPropagation(); setIsCommentSectionVisible(prev => !prev); }}
                                 className={`group flex items-center gap-2 transition-all text-slate-500 hover:text-primary`}
                               >
                                 <MessageSquare size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.commentCount}</span>
                               </button>
                             
-                              <button onClick={() => handleRepost(focusedPost.id)} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                              <button onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
                                 <Repeat size={22} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.repostCount}</span>
                               </button>
 
-                              <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                              <button onClick={(e) => e.stopPropagation()} className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
                                 <Heart size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.likeCount}</span>
                               </button>
                           </div>
-                          <button 
-                                onClick={() => handleToggleBookmark(focusedPost.id)}
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleToggleBookmark(focusedPost.id); }}
                                 className={`group flex items-center gap-2 transition-all ${isFocusedPostBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                               >
                                 <Bookmark 
@@ -869,46 +879,56 @@ export default function VibesphereApp() {
                             </button>
                       </div>
                     
-                        <h3 className="text-base font-bold lowercase tracking-widest text-slate-400 mb-6">replies</h3>
-                        <div className="flex flex-col gap-6">
-                            {/* New Comment Input */}
-                            <div className="flex gap-3 items-start">
-                                <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
-                                <div className="flex-1">
-                                    <div className="relative flex items-center">
-                                      <textarea 
-                                        value={commentText}
-                                        onChange={(e) => setCommentText(e.target.value.toLowerCase())}
-                                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id))}
-                                        placeholder="post your reply..."
-                                        className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
-                                        rows={1}
-                                      />
-                                      <button 
-                                        onClick={() => handleSendComment(focusedPost.id)}
-                                        disabled={!commentText.trim()}
-                                        className={`absolute right-1 bottom-1 transition-colors ${
-                                          commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
-                                        }`}
-                                      >
-                                        <Send size={16} strokeWidth={2} />
-                                      </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Vibe Thread */}
-                            <div className="flex gap-3 items-start">
-                                <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${getPostAuraColor({avatar: profile.avatar, handle: profile.handle})})`}}/>
-                                <div className="flex-1">
-                                  <div className='flex items-center gap-2'>
-                                      <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor({avatar: profile.avatar, handle: profile.handle})})`}}>{profile.username}</span>
-                                      <span className="text-xs text-slate-500 font-mono">@{profile.handle} &bull; now</span>
+                      <AnimatePresence>
+                      {isCommentSectionVisible && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                        >
+                          <h3 className="text-base font-bold lowercase tracking-widest text-slate-400 mb-6">replies</h3>
+                          <div className="flex flex-col gap-6">
+                              {/* New Comment Input */}
+                              <div className="flex gap-3 items-start">
+                                  <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
+                                  <div className="flex-1">
+                                      <div className="relative flex items-center">
+                                        <textarea 
+                                          value={commentText}
+                                          onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id))}
+                                          placeholder="post your reply..."
+                                          className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
+                                          rows={1}
+                                        />
+                                        <button 
+                                          onClick={() => handleSendComment(focusedPost.id)}
+                                          disabled={!commentText.trim()}
+                                          className={`absolute right-1 bottom-1 transition-colors ${
+                                            commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
+                                          }`}
+                                        >
+                                          <Send size={16} strokeWidth={2} />
+                                        </button>
+                                      </div>
                                   </div>
-                                  <p className="text-base text-slate-300 leading-relaxed mt-1 font-light">this vibe is real. 100% locked.</p>
-                                </div>
-                            </div>
-                        </div>
+                              </div>
+                              
+                              {/* Vibe Thread */}
+                              <div className="flex gap-3 items-start">
+                                  <img src={focusedPost.avatar} alt="Original poster avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${getPostAuraColor(focusedPost)})`}}/>
+                                  <div className="flex-1">
+                                    <div className='flex items-center gap-2'>
+                                        <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor(focusedPost)})`}}>{focusedPost.username}</span>
+                                        <span className="text-xs text-slate-500 font-mono">@{focusedPost.handle} &bull; {focusedPost.time}</span>
+                                    </div>
+                                    <p className="text-base text-slate-300 leading-relaxed mt-1 font-light">this vibe is real. 100% locked.</p>
+                                  </div>
+                              </div>
+                          </div>
+                        </motion.div>
+                      )}
+                      </AnimatePresence>
                     </div>
                 </div>
               </motion.div>
@@ -923,14 +943,15 @@ export default function VibesphereApp() {
               {activeTab === 'home' || activeTab === 'bookmarks' || (activeTab === 'user-profile' && viewingProfile) ? (
                 <>
                 {activeTab === 'user-profile' && viewingProfile && (
-                    <button
-                        onClick={() => { setViewingProfile(null); setActiveTab('home'); }}
-                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
-                        style={{ color: `hsl(${viewingProfileAura})` }}
-                    >
-                        <ArrowLeft size={16} />
-                        back
-                    </button>
+                    <div style={{'--primary': viewingProfileAura, '--primary-glow': viewingProfileAura.replace(/ /g, ', ')} as React.CSSProperties}>
+                      <button
+                          onClick={() => { setViewingProfile(null); setActiveTab('home'); }}
+                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
+                      >
+                          <ArrowLeft size={16} />
+                          back
+                      </button>
+                    </div>
                 )}
                 <motion.div 
                   initial="hidden" animate="show"
@@ -949,7 +970,7 @@ export default function VibesphereApp() {
                       </motion.div>
                   )}
                   {activeTab === 'user-profile' && viewingProfile && (
-                     <ResonanceCard style={{'--primary': viewingProfile.themeColor, '--primary-glow': viewingProfile.themeColor.replace(/ /g, ', ')} as React.CSSProperties}>
+                     <ResonanceCard style={{'--primary': viewingProfileAura, '--primary-glow': viewingProfileAura.replace(/ /g, ', ')} as React.CSSProperties}>
                         <div className="flex flex-col items-center text-center">
                           <img 
                             src={viewingProfile.avatar} 
@@ -972,7 +993,7 @@ export default function VibesphereApp() {
                       <ResonanceCard 
                         key={item.id} 
                         style={cardStyle}
-                        onClick={() => setFocusedPost(item)}
+                        onClick={() => { setFocusedPost(item); setIsCommentSectionVisible(false); }}
                       >
                         {item.type === 'revibe' && (
                             <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -984,7 +1005,7 @@ export default function VibesphereApp() {
                           <div 
                             onClick={(e) => { 
                                 e.stopPropagation(); 
-                                const userToView = {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: postAuraColor}; 
+                                const userToView = {username: item.username, handle: item.handle, avatar: item.avatar}; 
                                 setViewingProfile(userToView);
                                 setActiveTab('user-profile');
                             }}
@@ -1084,14 +1105,15 @@ export default function VibesphereApp() {
                 <motion.div 
                     className="w-full max-w-md mx-auto flex flex-col gap-6"
                 >
-                    <button
-                        onClick={() => handleNavigation('home')}
-                        className="flex items-center gap-2 mb-2 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
-                        style={{ color: `hsl(${profile.themeColor})` }}
-                    >
-                        <ArrowLeft size={16} />
-                        back
-                    </button>
+                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
+                      <button
+                          onClick={() => handleNavigation('home')}
+                          className="flex items-center gap-2 mb-2 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
+                      >
+                          <ArrowLeft size={16} />
+                          back
+                      </button>
+                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifications</h2>
                     
                     <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
@@ -1135,40 +1157,43 @@ export default function VibesphereApp() {
                 </motion.div>
               ) : activeTab === 'defi' ? (
                 <motion.div>
-                    <button
-                        onClick={() => handleNavigation('home')}
-                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
-                        style={{ color: `hsl(${profile.themeColor})` }}
-                    >
-                        <ArrowLeft size={16} />
-                        back
-                    </button>
+                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
+                      <button
+                          onClick={() => handleNavigation('home')}
+                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
+                      >
+                          <ArrowLeft size={16} />
+                          back
+                      </button>
+                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">DeFi</h2>
                     <p className="text-center text-slate-500 font-mono mt-2">decentralized finance hub coming soon.</p>
                 </motion.div>
               ) : activeTab === 'swap' ? (
                  <motion.div>
-                    <button
-                        onClick={() => handleNavigation('home')}
-                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
-                        style={{ color: `hsl(${profile.themeColor})` }}
-                    >
-                        <ArrowLeft size={16} />
-                        back
-                    </button>
+                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
+                      <button
+                          onClick={() => handleNavigation('home')}
+                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
+                      >
+                          <ArrowLeft size={16} />
+                          back
+                      </button>
+                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Swap</h2>
                     <p className="text-center text-slate-500 font-mono mt-2">token swap interface coming soon.</p>
                 </motion.div>
               ) : activeTab === 'settings' ? (
                 <motion.div>
-                    <button
-                        onClick={() => handleNavigation('home')}
-                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
-                        style={{ color: `hsl(${profile.themeColor})` }}
-                    >
-                        <ArrowLeft size={16} />
-                        back
-                    </button>
+                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
+                      <button
+                          onClick={() => handleNavigation('home')}
+                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
+                      >
+                          <ArrowLeft size={16} />
+                          back
+                      </button>
+                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Settings</h2>
                     <p className="text-center text-slate-500 font-mono mt-2">sovereign settings panel coming soon.</p>
                 </motion.div>
