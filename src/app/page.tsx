@@ -577,6 +577,8 @@ export default function VibesphereApp() {
   const focusedPostAuraColor = focusedPost ? getPostAuraColor(focusedPost.type === 'revibe' ? focusedPost.quotedPost : focusedPost) : '262 100% 70%';
   const isFocusedPostBookmarked = focusedPost ? bookmarkedPosts.includes(focusedPost.id) : false;
 
+  const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
+
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans">
       
@@ -649,7 +651,8 @@ export default function VibesphereApp() {
         <motion.header
           animate={{ y: isScrolling ? -100 : 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b border-white/5"
+          className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b"
+          style={focusedPost ? { borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.4)` } : {borderColor: 'rgba(255,255,255,0.05)'} }
         >
           {/* menu toggle (hide when search is active) */}
           {!isSearchOpen && !focusedPost &&(
@@ -811,12 +814,12 @@ export default function VibesphereApp() {
                  <div
                     className="absolute inset-x-0 -top-20 h-96"
                     style={{
-                      background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.05), transparent 70%)`
+                      background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
                     }}
                  />
                 <div 
                     className="relative"
-                    style={{'--primary': focusedPostAuraColor } as React.CSSProperties}
+                    style={{'--primary': focusedPostAuraColor, '--primary-glow': focusedPostAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                 >
                     <div 
                         onClick={(e) => { e.stopPropagation(); setFocusedPost(null); const userToView = {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar}; setViewingProfile(userToView); setActiveTab('user-profile');}}
@@ -832,43 +835,45 @@ export default function VibesphereApp() {
                     </div>
 
                     <div className='pl-16'>
-                      {focusedPost.media && (
-                          <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-                          {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                          {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                          </div>
-                      )}
+                      <div className="p-4 rounded-2xl shadow-[0_0_15px_hsla(var(--primary-glow),0.3)]">
+                        {focusedPost.media && (
+                            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                            {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                            {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                            </div>
+                        )}
 
-                      <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
-                      
-                      <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
+                        <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                        
+                        <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
+                      </div>
 
                       <div 
                         className="flex justify-between items-center my-6 py-4 border-y"
-                        style={{borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.1)`}}
+                        style={{borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.4)`}}
                       >
                           <div className="flex items-center gap-10">
                               <button 
                                 onClick={(e) => { e.stopPropagation(); setIsCommentSectionVisible(prev => !prev); }}
-                                className={`group flex items-center gap-2 transition-all text-slate-500 hover:text-primary`}
+                                className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
                               >
                                 <MessageSquare size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.commentCount}</span>
                               </button>
                             
-                              <button onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                              <button onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
                                 <Repeat size={22} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.repostCount}</span>
                               </button>
 
-                              <button onClick={(e) => e.stopPropagation()} className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                              <button onClick={(e) => e.stopPropagation()} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
                                 <Heart size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.likeCount}</span>
                               </button>
                           </div>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); handleToggleBookmark(focusedPost.id); }}
-                                className={`group flex items-center gap-2 transition-all ${isFocusedPostBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                                className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
                               >
                                 <Bookmark 
                                   size={20} 
