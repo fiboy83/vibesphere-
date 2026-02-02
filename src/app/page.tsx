@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark } from 'lucide-react';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -620,25 +620,38 @@ export default function VibesphereApp() {
                   <h2 className="text-2xl font-black lowercase italic bg-gradient-to-tr from-white to-purple-500 bg-clip-text text-transparent">vibesphere</h2>
                 </div>
                 <nav className="flex-1">
-                  <div className="flex flex-col gap-6 px-6 mt-10">
-                    <button onClick={() => handleNavigation('profile')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
-                      <span className="text-xl font-light tracking-wide text-white lowercase">profil</span>
+                <div className="flex flex-col gap-6 px-6 mt-10">
+                    <button onClick={() => handleNavigation('profile')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                        <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'profile' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>profil</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('bookmarks')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
-                      <span className="text-xl font-light tracking-wide text-white lowercase">bookmark</span>
+                    <button onClick={() => handleNavigation('bookmarks')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                        <Bookmark size={20} strokeWidth={1.5} className={`${activeTab === 'bookmarks' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'bookmarks' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>bookmark</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('defi')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
-                      <span className="text-xl font-light tracking-wide text-white lowercase">defi</span>
+                    <button onClick={() => handleNavigation('notifications')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                        <div className="relative">
+                            <Bell size={20} strokeWidth={1.5} className={`${activeTab === 'notifications' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
+                        </div>
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'notifications' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>notifikasi</span>
+                    </button>
+
+                    <button onClick={() => handleNavigation('defi')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                        <DollarSign size={20} strokeWidth={1.5} className={`${activeTab === 'defi' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'defi' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>defi</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('swap')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
-                      <span className="text-xl font-light tracking-wide text-white lowercase">swap</span>
+                    <button onClick={() => handleNavigation('swap')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                        <Repeat size={20} strokeWidth={1.5} className={`${activeTab === 'swap' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'swap' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>swap</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('settings')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70">
-                      <span className="text-xl font-light tracking-wide text-white lowercase">seting</span>
+                    <button onClick={() => handleNavigation('settings')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                        <Settings size={20} strokeWidth={1.5} className={`${activeTab === 'settings' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'settings' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>seting</span>
                     </button>
                   </div>
                 </nav>
@@ -687,7 +700,9 @@ export default function VibesphereApp() {
                   )}
                   {displayedFeed.map((item) => {
                     let cardColor = profile.themeColor; // Default to user's theme
-                    if (item.handle !== profile.handle) {
+                    if (item.handle === profile.handle) {
+                        cardColor = profile.themeColor;
+                    } else {
                         // For other users, extract color from their avatar URL
                         try {
                             const url = new URL(item.avatar);
@@ -763,7 +778,7 @@ export default function VibesphereApp() {
                               </button>
                             
                               <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
-                                <Repeat2 size={20} strokeWidth={1.5} />
+                                <Repeat size={20} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.repostCount}</span>
                               </button>
 
@@ -864,6 +879,53 @@ export default function VibesphereApp() {
                       </button>
                     </div>
                   </ResonanceCard>
+                </motion.div>
+              )}
+              {activeTab === 'notifications' && (
+                <motion.div 
+                    className="w-full max-w-md mx-auto flex flex-col gap-6"
+                >
+                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifikasi</h2>
+                    
+                    <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-red-500/20 flex items-center justify-center">
+                            <Heart size={16} className="text-red-400" />
+                        </div>
+                        <div>
+                            <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`} alt="Quantum_Leaper avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
+                            <p className="inline text-sm text-slate-300 font-light">
+                                <span className="font-bold text-white">Quantum_Leaper</span> dan 2 lainnya menyukai vibe anda.
+                            </p>
+                            <p className="text-xs text-slate-500 font-mono mt-1">2 jam yang lalu</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-primary/20 flex items-center justify-center transition-colors duration-500">
+                            <Bookmark size={16} className="text-primary transition-colors duration-500" />
+                        </div>
+                        <div>
+                            <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`} alt="DAO_Steward avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
+                            <p className="inline text-sm text-slate-300 font-light">
+                                <span className="font-bold text-white">DAO_Steward</span> menyimpan artikel anda: "New governance proposal PIP-8..."
+                            </p>
+                            <p className="text-xs text-slate-500 font-mono mt-1">5 jam yang lalu</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                            <MessageSquare size={16} className="text-cyan-400" />
+                        </div>
+                        <div>
+                            <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`} alt="Nova_Architect avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
+                            <p className="inline text-sm text-slate-300 font-light">
+                                Postingan baru dari <span className="font-bold text-white">Nova_Architect</span>.
+                            </p>
+                            <p className="text-xs text-slate-500 font-mono mt-1">1 hari yang lalu</p>
+                        </div>
+                    </div>
+
                 </motion.div>
               )}
               {activeTab === 'wallet' && (
@@ -1275,6 +1337,7 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
 
 
 
