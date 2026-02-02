@@ -894,12 +894,29 @@ export default function VibesphereApp() {
         </div>
       ) : (
       <>
+        <AnimatePresence>
+          {isSubView && (
+              <motion.button
+                key="back-button-immersive"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{duration: 0.3, ease: "easeOut"}}
+                onClick={popView}
+                className="fixed top-6 left-6 p-2 hover:bg-white/10 rounded-full transition-colors z-[60]"
+                style={{ color: `hsl(${currentAuraColor})` }}
+              >
+                <ArrowLeft size={22} strokeWidth={1.5} />
+              </motion.button>
+          )}
+        </AnimatePresence>
+
         <input type="file" ref={fileInputRef} onChange={handleProfileFileChange} style={{ display: 'none' }} accept="image/*" />
         <input type="file" ref={mediaInputRef} onChange={handleMediaFileChange} style={{ display: 'none' }} accept="image/*,video/*" />
         
         {/* --- HEADER --- */}
         <motion.header
-          animate={{ y: isScrolling ? -100 : 0 }}
+          animate={{ y: (isScrolling || isSubView) ? -100 : 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b"
           style={isSubView ? { borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {borderColor: 'rgba(255,255,255,0.05)'} }
@@ -1135,7 +1152,7 @@ export default function VibesphereApp() {
         </AnimatePresence>
 
         {/* --- MAIN CONTENT --- */}
-        <main className="w-full max-w-4xl mx-auto pb-48 pt-28 px-6 min-h-screen">
+        <main className={`w-full max-w-4xl mx-auto min-h-screen px-6 ${isSubView ? 'pt-20 pb-24' : 'pb-48 pt-28'}`}>
           <AnimatePresence mode="wait">
             {focusedPost ? (
                <motion.div
@@ -2141,7 +2158,7 @@ export default function VibesphereApp() {
         {/* --- DOCK MENU --- */}
         <motion.div
           variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 100, opacity: 0 } }}
-          animate={(isScrolling || isSidebarOpen || focusedPost) ? "hidden" : "visible"}
+          animate={(isScrolling || isSidebarOpen || isSubView) ? "hidden" : "visible"}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-xl border-t border-white/5 z-[80]"
         >
