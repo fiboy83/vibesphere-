@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Link as LinkIcon } from 'lucide-react';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Link as LinkIcon, Landmark, Network } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -1773,9 +1773,92 @@ export default function VibesphereApp() {
                     </div>
                 </motion.div>
               ) : activeTab === 'defi' ? (
-                <motion.div>
-                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">DeFi</h2>
-                    <p className="text-center text-slate-500 font-mono mt-2">decentralized finance hub coming soon.</p>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full max-w-2xl mx-auto"
+                >
+                    <div
+                        className="absolute inset-x-0 -top-20 h-96"
+                        style={{
+                            background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
+                        }}
+                    />
+
+                    <div className="relative flex flex-col gap-12">
+                        <h2 className="text-center text-slate-300 font-light tracking-[0.3em] uppercase text-2xl"
+                            style={{ color: `hsl(${currentAuraColor})`, textShadow: `0 0 10px hsla(${currentAuraColor.replace(/ /g, ',')}, 0.5)` }}
+                        >
+                            defi hub
+                        </h2>
+
+                        <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                            <div className="text-center">
+                                <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
+                                <p className="text-5xl font-black mt-2 tracking-tighter italic text-white">
+                                    {parseFloat(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                                    <span className="text-2xl font-light not-italic text-primary"> $phrs</span>
+                                </p>
+                            </div>
+                        </ResonanceCard>
+
+                        <div>
+                            <h3 className="text-lg font-light lowercase tracking-[0.2em] text-slate-400 mb-6 text-center">active governance</h3>
+                            <div className="flex flex-col gap-4">
+                                <div className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/10 transition-all hover:border-primary/30 hover:bg-white/[0.03]">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm font-mono text-green-400">● active</p>
+                                            <p className="text-lg font-light text-white lowercase mt-1">pip-8: adjust liquidity provider rewards</p>
+                                        </div>
+                                        <button
+                                            style={{ backgroundColor: `hsl(${currentAuraColor})`, color: 'hsl(var(--primary-foreground))', boxShadow: `0 0 15px 0px hsla(${currentAuraColor.replace(/ /g, ',')}, 0.5)` }}
+                                            className="py-2 px-6 rounded-full text-xs font-bold uppercase tracking-widest hover:brightness-110 transition-all"
+                                        >
+                                            vote
+                                        </button>
+                                    </div>
+                                    <p className="text-xs font-mono text-slate-500 mt-2">voting ends in 3 days</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                             <h3 className="text-lg font-light lowercase tracking-[0.2em] text-slate-400 mb-6 text-center">pharos gateway</h3>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <a href="#" target="_blank" rel="noopener noreferrer" className="group">
+                                    <ResonanceCard>
+                                        <div className="flex flex-col items-center text-center gap-4">
+                                            <Repeat size={24} className="text-primary transition-colors duration-500"/>
+                                            <p className="text-sm font-bold lowercase tracking-widest text-white">swap</p>
+                                        </div>
+                                    </ResonanceCard>
+                                </a>
+                                 <a href="#" target="_blank" rel="noopener noreferrer" className="group">
+                                    <ResonanceCard>
+                                        <div className="flex flex-col items-center text-center gap-4">
+                                            <Landmark size={24} className="text-primary transition-colors duration-500"/>
+                                            <p className="text-sm font-bold lowercase tracking-widest text-white">staking</p>
+                                        </div>
+                                    </ResonanceCard>
+                                </a>
+                                 <a href="#" target="_blank" rel="noopener noreferrer" className="group">
+                                    <ResonanceCard>
+                                        <div className="flex flex-col items-center text-center gap-4">
+                                            <Network size={24} className="text-primary transition-colors duration-500"/>
+                                            <p className="text-sm font-bold lowercase tracking-widest text-white">explorer</p>
+                                        </div>
+                                    </ResonanceCard>
+                                </a>
+                             </div>
+                        </div>
+
+                        <p className="text-center text-[10px] font-mono text-slate-600 mt-8">
+                            powered by pharos network protocols.
+                        </p>
+                    </div>
                 </motion.div>
               ) : activeTab === 'swap' ? (
                  <motion.div>
