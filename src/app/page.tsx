@@ -396,7 +396,9 @@ export default function VibesphereApp() {
 
   const handleNavigation = (target: string) => {
     setActiveTab(target);
-    setViewingProfile(null);
+    if (target === 'home') {
+      setViewingProfile(null);
+    }
     setIsSidebarOpen(false);
   };
   
@@ -791,61 +793,63 @@ export default function VibesphereApp() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
                 transition={{ duration: 0.5, ease: 'easeInOut' }}
-                className="relative p-8 rounded-[3rem] border"
-                style={{
-                  '--primary': focusedPostAuraColor,
-                  '--primary-glow': focusedPostAuraColor.replace(/ /g, ', '),
-                  borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.3)`,
-                  boxShadow: `0 0 40px 0px hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.2)`
-                } as React.CSSProperties}
+                className="relative"
               >
                 <button
                     onClick={() => setFocusedPost(null)}
-                    className="absolute top-8 left-8 flex items-center gap-2 text-xs font-mono uppercase tracking-widest transition-colors"
-                    style={{color: `hsl(${profile.themeColor})`}}
+                    className="absolute top-0 left-0 flex items-center gap-2 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
+                    style={{color: `hsl(${focusedPostAuraColor})`}}
                 >
                     <ArrowLeft size={16} />
                     back
                 </button>
 
-                <div className="pt-16 pb-8">
-                  <div 
-                    onClick={(e) => { e.stopPropagation(); setFocusedPost(null); const userToView = {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPostAuraColor}; setViewingProfile(userToView); setActiveTab('user-profile');}}
-                    className="flex items-center gap-4 mb-6 cursor-pointer group"
-                  >
-                    <img src={focusedPost.avatar} alt="avatar" className="w-16 h-16 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${focusedPostAuraColor})`}} />
-                    <div>
-                      <h2 className="text-2xl font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${focusedPostAuraColor})`}}>{focusedPost.username}</h2>
-                      <p className="text-sm font-mono text-slate-400">@{focusedPost.handle} &bull; {focusedPost.time}</p>
+                <div 
+                    className="relative p-8 rounded-[3rem] border mt-12"
+                    style={{
+                      '--primary': focusedPostAuraColor,
+                      '--primary-glow': focusedPostAuraColor.replace(/ /g, ', '),
+                      borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.3)`,
+                      boxShadow: `0 0 40px 0px hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.2)`
+                    } as React.CSSProperties}
+                >
+                    <div 
+                        onClick={(e) => { e.stopPropagation(); setFocusedPost(null); const userToView = {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPostAuraColor}; setViewingProfile(userToView); setActiveTab('user-profile');}}
+                        className="flex items-center gap-4 mb-6 cursor-pointer group"
+                    >
+                        <img src={focusedPost.avatar} alt="avatar" className="w-16 h-16 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${focusedPostAuraColor})`}} />
+                        <div>
+                        <h2 className="text-2xl font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${focusedPostAuraColor})`}}>{focusedPost.username}</h2>
+                        <p className="text-sm font-mono text-slate-400">@{focusedPost.handle} &bull; {focusedPost.time}</p>
+                        </div>
                     </div>
-                  </div>
-                  
-                  {focusedPost.media && (
-                     <div className="mb-6 rounded-2xl overflow-hidden border border-white/10">
-                       {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                       {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                     </div>
-                  )}
+                    
+                    {focusedPost.media && (
+                        <div className="mb-6 rounded-2xl overflow-hidden border border-white/10">
+                        {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                        {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                        </div>
+                    )}
 
-                  <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
-                
-                  <div className="mt-12 border-t border-white/[0.05] pt-8">
-                    <h3 className="text-lg font-bold lowercase tracking-widest text-slate-400 mb-6">vibe thread</h3>
-                     <div className="flex flex-col gap-4">
-                        <div className="flex gap-3 items-start">
-                             <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
-                            <div className="flex-1">
-                                <div className="bg-white/5 p-4 rounded-xl">
-                                  <div className='flex items-center gap-2'>
-                                    <span className="text-xs font-bold" style={{color: `hsl(${profile.themeColor})`}}>@{profile.handle}</span>
-                                    <p className="text-xs text-slate-500 font-mono">&bull; now</p>
-                                  </div>
-                                  <p className="text-sm text-slate-300 leading-relaxed mt-1">this vibe is real. 100% locked.</p>
+                    <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                    
+                    <div className="mt-12 border-t border-white/[0.05] pt-8">
+                        <h3 className="text-lg font-bold lowercase tracking-widest text-slate-400 mb-6">vibe thread</h3>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex gap-3 items-start">
+                                <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
+                                <div className="flex-1">
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                    <div className='flex items-center gap-2'>
+                                        <span className="text-xs font-bold" style={{color: `hsl(${profile.themeColor})`}}>@{profile.handle}</span>
+                                        <p className="text-xs text-slate-500 font-mono">&bull; now</p>
+                                    </div>
+                                    <p className="text-sm text-slate-300 leading-relaxed mt-1">this vibe is real. 100% locked.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                  </div>
                 </div>
 
               </motion.div>
@@ -857,7 +861,18 @@ export default function VibesphereApp() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {(activeTab === 'home' || activeTab === 'bookmarks' || (activeTab === 'user-profile' && viewingProfile)) && (
+              {activeTab === 'home' || activeTab === 'bookmarks' || (activeTab === 'user-profile' && viewingProfile) ? (
+                <>
+                {activeTab === 'user-profile' && viewingProfile && (
+                    <button
+                        onClick={() => { setViewingProfile(null); setActiveTab('home'); }}
+                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
+                        style={{ color: `hsl(${viewingProfileAura})` }}
+                    >
+                        <ArrowLeft size={16} />
+                        back
+                    </button>
+                )}
                 <motion.div 
                   initial="hidden" animate="show"
                   variants={{ show: { transition: { staggerChildren: 0.15 } } }}
@@ -903,7 +918,7 @@ export default function VibesphereApp() {
                         onClick={() => setFocusedPost(item)}
                       >
                         {item.type === 'revibe' && (
-                            <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2">
+                            <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 <Repeat size={14} />
                                 <span>re-vibed by @{item.handle}</span>
                             </div>
@@ -972,28 +987,28 @@ export default function VibesphereApp() {
                             )}
                         </div>
                         
-                        <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]">
+                        <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]" onClick={(e) => e.stopPropagation()}>
                            <div className="flex items-center gap-10">
                               <button 
-                                onClick={(e) => { e.stopPropagation(); setOpenCommentsId(openCommentsId === item.id ? null : item.id); }}
+                                onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
                                 className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                               >
                                 <MessageSquare size={18} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.commentCount}</span>
                               </button>
                             
-                              <button onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                              <button onClick={() => handleRepost(item.id)} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
                                 <Repeat size={20} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.repostCount}</span>
                               </button>
 
-                              <button onClick={(e) => { e.stopPropagation(); }} className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                              <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
                                 <Heart size={18} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.likeCount}</span>
                               </button>
                            </div>
                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleToggleBookmark(item.id); }}
+                                onClick={() => handleToggleBookmark(item.id)}
                                 className={`group flex items-center gap-2 transition-all ${isBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
                               >
                                 <Bookmark 
@@ -1054,8 +1069,8 @@ export default function VibesphereApp() {
                   })}
                   <div className="h-20"></div>
                 </motion.div>
-              )}
-              {activeTab === 'profile' && !viewingProfile && (
+                </>
+              ) : activeTab === 'profile' && !viewingProfile ? (
                 <motion.div className="flex flex-col items-center">
                    <ResonanceCard style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor.replace(/ /g, ', ')} as React.CSSProperties}>
                     <div className="flex flex-col items-center text-center">
@@ -1086,11 +1101,18 @@ export default function VibesphereApp() {
                     </div>
                   </ResonanceCard>
                 </motion.div>
-              )}
-              {activeTab === 'notifications' && (
+              ) : activeTab === 'notifications' ? (
                 <motion.div 
                     className="w-full max-w-md mx-auto flex flex-col gap-6"
                 >
+                    <button
+                        onClick={() => handleNavigation('home')}
+                        className="flex items-center gap-2 mb-2 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
+                        style={{ color: `hsl(${profile.themeColor})` }}
+                    >
+                        <ArrowLeft size={16} />
+                        back
+                    </button>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifications</h2>
                     
                     <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
@@ -1131,10 +1153,47 @@ export default function VibesphereApp() {
                             <p className="text-xs text-slate-500 font-mono mt-1">1 day ago</p>
                         </div>
                     </div>
-
                 </motion.div>
-              )}
-              {activeTab === 'wallet' && (
+              ) : activeTab === 'defi' ? (
+                <motion.div>
+                    <button
+                        onClick={() => handleNavigation('home')}
+                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
+                        style={{ color: `hsl(${profile.themeColor})` }}
+                    >
+                        <ArrowLeft size={16} />
+                        back
+                    </button>
+                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">DeFi</h2>
+                    <p className="text-center text-slate-500 font-mono mt-2">decentralized finance hub coming soon.</p>
+                </motion.div>
+              ) : activeTab === 'swap' ? (
+                 <motion.div>
+                    <button
+                        onClick={() => handleNavigation('home')}
+                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
+                        style={{ color: `hsl(${profile.themeColor})` }}
+                    >
+                        <ArrowLeft size={16} />
+                        back
+                    </button>
+                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Swap</h2>
+                    <p className="text-center text-slate-500 font-mono mt-2">token swap interface coming soon.</p>
+                </motion.div>
+              ) : activeTab === 'settings' ? (
+                <motion.div>
+                    <button
+                        onClick={() => handleNavigation('home')}
+                        className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125"
+                        style={{ color: `hsl(${profile.themeColor})` }}
+                    >
+                        <ArrowLeft size={16} />
+                        back
+                    </button>
+                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Settings</h2>
+                    <p className="text-center text-slate-500 font-mono mt-2">sovereign settings panel coming soon.</p>
+                </motion.div>
+              ) : activeTab === 'wallet' ? (
                   <motion.div 
                     className="w-full max-w-md mx-auto p-6"
                   >
@@ -1301,21 +1360,19 @@ export default function VibesphereApp() {
                       )}
                     </AnimatePresence>
                   </motion.div>
-              )}
-              {activeTab === 'market' && (
+              ) : activeTab === 'market' ? (
                 <motion.div
                   className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
                   <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Atlantic Testnet</h2>
                   {/* Market data would go here */}
                 </motion.div>
-              )}
-              {activeTab === 'inbox' && (
+              ) : activeTab === 'inbox' ? (
                 <motion.div className="text-center py-20">
                   <h2 className="text-xl font-black lowercase italic tracking-[0.3em]">inbok</h2>
                   <p className="text-slate-500 font-mono mt-2">your sovereign messages will appear here.</p>
                 </motion.div>
-              )}
+              ) : null}
             </motion.div>
             )}
           </AnimatePresence>
@@ -1569,5 +1626,3 @@ export default function VibesphereApp() {
     </div>
   );
 }
-
-    
