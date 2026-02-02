@@ -1165,7 +1165,7 @@ export default function VibesphereApp() {
                               </div>
                           )}
 
-                          <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap lowercase tracking-widest ${focusedPost.text.length > 200 ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'}`}>{focusedPost.text}</p>
+                          <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap lowercase tracking-widest ${focusedPost.text.length > 200 ? 'text-base md:text-lg' : 'text-lg md:text-xl'}`}>{focusedPost.text}</p>
                           
                           <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
                         </div>
