@@ -151,6 +151,7 @@ export default function VibesphereApp() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profileTab, setProfileTab] = useState<'vibe' | 'revibe' | 'like'>('vibe');
 
   // --- FEED & BOOKMARK STATE ---
   const initialFeedData = [
@@ -198,6 +199,10 @@ export default function VibesphereApp() {
     // But if we are changing tabs (e.g. from home to profile), we want a clean slate.
     const isNewTab = newView.tab && newView.tab !== currentView.tab;
     const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null } : currentView;
+    
+    if (newView.tab === 'profile' || newView.tab === 'user-profile') {
+        setProfileTab('vibe');
+    }
 
     setViewStack(prev => [...prev, { ...baseView, ...newView }]);
     setIsSidebarOpen(false); // Always close sidebar on navigation
@@ -770,10 +775,35 @@ export default function VibesphereApp() {
     }
   };
 
+  const profileToShow = (activeTab === 'profile' && !viewingProfile) 
+      ? profile 
+      : (activeTab === 'user-profile' && viewingProfile) 
+      ? viewingProfile 
+      : null;
+
+  let feedForProfileTab: any[] = [];
+  if (profileToShow) {
+      switch (profileTab) {
+          case 'vibe':
+              feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type !== 'revibe');
+              break;
+          case 'revibe':
+              feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type === 'revibe');
+              break;
+          case 'like':
+              if (profileToShow.handle === profile.handle) {
+                  feedForProfileTab = feed.filter(item => likedPosts.includes(item.id));
+              } else {
+                  feedForProfileTab = [];
+              }
+              break;
+      }
+  }
+
   const displayedFeed = activeTab === 'bookmarks'
     ? feed.filter(item => bookmarkedPosts.includes(item.id))
-    : (activeTab === 'user-profile' && viewingProfile)
-    ? feed.filter(item => item.handle === viewingProfile.handle)
+    : profileToShow
+    ? feedForProfileTab
     : feed;
   
   
@@ -1268,7 +1298,7 @@ export default function VibesphereApp() {
                               className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all"
                               style={isFocusedPostLiked ? {
                                   color: `hsl(${currentAuraColor})`,
-                                  filter: `drop-shadow(0 0 6px hsl(${currentAuraColor}))`
+                                  filter: `drop-shadow(0 0 6px hsl(${currentAuraColor.replace(/ /g, ', ')}))`
                               } : {}}
                             >
                               <Heart 
@@ -1304,36 +1334,22 @@ export default function VibesphereApp() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'home' || activeTab === 'bookmarks' || (activeTab === 'user-profile' && viewingProfile) ? (
-                <>
+              {activeTab === 'home' || activeTab === 'bookmarks' ? (
                 <motion.div 
                   initial="hidden" animate="show"
                   variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                   className="flex flex-col items-center gap-8"
                 >
-                  {(activeTab === 'bookmarks' || activeTab === 'user-profile') && displayedFeed.length === 0 && (
+                  {displayedFeed.length === 0 && (
                       <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
                           <Bookmark size={32} strokeWidth={1.5} className="mb-6"/>
                           <h2 className="text-xl font-light lowercase tracking-widest text-slate-300">
-                            {activeTab === 'bookmarks' ? 'no saved vibes' : 'no vibes yet'}
+                            no saved vibes
                           </h2>
                           <p className="text-sm font-mono mt-2">
-                            {activeTab === 'bookmarks' ? 'your saved posts will appear here.' : 'posts from this user will appear here.'}
+                            your saved posts will appear here.
                           </p>
                       </motion.div>
-                  )}
-                  {activeTab === 'user-profile' && viewingProfile && (
-                     <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ')} as React.CSSProperties}>
-                        <div className="flex flex-col items-center text-center">
-                          <img 
-                            src={viewingProfile.avatar} 
-                            alt="User avatar" 
-                            className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg"
-                          />
-                          <h2 className="text-3xl font-black lowercase italic tracking-tighter text-white mt-6">{viewingProfile.username}</h2>
-                          <p className="text-sm font-mono text-slate-400">@{viewingProfile.handle}</p>
-                        </div>
-                      </ResonanceCard>
                   )}
                   {displayedFeed.map((item) => {
                     const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
@@ -1474,37 +1490,225 @@ export default function VibesphereApp() {
                   })}
                   <div className="h-20"></div>
                 </motion.div>
-                </>
-              ) : activeTab === 'profile' && !viewingProfile ? (
-                <motion.div className="flex flex-col items-center">
-                   <ResonanceCard style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor.replace(/ /g, ', ')} as React.CSSProperties}>
+              ) : profileToShow ? (
+                <motion.div 
+                    className="flex flex-col items-center gap-8"
+                    initial="hidden" animate="show"
+                    variants={{ show: { transition: { staggerChildren: 0.15 } } }}
+                >
+                   <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ')} as React.CSSProperties}>
                     <div className="flex flex-col items-center text-center">
-                      <div 
-                        className="relative group mb-6 cursor-pointer"
-                        onClick={handleAvatarClick}
-                      >
-                        <img 
-                          src={profile.avatar} 
-                          alt="User avatar" 
-                          className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg transition-all duration-500 group-hover:border-primary/50 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-white text-xs font-bold uppercase tracking-widest">change</span>
-                        </div>
-                      </div>
-                      <h2 className="text-3xl font-black lowercase italic tracking-tighter text-white">{profile.username}</h2>
-                      <p className="text-sm font-mono text-slate-400">@{profile.handle}</p>
-                      <p className="text-xs font-mono text-slate-500 mt-4 lowercase">{profile.joinDate}</p>
+                        {profileToShow.handle === profile.handle ? (
+                            <div 
+                                className="relative group mb-6 cursor-pointer"
+                                onClick={handleAvatarClick}
+                            >
+                                <img 
+                                src={profileToShow.avatar} 
+                                alt="User avatar" 
+                                className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg transition-all duration-500 group-hover:border-primary/50 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-white text-xs font-bold uppercase tracking-widest">change</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <img 
+                                src={profileToShow.avatar} 
+                                alt="User avatar" 
+                                className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg mb-6"
+                            />
+                        )}
                       
-                      <button 
-                        onClick={openProfileModal}
-                        className="mt-8 flex items-center gap-2 py-2 px-6 bg-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
-                      >
-                        <Edit2 size={14} />
-                        edit profile
-                      </button>
+                      <h2 className="text-3xl font-black lowercase italic tracking-tighter text-white">{profileToShow.username}</h2>
+                      <p className="text-sm font-mono text-slate-400">@{profileToShow.handle}</p>
+                      
+                      {profileToShow.handle === profile.handle && (
+                        <>
+                            <p className="text-xs font-mono text-slate-500 mt-4 lowercase">{profileToShow.joinDate}</p>
+                            <button 
+                                onClick={openProfileModal}
+                                className="mt-8 flex items-center gap-2 py-2 px-6 bg-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                            >
+                                <Edit2 size={14} />
+                                edit profile
+                            </button>
+                        </>
+                      )}
                     </div>
                   </ResonanceCard>
+
+                  <div className="w-full border-b" style={{ borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2)`}}>
+                    <div className="flex justify-around max-w-sm mx-auto">
+                        <button
+                            onClick={() => setProfileTab('vibe')}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'vibe' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            style={profileTab === 'vibe' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
+                        >
+                            vibe
+                        </button>
+                        <button
+                            onClick={() => setProfileTab('revibe')}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'revibe' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            style={profileTab === 'revibe' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
+                        >
+                            revibe
+                        </button>
+                        <button
+                            onClick={() => setProfileTab('like')}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'like' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            style={profileTab === 'like' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
+                        >
+                            like
+                        </button>
+                    </div>
+                  </div>
+                  
+                  {displayedFeed.length === 0 ? (
+                    <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                        <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
+                          no vibrations found here.
+                        </h2>
+                    </motion.div>
+                   ) : (
+                    displayedFeed.map((item) => {
+                        const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
+                        const cardStyle = { 
+                            '--primary': postAuraColor,
+                            '--primary-glow': postAuraColor.replace(/ /g, ', '),
+                        } as React.CSSProperties;
+                        const isBookmarked = bookmarkedPosts.includes(item.id);
+                        const isLiked = likedPosts.includes(item.id);
+
+
+                        const handleCardClick = () => {
+                        if (item.type === 'revibe' && item.quotedPost) {
+                            pushView({ focusedPost: item.quotedPost });
+                        } else {
+                            pushView({ focusedPost: item });
+                        }
+                        };
+
+                        return (
+                        <ResonanceCard 
+                            key={item.id} 
+                            style={cardStyle}
+                        >
+                            {item.type === 'revibe' && (
+                                <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar}, focusedPost: null }); }}>
+                                    <Repeat size={14} />
+                                    <span>re-vibed by @{item.handle}</span>
+                                </div>
+                            )}
+                            <div onClick={handleCardClick} className="cursor-pointer">
+                                <div className="flex justify-between items-start mb-4">
+                                <div 
+                                    onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
+                                        pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
+                                    }}
+                                    className="flex items-center gap-3 cursor-pointer group"
+                                >
+                                    <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
+                                    <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
+                                        {item.username}
+                                        </span>
+                                        <div 
+                                            className="w-2 h-2 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
+                                        ></div>
+                                      </div>
+                                      <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                                    </div>
+                                  </div>
+                                  <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
+                                    <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
+                                  </button>
+                                </div>
+                                
+                                <div className="min-h-[40px]">
+                                    {item.type === 'revibe' && item.quotedPost ? (
+                                        <div 
+                                            className="mt-4 p-4 rounded-3xl border border-white/10" 
+                                            style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
+                                        >
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
+                                                <div>
+                                                    <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
+                                                    <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                                                </div>
+                                            </div>
+                                            {item.quotedPost.media && (
+                                                <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
+                                                    {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                                    {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                                </div>
+                                            )}
+                                            <p className="text-slate-300 text-base leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                          {item.media && (
+                                             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                                               {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
+                                               {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                             </div>
+                                          )}
+                                          <p className={`text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap ${item.type === 'artikel' ? 'line-clamp-5' : ''}`}>{item.text}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-4 -mx-4">
+                                <motion.button 
+                                    whileTap={{ scale: 1.2 }}
+                                    transition={{ duration: 0.1 }}
+                                    onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                    <MessageSquare size={18} strokeWidth={1.5} />
+                                    <span className="text-sm font-mono">{item.commentCount}</span>
+                                </motion.button>
+                                <motion.button 
+                                    whileTap={{ scale: 1.2 }}
+                                    transition={{ duration: 0.1 }}
+                                    onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                    <Repeat size={20} strokeWidth={1.5} />
+                                    <span className="text-sm font-mono">{item.repostCount}</span>
+                                </motion.button>
+                                <motion.button 
+                                    whileTap={{ scale: 1.2 }}
+                                    transition={{ duration: 0.1 }}
+                                    onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
+                                    className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                    style={isLiked ? {
+                                        color: `hsl(${postAuraColor})`,
+                                        filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
+                                    } : {}}
+                                >
+                                    <Heart 
+                                        size={18} 
+                                        strokeWidth={1.5}
+                                        fill={isLiked ? 'currentColor' : 'none'}
+                                    />
+                                    <span className="text-sm font-mono">{item.likeCount}</span>
+                                </motion.button>
+                                <motion.button
+                                    whileTap={{ scale: 1.2 }}
+                                    transition={{ duration: 0.1 }}
+                                    onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                    <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
+                                </motion.button>
+                            </div>
+
+                        </ResonanceCard>
+                        )
+                    })
+                  )}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
