@@ -227,7 +227,6 @@ export default function VibesphereApp() {
         localStorage.setItem(key, value);
     } catch (e: any) {
         if (e.name === 'QuotaExceededError') {
-            console.warn('LocalStorage quota exceeded. Clearing 50% of old feed data to make space.');
             toast({
                 variant: "destructive",
                 title: "Local cache full",
@@ -249,10 +248,8 @@ export default function VibesphereApp() {
                 }
                 localStorage.setItem(key, value); // Retry
             } catch (cleanupError) {
-                console.error('Failed to save to localStorage even after cleanup:', cleanupError);
+                // Failsafe
             }
-        } else {
-            console.error('Failed to save to localStorage:', e);
         }
     }
   }
@@ -288,7 +285,6 @@ export default function VibesphereApp() {
           try {
               setFeed(JSON.parse(savedFeed));
           } catch (e) {
-              console.error("Failed to parse feed from localStorage, resetting.", e);
               localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
               setFeed(initialFeedData);
           }
@@ -339,7 +335,6 @@ export default function VibesphereApp() {
         const data = await response.json();
         setBalance(data.balance);
       } catch (error) {
-        console.warn("vibe check failed, rpc error:", error);
         setBalance('0.01'); // Fallback balance on error
       }
     }
@@ -355,7 +350,6 @@ export default function VibesphereApp() {
     try {
       await login();
     } catch (error) {
-      console.warn("vibe check error:", error);
       setShowSecurityHint(true);
     } finally {
       setIsLoggingIn(false);
@@ -417,7 +411,6 @@ export default function VibesphereApp() {
       setRecipient('');
       setAmount('');
     } catch (error) {
-      console.warn('send phrs error:', error);
       toast({ variant: "destructive", title: 'network is tight', description: 'try opening in a new tab.'});
     } finally {
       setIsSending(false);
@@ -720,7 +713,7 @@ export default function VibesphereApp() {
                 url: postUrl,
             });
         } catch (error) {
-            console.error('Error sharing:', error);
+            // Error sharing
         }
     } else {
         handleCopyLink();
