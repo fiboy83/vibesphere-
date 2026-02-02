@@ -623,7 +623,7 @@ export default function VibesphereApp() {
                 <div className="flex flex-col gap-6 px-6 mt-10">
                     <button onClick={() => handleNavigation('profile')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'profile' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>profil</span>
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'profile' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>profile</span>
                     </button>
                     
                     <button onClick={() => handleNavigation('bookmarks')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
@@ -636,7 +636,7 @@ export default function VibesphereApp() {
                             <Bell size={20} strokeWidth={1.5} className={`${activeTab === 'notifications' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
                         </div>
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'notifications' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>notifikasi</span>
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'notifications' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>notifications</span>
                     </button>
 
                     <button onClick={() => handleNavigation('defi')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
@@ -651,7 +651,7 @@ export default function VibesphereApp() {
                     
                     <button onClick={() => handleNavigation('settings')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <Settings size={20} strokeWidth={1.5} className={`${activeTab === 'settings' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'settings' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>seting</span>
+                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'settings' ? 'text-primary' : 'text-white'} transition-colors duration-500`}>settings</span>
                     </button>
                   </div>
                 </nav>
@@ -1337,6 +1337,7 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
 
 
 
