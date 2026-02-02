@@ -782,45 +782,45 @@ export default function VibesphereApp() {
                 className="fixed inset-y-0 left-0 w-64 bg-[#050505] z-[100] border-r border-white/5 p-8 flex flex-col"
               >
                 <div className="flex flex-col gap-6 mb-12">
-                  <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-slate-500 hover:text-white transition">
+                  <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors duration-500">
                     <ArrowLeft size={18} strokeWidth={1.5} />
                     <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
                   </button>
-                  <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow" style={{color: `hsl(${profile.themeColor})`}}>vibesphere</h2>
+                  <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow">vibesphere</h2>
                 </div>
                 <nav className="flex-1">
                 <div className="flex flex-col gap-6 px-6 mt-10">
-                    <button onClick={() => pushView({ tab: 'profile', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
-                        <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' && !viewingProfile ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'profile' && !viewingProfile ? 'text-white' : 'text-white'} transition-colors duration-500`}>profile</span>
+                    <button onClick={() => pushView({ tab: 'profile', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'profile' && !viewingProfile ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
+                        <User size={20} strokeWidth={1.5} />
+                        <span className="text-xl font-light tracking-wide lowercase">profile</span>
                     </button>
                     
-                    <button onClick={() => pushView({ tab: 'bookmarks', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
-                        <Bookmark size={20} strokeWidth={1.5} className={`${activeTab === 'bookmarks' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'bookmarks' ? 'text-white' : 'text-white'} transition-colors duration-500`}>bookmark</span>
+                    <button onClick={() => pushView({ tab: 'bookmarks', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'bookmarks' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
+                        <Bookmark size={20} strokeWidth={1.5} />
+                        <span className="text-xl font-light tracking-wide lowercase">bookmark</span>
                     </button>
                     
-                    <button onClick={() => pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                    <button onClick={() => pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'notifications' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
                         <div className="relative">
-                            <Bell size={20} strokeWidth={1.5} className={`${activeTab === 'notifications' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
+                            <Bell size={20} strokeWidth={1.5} />
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
                         </div>
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'notifications' ? 'text-white' : 'text-white'} transition-colors duration-500`}>notifications</span>
+                        <span className="text-xl font-light tracking-wide lowercase">notifications</span>
                     </button>
 
-                    <button onClick={() => pushView({ tab: 'defi', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
-                        <DollarSign size={20} strokeWidth={1.5} className={`${activeTab === 'defi' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'defi' ? 'text-white' : 'text-white'} transition-colors duration-500`}>defi</span>
+                    <button onClick={() => pushView({ tab: 'defi', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'defi' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
+                        <DollarSign size={20} strokeWidth={1.5} />
+                        <span className="text-xl font-light tracking-wide lowercase">defi</span>
                     </button>
                     
-                    <button onClick={() => pushView({ tab: 'swap', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
-                        <Repeat size={20} strokeWidth={1.5} className={`${activeTab === 'swap' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'swap' ? 'text-white' : 'text-white'} transition-colors duration-500`}>swap</span>
+                    <button onClick={() => pushView({ tab: 'swap', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'swap' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
+                        <Repeat size={20} strokeWidth={1.5} />
+                        <span className="text-xl font-light tracking-wide lowercase">swap</span>
                     </button>
                     
-                    <button onClick={() => pushView({ tab: 'settings', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
-                        <Settings size={20} strokeWidth={1.5} className={`${activeTab === 'settings' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
-                        <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'settings' ? 'text-white' : 'text-white'} transition-colors duration-500`}>settings</span>
+                    <button onClick={() => pushView({ tab: 'settings', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'settings' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
+                        <Settings size={20} strokeWidth={1.5} />
+                        <span className="text-xl font-light tracking-wide lowercase">settings</span>
                     </button>
                   </div>
                 </nav>
@@ -836,7 +836,7 @@ export default function VibesphereApp() {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="1.5">
                       <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15M10 17L15 12L10 7M15 12H3" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span className="text-[11px] font-mono uppercase tracking-widest">logout</span>
+                    <span className="text-[11px] font-mono font-light lowercase tracking-widest">logout</span>
                   </button>
                 </div>
               </motion.div>
