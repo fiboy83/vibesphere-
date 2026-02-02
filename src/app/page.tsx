@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings } from 'lucide-react';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Link as LinkIcon } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -162,6 +162,10 @@ export default function VibesphereApp() {
   const [feed, setFeed] = useState(initialFeedData);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
 
+  // --- SOCIAL ACTION STATE ---
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [postToShare, setPostToShare] = useState<any | null>(null);
+
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
   const { ready, authenticated, login, logout } = usePrivy();
@@ -220,7 +224,8 @@ export default function VibesphereApp() {
   useEffect(() => {
     if (profile.themeColor) {
         document.documentElement.style.setProperty('--primary', profile.themeColor);
-        document.documentElement.style.setProperty('--primary-glow', profile.themeColor.replace(/ /g, ', '));
+        const glowColor = profile.themeColor.replace(/ /g, ', ');
+        document.documentElement.style.setProperty('--primary-glow', glowColor);
         document.body.classList.add('theme-transition');
         setTimeout(() => document.body.classList.remove('theme-transition'), 1000);
     }
@@ -280,17 +285,17 @@ export default function VibesphereApp() {
   const copyAddress = () => {
     if (wallet?.address) {
       navigator.clipboard.writeText(wallet.address);
-      alert("wallet address copied to clipboard!");
+      toast({title: "wallet address copied"});
     }
   };
 
   const handleSend = async () => {
     if (!wallet || !recipient || !amount) {
-      alert("recipient and amount are required.");
+      toast({ variant: "destructive", title: "recipient and amount are required."});
       return;
     }
     if (!wallet.address) {
-      alert("Wallet address not found.");
+      toast({ variant: "destructive", title: "Wallet address not found."});
       return;
     }
   
@@ -311,14 +316,14 @@ export default function VibesphereApp() {
       };
   
       const txHash = await walletClient.sendTransaction(transaction);
-      alert(`transaction broadcasted!\nview on explorer: https://pharos-testnet.socialscan.io/tx/${txHash}`);
+      toast({ title: "transaction sent", description: `view on explorer: ${txHash.slice(0,10)}...`});
   
       setShowSendModal(false);
       setRecipient('');
       setAmount('');
     } catch (error) {
       console.warn('send phrs error:', error);
-      alert('network is tight. try opening in a new tab.');
+      toast({ variant: "destructive", title: 'network is tight', description: 'try opening in a new tab.'});
     } finally {
       setIsSending(false);
     }
@@ -390,6 +395,8 @@ export default function VibesphereApp() {
     setCommentText("");
   };
 
+  // --- SOCIAL ACTIONS ---
+
   const handleToggleBookmark = (postId: number) => {
     setBookmarkedPosts(prev => {
         const isBookmarked = prev.includes(postId);
@@ -399,6 +406,67 @@ export default function VibesphereApp() {
             return [...prev, postId];
         }
     });
+  };
+
+  const handleRepost = (postId: number) => {
+    const originalPost = feed.find(p => p.id === postId);
+    if (!originalPost) return;
+
+    const newPost = {
+        id: Date.now(),
+        userId: profile.handle,
+        username: profile.username,
+        handle: profile.handle,
+        avatar: profile.avatar,
+        time: 'now',
+        commentCount: 0,
+        repostCount: 0,
+        likeCount: 0,
+        text: '',
+        type: 'revibe',
+        quotedPost: originalPost,
+    };
+
+    setFeed(prevFeed => {
+        const updatedFeed = prevFeed.map(p => 
+            p.id === postId ? { ...p, repostCount: p.repostCount + 1 } : p
+        );
+        return [newPost, ...updatedFeed];
+    });
+
+    toast({ title: "vibe re-shared" });
+  };
+  
+  const handleOpenShareModal = (post: any) => {
+    setPostToShare(post);
+    setShowShareModal(true);
+  };
+
+  const handleCopyLink = () => {
+    if (!postToShare) return;
+    const postUrl = `${window.location.origin}/post/${postToShare.id}`;
+    navigator.clipboard.writeText(postUrl);
+    toast({ title: "link copied" });
+    setShowShareModal(false);
+  };
+
+  const handleNativeShare = async () => {
+    if (!postToShare) return;
+    const postUrl = `${window.location.origin}/post/${postToShare.id}`;
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: `Vibe from @${postToShare.handle}`,
+                text: postToShare.text,
+                url: postUrl,
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
+        }
+    } else {
+        handleCopyLink();
+    }
+    setShowShareModal(false);
   };
 
   const handlePost = () => {
@@ -412,7 +480,6 @@ export default function VibesphereApp() {
       commentCount: 0,
       repostCount: 0,
       likeCount: 0,
-      vibe_color: profile.themeColor,
       text: composerText,
       media: null,
     };
@@ -455,6 +522,29 @@ export default function VibesphereApp() {
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const getPostAuraColor = (post: any) => {
+    if (!post) return '262 100% 70%';
+    if (post.handle === profile.handle) {
+      return profile.themeColor;
+    }
+    try {
+      const url = new URL(post.avatar);
+      const bgColorHex = url.searchParams.get('backgroundColor');
+      if (bgColorHex) {
+        const rgb = hexToRgb(bgColorHex);
+        if (rgb) {
+          let [h, s, l] = rgbToHsl(...rgb);
+          s = Math.min(1, s * 1.5);
+          l = Math.max(0.4, Math.min(0.7, l));
+          return `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
+        }
+      }
+      return '262 100% 70%';
+    } catch(e) {
+      return '262 100% 70%';
     }
   };
 
@@ -699,39 +789,22 @@ export default function VibesphereApp() {
                       </motion.div>
                   )}
                   {displayedFeed.map((item) => {
-                    let cardColor = profile.themeColor; // Default to user's theme
-                    if (item.handle === profile.handle) {
-                        cardColor = profile.themeColor;
-                    } else {
-                        // For other users, extract color from their avatar URL
-                        try {
-                            const url = new URL(item.avatar);
-                            const bgColorHex = url.searchParams.get('backgroundColor');
-                            if (bgColorHex) {
-                                const rgb = hexToRgb(bgColorHex);
-                                if (rgb) {
-                                    let [h, s, l] = rgbToHsl(...rgb);
-                                    s = Math.min(1, s * 1.5);
-                                    l = Math.max(0.4, Math.min(0.7, l));
-                                    cardColor = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
-                                }
-                            } else {
-                                cardColor = '262 100% 70%'; // Fallback for other users
-                            }
-                        } catch(e) {
-                            cardColor = '262 100% 70%'; // Fallback on URL parse error
-                        }
-                    }
-
+                    const postAuraColor = getPostAuraColor(item.type === 'revibe' ? item.quotedPost : item);
                     const cardStyle = { 
-                        '--primary': cardColor,
-                        '--primary-glow': cardColor.replace(/ /g, ', '),
+                        '--primary': postAuraColor,
+                        '--primary-glow': postAuraColor.replace(/ /g, ', '),
                     } as React.CSSProperties;
 
                     const isBookmarked = bookmarkedPosts.includes(item.id);
                     
                     return (
                       <ResonanceCard key={item.id} isShort={item.type === 'tekt'} style={cardStyle}>
+                        {item.type === 'revibe' && (
+                            <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2">
+                                <Repeat size={14} />
+                                <span>re-vibed by @{item.handle}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between items-start mb-5">
                           <div 
                             onClick={() => handleNavigation('user-profile', { userId: item.userId })} 
@@ -752,20 +825,42 @@ export default function VibesphereApp() {
                               <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                             </div>
                           </div>
-                          <button className="group p-2 -mr-2 mt-1">
+                          <button onClick={() => handleOpenShareModal(item)} className="group p-2 -mr-2 mt-1">
                             <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                           </button>
                         </div>
-
-                        <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
-                          {item.media && (
-                             <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-                               {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
-                               {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                             </div>
-                          )}
-                          <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
-                        </div>
+                        
+                        {item.type === 'revibe' ? (
+                            <div 
+                                className="mt-4 p-4 rounded-3xl border border-white/10" 
+                                style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
+                            >
+                                <div className="flex items-center gap-3 mb-3">
+                                    <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
+                                    <div>
+                                        <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
+                                        <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                                    </div>
+                                </div>
+                                {item.quotedPost.media && (
+                                    <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
+                                        {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                        {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                    </div>
+                                )}
+                                <p className="text-slate-300 text-base leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
+                            </div>
+                        ) : (
+                            <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar min-h-[40px]' : 'min-h-[40px]'}>
+                              {item.media && (
+                                 <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                                   {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
+                                   {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                 </div>
+                              )}
+                              <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
+                            </div>
+                        )}
                         
                         <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]">
                            <div className="flex items-center gap-10">
@@ -777,7 +872,7 @@ export default function VibesphereApp() {
                                 <span className="text-[11px] font-mono">{item.commentCount}</span>
                               </button>
                             
-                              <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                              <button onClick={() => handleRepost(item.id)} className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
                                 <Repeat size={20} strokeWidth={1.5} />
                                 <span className="text-[11px] font-mono">{item.repostCount}</span>
                               </button>
@@ -1257,6 +1352,39 @@ export default function VibesphereApp() {
               </motion.div>
             </motion.div>
           )}
+        </AnimatePresence>
+        
+        <AnimatePresence>
+            {showShareModal && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowShareModal(false)}
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-end"
+                >
+                    <motion.div
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full bg-black rounded-t-3xl border-t-2"
+                        style={{ borderColor: `hsl(var(--primary))`}}
+                    >
+                        <div className="p-8 flex flex-col gap-6">
+                            <button onClick={handleCopyLink} className="flex items-center gap-4 text-slate-300 hover:text-white group">
+                                <Copy size={20} strokeWidth={1.5} className="text-primary group-hover:scale-110 transition-transform" />
+                                <span className="text-lg font-light lowercase tracking-wider">copy link</span>
+                            </button>
+                            <button onClick={handleNativeShare} className="flex items-center gap-4 text-slate-300 hover:text-white group">
+                                <Share2 size={20} strokeWidth={1.5} className="text-primary group-hover:scale-110 transition-transform" />
+                                <span className="text-lg font-light lowercase tracking-wider">share with...</span>
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
         </AnimatePresence>
 
 
