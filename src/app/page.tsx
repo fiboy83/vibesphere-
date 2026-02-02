@@ -1171,7 +1171,7 @@ export default function VibesphereApp() {
                   <div className="flex items-center gap-3 mb-6 px-2">
                     <img src={profile.avatar} alt="User Avatar" className="w-10 h-10 rounded-full border-2 border-primary/50 object-cover transition-colors duration-500" />
                     <div>
-                      <p className="font-bold text-sm text-white">{profile.username}</p>
+                      <p className="font-bold text-sm text-primary">{profile.username}</p>
                       <p className="text-xs text-slate-400 font-mono">@{profile.handle}</p>
                     </div>
                   </div>
@@ -1233,7 +1233,7 @@ export default function VibesphereApp() {
                           <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
                           <div>
                             <div className="flex items-center gap-2">
-                              <h2 className="text-lg font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${currentAuraColor})`}}>{focusedPost.username}</h2>
+                              <h2 className="text-lg font-bold transition-colors group-hover:brightness-125" style={{color: `hsl(${currentAuraColor})`}}>{focusedPost.username}</h2>
                             </div>
                             <p className="text-sm font-mono text-slate-400">@{focusedPost.handle}</p>
                           </div>
@@ -1448,7 +1448,7 @@ export default function VibesphereApp() {
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
+                                    <span className="text-sm font-bold text-primary transition-colors duration-500">
                                       {item.username}
                                     </span>
                                     <div 
@@ -1466,13 +1466,16 @@ export default function VibesphereApp() {
                             <div className="min-h-[40px]">
                                 {item.type === 'revibe' && item.quotedPost ? (
                                     <div 
-                                        className="mt-4 p-4 rounded-3xl border border-white/10" 
-                                        style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
+                                        className="mt-4 p-4 rounded-3xl border" 
+                                        style={{ 
+                                            borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)`,
+                                            '--primary': getPostAuraColor(item.quotedPost)
+                                        } as React.CSSProperties}
                                     >
                                         <div className="flex items-center gap-3 mb-3">
                                             <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
                                             <div>
-                                                <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
+                                                <span className="text-sm font-bold text-primary">{item.quotedPost.username}</span>
                                                 <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
                                             </div>
                                         </div>
@@ -1573,7 +1576,7 @@ export default function VibesphereApp() {
                             />
                         )}
                       
-                      <h2 className="text-3xl font-black lowercase italic tracking-tighter text-white">{profileToShow.username}</h2>
+                      <h2 className="text-3xl font-black lowercase italic tracking-tighter text-primary">{profileToShow.username}</h2>
                       <p className="text-sm font-mono text-slate-400">@{profileToShow.handle}</p>
                       
                       {profileToShow.handle === profile.handle && (
@@ -1668,7 +1671,7 @@ export default function VibesphereApp() {
                                     </div>
                                     <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
+                                        <span className="text-sm font-bold text-primary transition-colors duration-500">
                                         {item.username}
                                         </span>
                                         <div 
@@ -1686,13 +1689,16 @@ export default function VibesphereApp() {
                                 <div className="min-h-[40px]">
                                     {item.type === 'revibe' && item.quotedPost ? (
                                         <div 
-                                            className="mt-4 p-4 rounded-3xl border border-white/10" 
-                                            style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
+                                            className="mt-4 p-4 rounded-3xl border" 
+                                            style={{ 
+                                                borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)`,
+                                                '--primary': getPostAuraColor(item.quotedPost)
+                                            } as React.CSSProperties}
                                         >
                                             <div className="flex items-center gap-3 mb-3">
                                                 <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
                                                 <div>
-                                                    <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
+                                                    <span className="text-sm font-bold text-primary">{item.quotedPost.username}</span>
                                                     <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
                                                 </div>
                                             </div>
