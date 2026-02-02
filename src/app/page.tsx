@@ -618,6 +618,7 @@ export default function VibesphereApp() {
     try {
         await new Promise(r => setTimeout(r, 300));
         if (wallet?.address) {
+            saveFeedToStorage(updatedFeed);
             safeLocalStorageSet(`vibesphere_likes_${wallet.address}`, JSON.stringify(newLikedPosts));
         }
     } catch (error) {
@@ -1171,7 +1172,7 @@ export default function VibesphereApp() {
                   <div className="flex items-center gap-3 mb-6 px-2">
                     <img src={profile.avatar} alt="User Avatar" className="w-10 h-10 rounded-full border-2 border-primary/50 object-cover transition-colors duration-500" />
                     <div>
-                      <p className="font-bold text-sm text-primary">{profile.username}</p>
+                      <p className="font-bold text-sm" style={{ color: `hsl(${profile.themeColor})` }}>{profile.username}</p>
                       <p className="text-xs text-slate-400 font-mono">@{profile.handle}</p>
                     </div>
                   </div>
@@ -1248,7 +1249,11 @@ export default function VibesphereApp() {
                               </div>
                           )}
 
-                          <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap lowercase tracking-widest ${focusedPost.text.length > 200 ? 'text-base md:text-lg' : 'text-lg md:text-xl'}`}>{focusedPost.text}</p>
+                          <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap lowercase tracking-widest ${
+                            focusedPost.text.length > 200 
+                            ? 'text-base md:text-lg' 
+                            : 'text-lg md:text-xl'
+                          }`}>{focusedPost.text}</p>
                           
                           <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
                         </div>
@@ -1448,7 +1453,7 @@ export default function VibesphereApp() {
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-primary transition-colors duration-500">
+                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
                                       {item.username}
                                     </span>
                                     <div 
@@ -1475,7 +1480,7 @@ export default function VibesphereApp() {
                                         <div className="flex items-center gap-3 mb-3">
                                             <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
                                             <div>
-                                                <span className="text-sm font-bold text-primary">{item.quotedPost.username}</span>
+                                                <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{item.quotedPost.username}</span>
                                                 <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
                                             </div>
                                         </div>
@@ -1671,7 +1676,7 @@ export default function VibesphereApp() {
                                     </div>
                                     <div className="flex flex-col">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-primary transition-colors duration-500">
+                                        <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
                                           {item.username}
                                         </span>
                                         <div 
@@ -1698,7 +1703,7 @@ export default function VibesphereApp() {
                                             <div className="flex items-center gap-3 mb-3">
                                                 <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
                                                 <div>
-                                                    <span className="text-sm font-bold text-primary">{item.quotedPost.username}</span>
+                                                    <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{item.quotedPost.username}</span>
                                                     <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
                                                 </div>
                                             </div>
@@ -1781,7 +1786,7 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`} alt="Quantum_Leaper avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold text-white">Quantum_Leaper</span> and 2 others liked your vibe.
+                                <span className="font-bold">Quantum_Leaper</span> and 2 others liked your vibe.
                             </p>
                             <p className="text-xs text-slate-500 font-mono mt-1">2 hours ago</p>
                         </div>
@@ -1794,7 +1799,7 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`} alt="DAO_Steward avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold text-white">DAO_Steward</span> saved your article: "New governance proposal PIP-8..."
+                                <span className="font-bold">DAO_Steward</span> saved your article: "New governance proposal PIP-8..."
                             </p>
                             <p className="text-xs text-slate-500 font-mono mt-1">5 hours ago</p>
                         </div>
@@ -1807,7 +1812,7 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`} alt="Nova_Architect avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                New post from <span className="font-bold text-white">Nova_Architect</span>.
+                                New post from <span className="font-bold">Nova_Architect</span>.
                             </p>
                             <p className="text-xs text-slate-500 font-mono mt-1">1 day ago</p>
                         </div>
@@ -1838,7 +1843,7 @@ export default function VibesphereApp() {
                         <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                             <div className="text-center">
                                 <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
-                                <p className="text-5xl font-black mt-2 tracking-tighter italic text-white">
+                                <p className="text-5xl font-black mt-2 tracking-tighter italic">
                                     {parseFloat(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
                                     <span className="text-2xl font-light not-italic text-primary"> $phrs</span>
                                 </p>
@@ -1852,7 +1857,7 @@ export default function VibesphereApp() {
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <p className="text-sm font-mono text-green-400">● active</p>
-                                            <p className="text-lg font-light text-white lowercase mt-1">pip-8: adjust liquidity provider rewards</p>
+                                            <p className="text-lg font-light lowercase mt-1">pip-8: adjust liquidity provider rewards</p>
                                         </div>
                                         <button
                                             style={{ backgroundColor: `hsl(${currentAuraColor})`, color: 'hsl(var(--primary-foreground))', boxShadow: `0 0 15px 0px hsla(${currentAuraColor.replace(/ /g, ',')}, 0.5)` }}
@@ -1873,7 +1878,7 @@ export default function VibesphereApp() {
                                     <ResonanceCard>
                                         <div className="flex flex-col items-center text-center gap-4">
                                             <Repeat size={24} className="text-primary transition-colors duration-500"/>
-                                            <p className="text-sm font-bold lowercase tracking-widest text-white">swap</p>
+                                            <p className="text-sm font-bold lowercase tracking-widest">swap</p>
                                         </div>
                                     </ResonanceCard>
                                 </a>
@@ -1881,7 +1886,7 @@ export default function VibesphereApp() {
                                     <ResonanceCard>
                                         <div className="flex flex-col items-center text-center gap-4">
                                             <Landmark size={24} className="text-primary transition-colors duration-500"/>
-                                            <p className="text-sm font-bold lowercase tracking-widest text-white">staking</p>
+                                            <p className="text-sm font-bold lowercase tracking-widest">staking</p>
                                         </div>
                                     </ResonanceCard>
                                 </a>
@@ -1889,7 +1894,7 @@ export default function VibesphereApp() {
                                     <ResonanceCard>
                                         <div className="flex flex-col items-center text-center gap-4">
                                             <Network size={24} className="text-primary transition-colors duration-500"/>
-                                            <p className="text-sm font-bold lowercase tracking-widest text-white">explorer</p>
+                                            <p className="text-sm font-bold lowercase tracking-widest">explorer</p>
                                         </div>
                                     </ResonanceCard>
                                 </a>
@@ -1918,7 +1923,7 @@ export default function VibesphereApp() {
                     {/* 1. balance card: the core resonance */}
                     <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
                       <div className="absolute top-0 right-0 p-6 opacity-20">
-                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1" className="text-white">
+                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1">
                            <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
                          </svg>
                       </div>
@@ -1948,13 +1953,13 @@ export default function VibesphereApp() {
                       <div className="flex gap-4 mt-6">
                         <button 
                             onClick={() => setShowSendModal(true)}
-                            className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all text-white"
+                            className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
                         >
                           send
                         </button>
                         <button 
                           onClick={() => setShowReceiveModal(true)}
-                          className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all text-white"
+                          className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
                         >
                           receive
                         </button>
@@ -1976,7 +1981,7 @@ export default function VibesphereApp() {
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400"><path d="M12 5L12 19M19 12L12 19L5 12"/></svg>
                                       </div>
                                       <div>
-                                          <p className="text-sm font-light text-white lowercase">faucet received</p>
+                                          <p className="text-sm font-light lowercase">faucet received</p>
                                           <p className="text-[11px] font-mono text-slate-500">confirmed</p>
                                       </div>
                                   </div>
@@ -2228,7 +2233,7 @@ export default function VibesphereApp() {
                 <div className="flex gap-4 mt-8">
                     <button 
                         onClick={() => setIsProfileModalOpen(false)}
-                        className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all text-white"
+                        className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
                     >
                         cancel
                     </button>
@@ -2314,7 +2319,7 @@ export default function VibesphereApp() {
 
           {/* plus button - center focus */}
           <button onClick={() => setIsComposerOpen(true)} className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-500">
-            <span className="text-3xl text-white font-light">+</span>
+            <span className="text-3xl font-light">+</span>
           </button>
 
           {/* inbok - familiar mail icon */}
