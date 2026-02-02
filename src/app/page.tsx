@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText } from 'lucide-react';
+import { Home, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Menu, Search, X, Share2, MessageSquare, Repeat2, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -153,7 +153,7 @@ export default function VibesphereApp() {
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- FEED STATE ---
+  // --- FEED & BOOKMARK STATE ---
   const initialFeedData = [
     { id: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 12, repostCount: 5, likeCount: 42, media: null },
     { id: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", text: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "tekt", commentCount: 8, repostCount: 2, likeCount: 28, media: null },
@@ -164,6 +164,7 @@ export default function VibesphereApp() {
     { id: 4, userId: "user.opn", username: "Sovereign_User", handle: "user.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", text: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "tekt", commentCount: 18, repostCount: 3, likeCount: 66, media: null },
   ];
   const [feed, setFeed] = useState(initialFeedData);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
 
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
@@ -172,7 +173,7 @@ export default function VibesphereApp() {
   const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
   const isConnected = ready && authenticated && !!wallet;
   
-  // --- LOCALSTORAGE & PROFILE/FEED SYNC ---
+  // --- LOCALSTORAGE & PROFILE/FEED/BOOKMARK SYNC ---
   useEffect(() => {
     if (wallet?.address) {
       const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
@@ -193,6 +194,10 @@ export default function VibesphereApp() {
       if(savedFeed) {
         setFeed(JSON.parse(savedFeed));
       }
+      const savedBookmarks = localStorage.getItem(`vibesphere_bookmarks_${wallet.address}`);
+      if (savedBookmarks) {
+        setBookmarkedPosts(JSON.parse(savedBookmarks));
+      }
     }
   }, [wallet?.address]);
 
@@ -208,14 +213,20 @@ export default function VibesphereApp() {
     }
   }, [feed, wallet?.address]);
 
+  useEffect(() => {
+    if (wallet?.address) {
+        localStorage.setItem(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(bookmarkedPosts));
+    }
+  }, [bookmarkedPosts, wallet?.address]);
+
 
   // --- GLOBAL THEME CONTROLLER ---
   useEffect(() => {
     if (profile.themeColor) {
         document.documentElement.style.setProperty('--primary', profile.themeColor);
         document.documentElement.style.setProperty('--primary-glow', profile.themeColor.replace(/ /g, ', '));
-        // Add a class to body for smooth transition
         document.body.classList.add('theme-transition');
+        setTimeout(() => document.body.classList.remove('theme-transition'), 1000);
     }
   }, [profile.themeColor]);
   
@@ -383,6 +394,17 @@ export default function VibesphereApp() {
     setCommentText("");
   };
 
+  const handleToggleBookmark = (postId: number) => {
+    setBookmarkedPosts(prev => {
+        const isBookmarked = prev.includes(postId);
+        if (isBookmarked) {
+            return prev.filter(id => id !== postId);
+        } else {
+            return [...prev, postId];
+        }
+    });
+  };
+
   const handlePost = () => {
     let newPost: any = {
       id: Date.now(),
@@ -439,6 +461,10 @@ export default function VibesphereApp() {
       reader.readAsDataURL(file);
     }
   };
+
+  const displayedFeed = activeTab === 'bookmarks'
+      ? feed.filter(item => bookmarkedPosts.includes(item.id))
+      : feed;
   
 
   if (!ready) {
@@ -650,18 +676,24 @@ export default function VibesphereApp() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'home' && (
+              {(activeTab === 'home' || activeTab === 'bookmarks') && (
                 <motion.div 
                   initial="hidden" animate="show"
                   variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                   className="flex flex-col items-center gap-12"
                 >
-                  {feed.map((item) => {
-                    let cardColor = '262 100% 70%'; // Default purple fallback
-                    try {
-                        if (item.handle === profile.handle) {
-                            cardColor = profile.themeColor;
-                        } else if (item.avatar) {
+                  {activeTab === 'bookmarks' && displayedFeed.length === 0 && (
+                      <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                          <Bookmark size={32} strokeWidth={1.5} className="mb-6"/>
+                          <h2 className="text-xl font-light lowercase tracking-widest text-slate-300">no saved vibes</h2>
+                          <p className="text-sm font-mono mt-2">your saved posts will appear here.</p>
+                      </motion.div>
+                  )}
+                  {displayedFeed.map((item) => {
+                    let cardColor = profile.themeColor; // Default to user's theme
+                    if (item.handle !== profile.handle) {
+                        // For other users, extract color from their avatar URL
+                        try {
                             const url = new URL(item.avatar);
                             const bgColorHex = url.searchParams.get('backgroundColor');
                             if (bgColorHex) {
@@ -672,16 +704,20 @@ export default function VibesphereApp() {
                                     l = Math.max(0.4, Math.min(0.7, l));
                                     cardColor = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
                                 }
+                            } else {
+                                cardColor = '262 100% 70%'; // Fallback for other users
                             }
+                        } catch(e) {
+                            cardColor = '262 100% 70%'; // Fallback on URL parse error
                         }
-                    } catch(e) {
-                        console.warn("Could not parse card color, using default.");
                     }
 
                     const cardStyle = { 
                         '--primary': cardColor,
                         '--primary-glow': cardColor.replace(/ /g, ', '),
                     } as React.CSSProperties;
+
+                    const isBookmarked = bookmarkedPosts.includes(item.id);
                     
                     return (
                       <ResonanceCard key={item.id} isShort={item.type === 'tekt'} style={cardStyle}>
@@ -715,26 +751,37 @@ export default function VibesphereApp() {
                           <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
                         </div>
                         
-                        <div className="flex gap-10 mt-8 pt-5 border-t border-white/[0.05]">
-                          <div className="flex flex-col">
-                            <button 
-                              onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
-                              className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
-                            >
-                              <MessageSquare size={18} strokeWidth={1.5} />
-                              <span className="text-[11px] font-mono">{item.commentCount}</span>
-                            </button>
-                          </div>
-                          
-                          <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
-                            <Repeat2 size={20} strokeWidth={1.5} />
-                            <span className="text-[11px] font-mono">{item.repostCount}</span>
-                          </button>
+                        <div className="flex justify-between items-center mt-8 pt-5 border-t border-white/[0.05]">
+                           <div className="flex items-center gap-10">
+                              <button 
+                                onClick={() => setOpenCommentsId(openCommentsId === item.id ? null : item.id)}
+                                className={`group flex items-center gap-2 transition-all ${openCommentsId === item.id ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                              >
+                                <MessageSquare size={18} strokeWidth={1.5} />
+                                <span className="text-[11px] font-mono">{item.commentCount}</span>
+                              </button>
+                            
+                              <button className="group flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-all">
+                                <Repeat2 size={20} strokeWidth={1.5} />
+                                <span className="text-[11px] font-mono">{item.repostCount}</span>
+                              </button>
 
-                          <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
-                            <Heart size={18} strokeWidth={1.5} />
-                            <span className="text-[11px] font-mono">{item.likeCount}</span>
-                          </button>
+                              <button className="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-all">
+                                <Heart size={18} strokeWidth={1.5} />
+                                <span className="text-[11px] font-mono">{item.likeCount}</span>
+                              </button>
+                           </div>
+                           <button 
+                                onClick={() => handleToggleBookmark(item.id)}
+                                className={`group flex items-center gap-2 transition-all ${isBookmarked ? 'text-primary' : 'text-slate-500 hover:text-primary'}`}
+                              >
+                                <Bookmark 
+                                  size={18} 
+                                  strokeWidth={1.5} 
+                                  className="transition-all duration-300"
+                                  fill={isBookmarked ? 'currentColor' : 'none'}
+                                />
+                            </button>
                         </div>
                         <AnimatePresence>
                           {openCommentsId === item.id && (
@@ -788,7 +835,7 @@ export default function VibesphereApp() {
               )}
               {activeTab === 'profile' && (
                 <motion.div className="flex flex-col items-center">
-                   <ResonanceCard>
+                   <ResonanceCard style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor.replace(/ /g, ', ')} as React.CSSProperties}>
                     <div className="flex flex-col items-center text-center">
                       <div 
                         className="relative group mb-6 cursor-pointer"
@@ -1227,3 +1274,4 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
