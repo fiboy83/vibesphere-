@@ -119,7 +119,6 @@ export default function VibesphereApp() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolling, setIsScrolling] = useState(false);
-  const [lastY, setLastY] = useState(0);
   const [commentText, setCommentText] = useState("");
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -398,20 +397,41 @@ export default function VibesphereApp() {
 
   
   // --- SCROLL HANDLING ---
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (!isConnected) return; // Only run scroll listener when logged in
+    if (!isConnected) return;
+
     const handleScroll = () => {
-      const currentY = window.scrollY;
-      if (currentY > lastY && currentY > 100) {
-        setIsScrolling(true); // Hide on scroll down
-      } else {
-        setIsScrolling(false); // Show on scroll up
+      const isAtTop = window.scrollY < 100;
+      const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 10;
+
+      if (isAtTop || isAtBottom) {
+        setIsScrolling(false);
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+        return;
       }
-      setLastY(currentY);
+      
+      setIsScrolling(true); // Hide bars while scrolling
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false); // Show bars after scrolling stops
+      }, 300); // 300ms of inactivity
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastY, isConnected]);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [isConnected]);
   
   const handleSendComment = (postId: number) => {
     if (commentText.trim() === "") return;
@@ -1007,6 +1027,7 @@ export default function VibesphereApp() {
                         '--primary': postAuraColor,
                         '--primary-glow': postAuraColor.replace(/ /g, ', '),
                     } as React.CSSProperties;
+                    const isBookmarked = bookmarkedPosts.includes(item.id);
 
                     return (
                       <ResonanceCard 
@@ -1082,6 +1103,25 @@ export default function VibesphereApp() {
                                 </div>
                             )}
                         </div>
+
+                        <div className="flex justify-between items-center mt-6 -mx-4" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item, viewingProfile: viewingProfile }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                <MessageSquare size={18} strokeWidth={1.5} />
+                                <span className="text-sm font-mono">{item.commentCount}</span>
+                            </button>
+                            <button onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                <Repeat size={20} strokeWidth={1.5} />
+                                <span className="text-sm font-mono">{item.repostCount}</span>
+                            </button>
+                            <button onClick={(e) => e.stopPropagation()} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                <Heart size={18} strokeWidth={1.5} />
+                                <span className="text-sm font-mono">{item.likeCount}</span>
+                            </button>
+                            <button onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
+                            </button>
+                        </div>
+
                       </ResonanceCard>
                     )
                   })}
@@ -1365,11 +1405,15 @@ export default function VibesphereApp() {
         </main>
         
         {isConnected && (
-          <div className="fixed bottom-24 left-6 z-50 pointer-events-none">
+          <motion.div
+            animate={{ y: isScrolling ? 100 : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed bottom-24 left-6 z-50 pointer-events-none"
+          >
               <p className="text-blue-400 text-[10px] font-mono lowercase bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-blue-400/20">
                   network: pharos atlantic testnet
               </p>
-          </div>
+          </motion.div>
         )}
 
         {/* --- COMPOSER MODAL --- */}
