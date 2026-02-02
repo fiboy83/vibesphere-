@@ -118,10 +118,8 @@ export default function VibesphereApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState('home');
   const [isScrolling, setIsScrolling] = useState(false);
   const [lastY, setLastY] = useState(0);
-  const [openCommentsId, setOpenCommentsId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -153,7 +151,6 @@ export default function VibesphereApp() {
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
-  const [viewingProfile, setViewingProfile] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- FEED & BOOKMARK STATE ---
@@ -173,10 +170,28 @@ export default function VibesphereApp() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [postToShare, setPostToShare] = useState<any | null>(null);
 
-  // --- FOCUS MODE STATE ---
-  const [focusedPost, setFocusedPost] = useState<any | null>(null);
+  // --- FOCUS MODE & COMMENT STATE ---
   const [isCommentSectionVisible, setIsCommentSectionVisible] = useState(false);
 
+  // --- NAVIGATION STATE ---
+  const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
+  const currentView = viewStack[viewStack.length - 1];
+  const { activeTab, viewingProfile, focusedPost } = currentView;
+
+  const pushView = (newView: Partial<typeof currentView>) => {
+    // We merge with the previous view to carry over properties like the tab when opening a focused post
+    setViewStack(prev => [...prev, { ...prev[prev.length - 1], ...newView }]);
+    setIsSidebarOpen(false); // Always close sidebar on navigation
+    if (newView.focusedPost) {
+        setIsCommentSectionVisible(false); // Reset comment visibility when focusing a new post
+    }
+  };
+
+  const popView = () => {
+    if (viewStack.length > 1) {
+        setViewStack(prev => prev.slice(0, -1));
+    }
+  };
 
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
   const { ready, authenticated, login, logout } = usePrivy();
@@ -393,15 +408,6 @@ export default function VibesphereApp() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastY, isConnected]);
-
-
-  const handleNavigation = (target: string) => {
-    setActiveTab(target);
-    if (target === 'home') {
-      setViewingProfile(null);
-    }
-    setIsSidebarOpen(false);
-  };
   
   const handleSendComment = (postId: number) => {
     if (commentText.trim() === "") return;
@@ -568,16 +574,25 @@ export default function VibesphereApp() {
     ? feed.filter(item => item.handle === viewingProfile.handle)
     : feed;
   
-  const viewingProfileAura = viewingProfile ? getPostAuraColor({avatar: viewingProfile.avatar, handle: viewingProfile.handle}) : profile.themeColor;
-
+  
   if (!ready) {
     return null; // or a loading spinner
   }
 
-  const focusedPostAuraColor = focusedPost ? getPostAuraColor(focusedPost.type === 'revibe' ? focusedPost.quotedPost : focusedPost) : '262 100% 70%';
+  const isSubView = viewStack.length > 1;
+
+  let currentAuraColor = profile.themeColor;
+  if (focusedPost) {
+      currentAuraColor = getPostAuraColor(focusedPost.type === 'revibe' ? focusedPost.quotedPost : focusedPost);
+  } else if (viewingProfile) {
+      currentAuraColor = getPostAuraColor({avatar: viewingProfile.avatar, handle: viewingProfile.handle});
+  } else if (activeTab !== 'home' && activeTab !== 'bookmarks') {
+      currentAuraColor = profile.themeColor;
+  }
+  
   const isFocusedPostBookmarked = focusedPost ? bookmarkedPosts.includes(focusedPost.id) : false;
 
-  const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
+  const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans">
@@ -652,29 +667,35 @@ export default function VibesphereApp() {
           animate={{ y: isScrolling ? -100 : 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b"
-          style={focusedPost ? { borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.4)` } : {borderColor: 'rgba(255,255,255,0.05)'} }
+          style={isSubView ? { borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {borderColor: 'rgba(255,255,255,0.05)'} }
         >
-          {/* menu toggle (hide when search is active) */}
-          {!isSearchOpen && !focusedPost &&(
-            <motion.button 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              onClick={() => setIsSidebarOpen(true)} 
-              className="p-2 hover:bg-white/10 rounded-full transition"
-            >
-              <Menu size={22} className="text-slate-400" />
-            </motion.button>
-          )}
-
-          {focusedPost && (
-            <motion.button
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              onClick={() => setFocusedPost(null)}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors h-10 w-10 flex items-center justify-center"
-              style={{color: `hsl(${focusedPostAuraColor})`}}
-            >
-              <ArrowLeft size={22} strokeWidth={1.5} />
-            </motion.button>
-          )}
+          <AnimatePresence mode="wait">
+            {isSubView && !isSearchOpen ? (
+              <motion.button
+                key="back-button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{duration: 0.3, ease: "easeOut"}}
+                onClick={popView}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors h-10 w-10 flex items-center justify-center"
+                style={{ color: `hsl(${currentAuraColor})` }}
+              >
+                <ArrowLeft size={22} strokeWidth={1.5} />
+              </motion.button>
+            ) : !isSearchOpen ? (
+              <motion.button
+                key="menu-button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 hover:bg-white/10 rounded-full transition"
+              >
+                <Menu size={22} className="text-slate-400" />
+              </motion.button>
+            ) : <div className='w-10 h-10'/>}
+          </AnimatePresence>
 
           {/* title & search bar container */}
           <div className="flex-1 flex justify-center px-4">
@@ -711,7 +732,7 @@ export default function VibesphereApp() {
           </div>
 
           {/* search trigger icon */}
-          {!isSearchOpen && (
+          {!isSearchOpen ? (
             <motion.button 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               onClick={() => setIsSearchOpen(true)} 
@@ -719,7 +740,7 @@ export default function VibesphereApp() {
             >
               <Search size={22} className="text-slate-400" />
             </motion.button>
-          )}
+          ) : <div className='w-10 h-10'/>}
         </motion.header>
 
         {/* --- SIDEBAR --- */}
@@ -741,21 +762,21 @@ export default function VibesphereApp() {
                     <ArrowLeft size={18} strokeWidth={1.5} />
                     <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
                   </button>
-                  <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow" style={{color: 'hsl(var(--primary))'}}>vibesphere</h2>
+                  <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow" style={{color: `hsl(${profile.themeColor})`}}>vibesphere</h2>
                 </div>
                 <nav className="flex-1">
                 <div className="flex flex-col gap-6 px-6 mt-10">
-                    <button onClick={() => { setActiveTab('profile'); setViewingProfile(null); setIsSidebarOpen(false); }} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                    <button onClick={() => pushView({ tab: 'profile', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' && !viewingProfile ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
                         <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'profile' && !viewingProfile ? 'text-white' : 'text-white'} transition-colors duration-500`}>profile</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('bookmarks')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                    <button onClick={() => pushView({ tab: 'bookmarks', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <Bookmark size={20} strokeWidth={1.5} className={`${activeTab === 'bookmarks' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
                         <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'bookmarks' ? 'text-white' : 'text-white'} transition-colors duration-500`}>bookmark</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('notifications')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                    <button onClick={() => pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <div className="relative">
                             <Bell size={20} strokeWidth={1.5} className={`${activeTab === 'notifications' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
@@ -763,17 +784,17 @@ export default function VibesphereApp() {
                         <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'notifications' ? 'text-white' : 'text-white'} transition-colors duration-500`}>notifications</span>
                     </button>
 
-                    <button onClick={() => handleNavigation('defi')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                    <button onClick={() => pushView({ tab: 'defi', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <DollarSign size={20} strokeWidth={1.5} className={`${activeTab === 'defi' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
                         <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'defi' ? 'text-white' : 'text-white'} transition-colors duration-500`}>defi</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('swap')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                    <button onClick={() => pushView({ tab: 'swap', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <Repeat size={20} strokeWidth={1.5} className={`${activeTab === 'swap' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
                         <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'swap' ? 'text-white' : 'text-white'} transition-colors duration-500`}>swap</span>
                     </button>
                     
-                    <button onClick={() => handleNavigation('settings')} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
+                    <button onClick={() => pushView({ tab: 'settings', viewingProfile: null, focusedPost: null })} className="flex items-center gap-4 text-left transition-opacity hover:opacity-70 group">
                         <Settings size={20} strokeWidth={1.5} className={`${activeTab === 'settings' ? 'text-primary' : 'text-slate-500 group-hover:text-primary'} transition-colors duration-500`} />
                         <span className={`text-xl font-light tracking-wide lowercase ${activeTab === 'settings' ? 'text-white' : 'text-white'} transition-colors duration-500`}>settings</span>
                     </button>
@@ -808,27 +829,27 @@ export default function VibesphereApp() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
                 className="relative"
               >
                  <div
                     className="absolute inset-x-0 -top-20 h-96"
                     style={{
-                      background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
+                      background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
                     }}
                  />
                 <div 
                     className="relative"
-                    style={{'--primary': focusedPostAuraColor, '--primary-glow': focusedPostAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                    style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                 >
                     <div 
-                        onClick={(e) => { e.stopPropagation(); setFocusedPost(null); const userToView = {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar}; setViewingProfile(userToView); setActiveTab('user-profile');}}
+                        onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar}, focusedPost: null })}}
                         className="flex items-center gap-4 mb-4 cursor-pointer group"
                     >
-                        <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${focusedPostAuraColor})`}} />
+                        <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
                         <div>
                           <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${focusedPostAuraColor})`}}>{focusedPost.username}</h2>
+                            <h2 className="text-lg font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${currentAuraColor})`}}>{focusedPost.username}</h2>
                           </div>
                           <p className="text-sm font-mono text-slate-400">@{focusedPost.handle}</p>
                         </div>
@@ -850,7 +871,7 @@ export default function VibesphereApp() {
 
                       <div 
                         className="flex justify-between items-center my-6 py-4 border-y"
-                        style={{borderColor: `hsla(${focusedPostAuraColor.replace(/ /g, ',')}, 0.4)`}}
+                        style={{borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)`}}
                       >
                           <div className="flex items-center gap-10">
                               <button 
@@ -947,17 +968,6 @@ export default function VibesphereApp() {
             >
               {activeTab === 'home' || activeTab === 'bookmarks' || (activeTab === 'user-profile' && viewingProfile) ? (
                 <>
-                {activeTab === 'user-profile' && viewingProfile && (
-                    <div style={{'--primary': viewingProfileAura, '--primary-glow': viewingProfileAura.replace(/ /g, ', ')} as React.CSSProperties}>
-                      <button
-                          onClick={() => { setViewingProfile(null); setActiveTab('home'); }}
-                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
-                      >
-                          <ArrowLeft size={16} />
-                          back
-                      </button>
-                    </div>
-                )}
                 <motion.div 
                   initial="hidden" animate="show"
                   variants={{ show: { transition: { staggerChildren: 0.15 } } }}
@@ -975,7 +985,7 @@ export default function VibesphereApp() {
                       </motion.div>
                   )}
                   {activeTab === 'user-profile' && viewingProfile && (
-                     <ResonanceCard style={{'--primary': viewingProfileAura, '--primary-glow': viewingProfileAura.replace(/ /g, ', ')} as React.CSSProperties}>
+                     <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ')} as React.CSSProperties}>
                         <div className="flex flex-col items-center text-center">
                           <img 
                             src={viewingProfile.avatar} 
@@ -998,7 +1008,7 @@ export default function VibesphereApp() {
                       <ResonanceCard 
                         key={item.id} 
                         style={cardStyle}
-                        onClick={() => { setFocusedPost(item); setIsCommentSectionVisible(false); }}
+                        onClick={() => pushView({ focusedPost: item })}
                       >
                         {item.type === 'revibe' && (
                             <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1011,8 +1021,7 @@ export default function VibesphereApp() {
                             onClick={(e) => { 
                                 e.stopPropagation(); 
                                 const userToView = {username: item.username, handle: item.handle, avatar: item.avatar}; 
-                                setViewingProfile(userToView);
-                                setActiveTab('user-profile');
+                                pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
                             }}
                             className="flex items-center gap-3 cursor-pointer group"
                           >
@@ -1110,15 +1119,6 @@ export default function VibesphereApp() {
                 <motion.div 
                     className="w-full max-w-md mx-auto flex flex-col gap-6"
                 >
-                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
-                      <button
-                          onClick={() => handleNavigation('home')}
-                          className="flex items-center gap-2 mb-2 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
-                      >
-                          <ArrowLeft size={16} />
-                          back
-                      </button>
-                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifications</h2>
                     
                     <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
@@ -1162,43 +1162,16 @@ export default function VibesphereApp() {
                 </motion.div>
               ) : activeTab === 'defi' ? (
                 <motion.div>
-                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
-                      <button
-                          onClick={() => handleNavigation('home')}
-                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
-                      >
-                          <ArrowLeft size={16} />
-                          back
-                      </button>
-                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">DeFi</h2>
                     <p className="text-center text-slate-500 font-mono mt-2">decentralized finance hub coming soon.</p>
                 </motion.div>
               ) : activeTab === 'swap' ? (
                  <motion.div>
-                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
-                      <button
-                          onClick={() => handleNavigation('home')}
-                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
-                      >
-                          <ArrowLeft size={16} />
-                          back
-                      </button>
-                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Swap</h2>
                     <p className="text-center text-slate-500 font-mono mt-2">token swap interface coming soon.</p>
                 </motion.div>
               ) : activeTab === 'settings' ? (
                 <motion.div>
-                    <div style={{'--primary': profile.themeColor} as React.CSSProperties}>
-                      <button
-                          onClick={() => handleNavigation('home')}
-                          className="flex items-center gap-2 mb-8 text-xs font-mono lowercase tracking-widest transition-colors hover:brightness-125 text-primary"
-                      >
-                          <ArrowLeft size={16} />
-                          back
-                      </button>
-                    </div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Settings</h2>
                     <p className="text-center text-slate-500 font-mono mt-2">sovereign settings panel coming soon.</p>
                 </motion.div>
@@ -1574,7 +1547,7 @@ export default function VibesphereApp() {
           className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-xl border-t border-white/5 z-[80]"
         >
           {/* home - familiar house icon */}
-          <button onClick={() => handleNavigation('home')} className={`p-2 transition-all ${activeTab === 'home' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+          <button onClick={() => pushView({ tab: 'home', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'home' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 9.5L12 3L21 9.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V9.5Z" stroke="url(#paint0_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
@@ -1587,7 +1560,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* market - familiar chart/trading icon */}
-          <button onClick={() => handleNavigation('market')} className={`p-2 transition-all ${activeTab === 'market' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+          <button onClick={() => pushView({ tab: 'market', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'market' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 18L9 12L13 16L21 8M21 8H16M21 8V13" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
@@ -1605,7 +1578,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* inbok - familiar mail icon */}
-          <button onClick={() => handleNavigation('inbox')} className={`p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+          <button onClick={() => pushView({ tab: 'inbox', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 7L12 13L21 7M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
@@ -1618,7 +1591,7 @@ export default function VibesphereApp() {
           </button>
 
           {/* wallet - familiar card/wallet icon */}
-          <button onClick={() => handleNavigation('wallet')} className={`p-2 transition-all ${activeTab === 'wallet' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+          <button onClick={() => pushView({ tab: 'wallet', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'wallet' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="url(#paint3_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
