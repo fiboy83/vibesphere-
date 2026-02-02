@@ -792,12 +792,12 @@ export default function VibesphereApp() {
                 <div className="flex flex-col gap-6 px-6 mt-10">
                     <button onClick={() => pushView({ tab: 'profile', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'profile' && !viewingProfile ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
                         <User size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-light tracking-wide lowercase">profile</span>
+                        <span className="text-xl font-bold tracking-wide lowercase">profile</span>
                     </button>
                     
                     <button onClick={() => pushView({ tab: 'bookmarks', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'bookmarks' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
                         <Bookmark size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-light tracking-wide lowercase">bookmark</span>
+                        <span className="text-xl font-bold tracking-wide lowercase">bookmark</span>
                     </button>
                     
                     <button onClick={() => pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'notifications' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
@@ -805,22 +805,22 @@ export default function VibesphereApp() {
                             <Bell size={20} strokeWidth={1.5} />
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
                         </div>
-                        <span className="text-xl font-light tracking-wide lowercase">notifications</span>
+                        <span className="text-xl font-bold tracking-wide lowercase">notifications</span>
                     </button>
 
                     <button onClick={() => pushView({ tab: 'defi', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'defi' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
                         <DollarSign size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-light tracking-wide lowercase">defi</span>
+                        <span className="text-xl font-bold tracking-wide lowercase">defi</span>
                     </button>
                     
                     <button onClick={() => pushView({ tab: 'swap', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'swap' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
                         <Repeat size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-light tracking-wide lowercase">swap</span>
+                        <span className="text-xl font-bold tracking-wide lowercase">swap</span>
                     </button>
                     
                     <button onClick={() => pushView({ tab: 'settings', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'settings' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
                         <Settings size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-light tracking-wide lowercase">settings</span>
+                        <span className="text-xl font-bold tracking-wide lowercase">settings</span>
                     </button>
                   </div>
                 </nav>
