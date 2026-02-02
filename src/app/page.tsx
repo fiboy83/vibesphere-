@@ -789,38 +789,116 @@ export default function VibesphereApp() {
                   <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow">vibesphere</h2>
                 </div>
                 <nav className="flex-1">
-                <div className="flex flex-col gap-6 px-6 mt-10">
-                    <button onClick={() => pushView({ tab: 'profile', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'profile' && !viewingProfile ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
-                        <User size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-bold tracking-wide lowercase">profile</span>
+                <div className="flex flex-col gap-4 mt-8">
+                    <button
+                      onClick={() => pushView({ tab: 'profile', viewingProfile: null, focusedPost: null })}
+                      className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
+                      ${activeTab === 'profile' && !viewingProfile
+                        ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
+                        : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
+                      }`}
+                    >
+                      <div
+                        className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'profile' && !viewingProfile ? 'opacity-100' : ''}`}
+                        style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'profile' && !viewingProfile ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                      />
+                      <div className="relative flex items-center gap-4">
+                        <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' && !viewingProfile ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                        <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'profile' && !viewingProfile ? 'text-shadow-glow' : ''}`}>profile</span>
+                      </div>
                     </button>
                     
-                    <button onClick={() => pushView({ tab: 'bookmarks', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'bookmarks' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
-                        <Bookmark size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-bold tracking-wide lowercase">bookmark</span>
-                    </button>
-                    
-                    <button onClick={() => pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'notifications' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
-                        <div className="relative">
-                            <Bell size={20} strokeWidth={1.5} />
-                            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
+                    <button
+                      onClick={() => pushView({ tab: 'bookmarks', viewingProfile: null, focusedPost: null })}
+                      className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
+                      ${activeTab === 'bookmarks'
+                        ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
+                        : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
+                      }`}
+                    >
+                        <div
+                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'bookmarks' ? 'opacity-100' : ''}`}
+                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'bookmarks' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                        />
+                        <div className="relative flex items-center gap-4">
+                            <Bookmark size={20} strokeWidth={1.5} className={`${activeTab === 'bookmarks' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'bookmarks' ? 'text-shadow-glow' : ''}`}>bookmark</span>
                         </div>
-                        <span className="text-xl font-bold tracking-wide lowercase">notifications</span>
+                    </button>
+                    
+                    <button
+                        onClick={() => pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null })}
+                        className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
+                        ${activeTab === 'notifications'
+                            ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
+                            : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
+                        }`}
+                        >
+                        <div
+                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'notifications' ? 'opacity-100' : ''}`}
+                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'notifications' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                        />
+                        <div className="relative flex items-center gap-4">
+                            <div className="relative">
+                                <Bell size={20} strokeWidth={1.5} className={`${activeTab === 'notifications' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
+                            </div>
+                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'notifications' ? 'text-shadow-glow' : ''}`}>notifications</span>
+                        </div>
                     </button>
 
-                    <button onClick={() => pushView({ tab: 'defi', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'defi' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
-                        <DollarSign size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-bold tracking-wide lowercase">defi</span>
+                    <button
+                        onClick={() => pushView({ tab: 'defi', viewingProfile: null, focusedPost: null })}
+                        className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
+                        ${activeTab === 'defi'
+                            ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
+                            : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
+                        }`}
+                        >
+                        <div
+                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'defi' ? 'opacity-100' : ''}`}
+                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'defi' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                        />
+                        <div className="relative flex items-center gap-4">
+                            <DollarSign size={20} strokeWidth={1.5} className={`${activeTab === 'defi' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'defi' ? 'text-shadow-glow' : ''}`}>defi</span>
+                        </div>
                     </button>
                     
-                    <button onClick={() => pushView({ tab: 'swap', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'swap' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
-                        <Repeat size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-bold tracking-wide lowercase">swap</span>
+                    <button
+                        onClick={() => pushView({ tab: 'swap', viewingProfile: null, focusedPost: null })}
+                        className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
+                        ${activeTab === 'swap'
+                            ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
+                            : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
+                        }`}
+                        >
+                        <div
+                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'swap' ? 'opacity-100' : ''}`}
+                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'swap' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                        />
+                        <div className="relative flex items-center gap-4">
+                            <Repeat size={20} strokeWidth={1.5} className={`${activeTab === 'swap' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'swap' ? 'text-shadow-glow' : ''}`}>swap</span>
+                        </div>
                     </button>
                     
-                    <button onClick={() => pushView({ tab: 'settings', viewingProfile: null, focusedPost: null })} className={`group flex items-center gap-4 text-left transition-all duration-300 ${activeTab === 'settings' ? 'text-primary text-shadow-glow' : 'text-primary/70 hover:text-primary hover:text-shadow-glow'}`}>
-                        <Settings size={20} strokeWidth={1.5} />
-                        <span className="text-xl font-bold tracking-wide lowercase">settings</span>
+                    <button
+                        onClick={() => pushView({ tab: 'settings', viewingProfile: null, focusedPost: null })}
+                        className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
+                        ${activeTab === 'settings'
+                            ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
+                            : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
+                        }`}
+                        >
+                        <div
+                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'settings' ? 'opacity-100' : ''}`}
+                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'settings' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                        />
+                        <div className="relative flex items-center gap-4">
+                            <Settings size={20} strokeWidth={1.5} className={`${activeTab === 'settings' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'settings' ? 'text-shadow-glow' : ''}`}>settings</span>
+                        </div>
                     </button>
                   </div>
                 </nav>
