@@ -1165,7 +1165,7 @@ export default function VibesphereApp() {
                               </div>
                           )}
 
-                          <p className="text-2xl text-slate-200 leading-loose font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                          <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
                           
                           <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
                         </div>
@@ -1423,7 +1423,7 @@ export default function VibesphereApp() {
                                            {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
                                          </div>
                                       )}
-                                      <p className={`text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap ${item.type === 'artikel' ? 'line-clamp-4' : ''}`}>{item.text}</p>
+                                      <p className={`text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap ${item.type === 'artikel' ? 'line-clamp-5' : ''}`}>{item.text}</p>
                                     </div>
                                 )}
                             </div>
