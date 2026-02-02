@@ -617,7 +617,7 @@ export default function VibesphereApp() {
                     <ArrowLeft size={18} strokeWidth={1.5} />
                     <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
                   </button>
-                  <h2 className="text-2xl font-black lowercase italic bg-gradient-to-tr from-white to-purple-500 bg-clip-text text-transparent">vibesphere</h2>
+                  <h2 className="text-2xl font-black lowercase italic text-primary transition-colors duration-500 text-shadow-glow">vibesphere</h2>
                 </div>
                 <nav className="flex-1">
                 <div className="flex flex-col gap-6 px-6 mt-10">
@@ -885,7 +885,7 @@ export default function VibesphereApp() {
                 <motion.div 
                     className="w-full max-w-md mx-auto flex flex-col gap-6"
                 >
-                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifikasi</h2>
+                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifications</h2>
                     
                     <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
                         <div className="w-8 h-8 flex-shrink-0 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -894,9 +894,9 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`} alt="Quantum_Leaper avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold text-white">Quantum_Leaper</span> dan 2 lainnya menyukai vibe anda.
+                                <span className="font-bold text-white">Quantum_Leaper</span> and 2 others liked your vibe.
                             </p>
-                            <p className="text-xs text-slate-500 font-mono mt-1">2 jam yang lalu</p>
+                            <p className="text-xs text-slate-500 font-mono mt-1">2 hours ago</p>
                         </div>
                     </div>
 
@@ -907,9 +907,9 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`} alt="DAO_Steward avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold text-white">DAO_Steward</span> menyimpan artikel anda: "New governance proposal PIP-8..."
+                                <span className="font-bold text-white">DAO_Steward</span> saved your article: "New governance proposal PIP-8..."
                             </p>
-                            <p className="text-xs text-slate-500 font-mono mt-1">5 jam yang lalu</p>
+                            <p className="text-xs text-slate-500 font-mono mt-1">5 hours ago</p>
                         </div>
                     </div>
                     
@@ -920,9 +920,9 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`} alt="Nova_Architect avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                Postingan baru dari <span className="font-bold text-white">Nova_Architect</span>.
+                                New post from <span className="font-bold text-white">Nova_Architect</span>.
                             </p>
-                            <p className="text-xs text-slate-500 font-mono mt-1">1 hari yang lalu</p>
+                            <p className="text-xs text-slate-500 font-mono mt-1">1 day ago</p>
                         </div>
                     </div>
 
@@ -1101,15 +1101,7 @@ export default function VibesphereApp() {
                   className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
                   <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Atlantic Testnet</h2>
-                  {marketData.map((coin) => (
-                    <div key={coin.symbol} className="p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 flex justify-between items-center">
-                      <div className="text-left">
-                        <p className="text-2xl font-light tracking-widest lowercase">{coin.symbol}</p>
-                        <p className="text-sm font-mono text-slate-400">{coin.price}</p>
-                      </div>
-                      <p className={`text-lg font-mono font-light ${coin.color}`}>{coin.change}</p>
-                    </div>
-                  ))}
+                  {/* Market data would go here */}
                 </motion.div>
               )}
               {activeTab === 'inbox' && (
@@ -1337,8 +1329,3 @@ export default function VibesphereApp() {
     </div>
   );
 }
-
-
-
-
-
