@@ -154,13 +154,20 @@ export default function VibesphereApp() {
 
   // --- FEED & BOOKMARK STATE ---
   const initialFeedData = [
-    { id: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 12, repostCount: 5, likeCount: 42, media: null },
-    { id: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", text: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "tekt", commentCount: 8, repostCount: 2, likeCount: 28, media: null },
+    { id: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 1, repostCount: 5, likeCount: 42, media: null, comments: [
+        { id: 101, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "1m", text: "this is fire. the future is now.", commentCount: 1, repostCount: 0, likeCount: 3, bookmarked: false, comments: [
+             { id: 1011, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "now", text: "indeed it is!", commentCount: 0, repostCount: 0, likeCount: 1, bookmarked: false, comments: [] }
+        ] }
+    ] },
+    { id: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", text: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "tekt", commentCount: 0, repostCount: 2, likeCount: 28, media: null, comments: [] },
     { id: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", 
       text: `New governance proposal PIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
-      type: "artikel" , commentCount: 34, repostCount: 15, likeCount: 99, media: null
+      type: "artikel" , commentCount: 1, repostCount: 15, likeCount: 99, media: null,
+      comments: [
+          { id: 301, userId: "user.opn", username: "Sovereign_User", handle: "user.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "1h", text: "Important proposal. Everyone should vote.", commentCount: 0, repostCount: 2, likeCount: 10, bookmarked: false, comments: [] }
+      ]
     },
-    { id: 4, userId: "user.opn", username: "Sovereign_User", handle: "user.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", text: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "tekt", commentCount: 18, repostCount: 3, likeCount: 66, media: null },
+    { id: 4, userId: "user.opn", username: "Sovereign_User", handle: "user.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.opn&backgroundColor=f59e0b`, time: "5h", text: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "tekt", commentCount: 0, repostCount: 3, likeCount: 66, media: null, comments: [] },
   ];
   const [feed, setFeed] = useState(initialFeedData);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
@@ -526,6 +533,7 @@ export default function VibesphereApp() {
       likeCount: 0,
       text: composerText,
       media: null,
+      comments: [],
     };
 
     if (composerTab === 'media' && mediaPreview) {
@@ -607,7 +615,8 @@ export default function VibesphereApp() {
 
   let currentAuraColor = profile.themeColor;
   if (focusedPost) {
-      currentAuraColor = getPostAuraColor(focusedPost.type === 'revibe' ? focusedPost.quotedPost : focusedPost);
+      const postOrComment = focusedPost.quotedPost ? focusedPost.quotedPost : focusedPost;
+      currentAuraColor = getPostAuraColor(postOrComment);
   } else if (viewingProfile) {
       currentAuraColor = getPostAuraColor({avatar: viewingProfile.avatar, handle: viewingProfile.handle});
   } else if (activeTab !== 'home' && activeTab !== 'bookmarks') {
@@ -782,7 +791,7 @@ export default function VibesphereApp() {
                 className="fixed inset-y-0 left-0 w-64 bg-[#050505] z-[100] border-r border-white/5 p-8 flex flex-col"
               >
                 <div className="flex flex-col gap-6 mb-12">
-                  <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors duration-500">
+                   <button onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors duration-500">
                     <ArrowLeft size={18} strokeWidth={1.5} />
                     <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
                   </button>
@@ -1043,16 +1052,46 @@ export default function VibesphereApp() {
                               </div>
                               
                               {/* Vibe Thread */}
-                              <div className="flex gap-3 items-start">
-                                  <img src={focusedPost.avatar} alt="Original poster avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${getPostAuraColor(focusedPost)})`}}/>
-                                  <div className="flex-1">
-                                    <div className='flex items-center gap-2'>
-                                        <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor(focusedPost)})`}}>{focusedPost.username}</span>
-                                        <span className="text-xs text-slate-500 font-mono">@{focusedPost.handle} &bull; {focusedPost.time}</span>
+                              {focusedPost.comments && focusedPost.comments.length > 0 ? (
+                                focusedPost.comments.map(comment => (
+                                    <div 
+                                        key={comment.id} 
+                                        className="flex gap-3 items-start cursor-pointer hover:bg-white/5 p-2 -m-2 rounded-lg transition-colors"
+                                        onClick={() => pushView({ focusedPost: comment })}
+                                    >
+                                        <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${getPostAuraColor(comment)})`}}/>
+                                        <div className="flex-1">
+                                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar}, focusedPost: null })}} className='flex items-center gap-2 group'>
+                                                <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${getPostAuraColor(comment)})`}}>{comment.username}</span>
+                                                <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
+                                            </div>
+                                            <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
+                                            {/* Interaction bar for comments */}
+                                            <div className="flex items-center gap-6 mt-3 -ml-2" onClick={e => e.stopPropagation()} style={{'--primary': getPostAuraColor(comment)} as React.CSSProperties}>
+                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
+                                                    <MessageSquare size={16} strokeWidth={1.5} />
+                                                    <span className="text-xs font-mono">{comment.commentCount}</span>
+                                                </button>
+                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
+                                                    <Repeat size={18} strokeWidth={1.5} />
+                                                    <span className="text-xs font-mono">{comment.repostCount}</span>
+                                                </button>
+                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
+                                                    <Heart size={16} strokeWidth={1.5} />
+                                                    <span className="text-xs font-mono">{comment.likeCount}</span>
+                                                </button>
+                                                <button className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all">
+                                                    <Bookmark size={16} strokeWidth={1.5} />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p className="text-base text-slate-300 leading-relaxed mt-1 font-light">this vibe is real. 100% locked.</p>
-                                  </div>
-                              </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-8">
+                                    <p className="text-sm text-slate-500 font-mono">no replies yet.</p>
+                                </div>
+                              )}
                           </div>
                         </motion.div>
                       )}
@@ -1107,11 +1146,16 @@ export default function VibesphereApp() {
                     } as React.CSSProperties;
                     const isBookmarked = bookmarkedPosts.includes(item.id);
 
+                    const handleCardClick = () => {
+                        const targetPost = (item.type === 'revibe' && item.quotedPost) ? item.quotedPost : item;
+                        pushView({ focusedPost: targetPost });
+                    };
+
                     return (
                       <ResonanceCard 
                         key={item.id} 
                         style={cardStyle}
-                        onClick={() => pushView({ focusedPost: item.type === 'revibe' ? item.quotedPost : item })}
+                        onClick={handleCardClick}
                       >
                         {item.type === 'revibe' && (
                             <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1123,7 +1167,7 @@ export default function VibesphereApp() {
                           <div 
                             onClick={(e) => { 
                                 e.stopPropagation(); 
-                                const userToView = {username: item.username, handle: item.handle, avatar: item.avatar}; 
+                                const userToView = item.type === 'revibe' ? {username: item.username, handle: item.handle, avatar: item.avatar} : {username: item.username, handle: item.handle, avatar: item.avatar}; 
                                 pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
                             }}
                             className="flex items-center gap-3 cursor-pointer group"
@@ -1143,7 +1187,7 @@ export default function VibesphereApp() {
                               <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                             </div>
                           </div>
-                          <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item)}} className="group p-2 -mr-2 mt-1">
+                          <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
                             <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                           </button>
                         </div>
