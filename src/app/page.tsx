@@ -72,7 +72,7 @@ const getDominantColorFromImage = (imageUrl: string, onComplete: (hslValues: str
         let [h, s, l] = rgbToHsl(r, g, b);
         
         s = Math.min(1, s * 1.5); // Boost saturation
-        l = Math.max(0.4, Math.min(0.7, l)); // Normalize lightness
+        l = Math.max(0.55, Math.min(0.75, l)); // Adjust lightness for visibility
 
         const newPrimaryValues = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
         onComplete(newPrimaryValues);
@@ -582,7 +582,7 @@ export default function VibesphereApp() {
         if (rgb) {
           let [h, s, l] = rgbToHsl(...rgb);
           s = Math.min(1, s * 1.5);
-          l = Math.max(0.4, Math.min(0.7, l));
+          l = Math.max(0.55, Math.min(0.75, l));
           return `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
         }
       }
