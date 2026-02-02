@@ -1122,171 +1122,178 @@ export default function VibesphereApp() {
                       background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
                     }}
                  />
-                 {parentPostForCommentView && (
-                    <div className="mb-4">
-                        <div className="flex gap-3 items-start opacity-70">
-                            <img src={parentPostForCommentView.avatar} alt="parent avatar" className="w-10 h-10 rounded-full border-2" style={{borderColor: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}/>
-                            <div className="flex-1">
-                                <div className='flex items-center gap-2'>
-                                    <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}>{parentPostForCommentView.username}</span>
-                                    <span className="text-xs text-slate-500 font-mono">@{parentPostForCommentView.handle} &bull; {parentPostForCommentView.time}</span>
-                                </div>
-                                <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{parentPostForCommentView.text}</p>
-                            </div>
-                        </div>
-                        <div className="ml-5 h-8 w-0.5 bg-white/10" />
-                    </div>
-                )}
-                <div 
-                    className="relative"
-                    style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
-                >
-                    <div 
-                        onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar}, focusedPost: null })}}
-                        className="flex items-center gap-4 mb-4 cursor-pointer group"
-                    >
-                        <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${currentAuraColor})`}}>{focusedPost.username}</h2>
-                          </div>
-                          <p className="text-sm font-mono text-slate-400">@{focusedPost.handle}</p>
-                        </div>
-                    </div>
 
-                    <div className='pl-16'>
-                      <div className="p-4 rounded-2xl shadow-[0_0_15px_hsla(var(--primary-glow),0.3)]">
-                        {focusedPost.media && (
-                            <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-                            {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                            {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                            </div>
-                        )}
-
-                        <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
-                        
-                        <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
-                      </div>
-
-                      <div 
-                        className="flex justify-between items-center my-6 py-4 border-y"
-                        style={{borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)`}}
-                      >
-                          <div className="flex items-center gap-10">
-                              <motion.button 
-                                whileTap={{ scale: 1.2 }}
-                                transition={{ duration: 0.1 }}
-                                onClick={(e) => { e.stopPropagation(); setIsCommentSectionVisible(prev => !prev); }}
-                                className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
-                              >
-                                <MessageSquare size={20} strokeWidth={1.5} />
-                                <span className="text-sm font-mono">{focusedPost.commentCount}</span>
-                              </motion.button>
-                            
-                              <motion.button
-                                whileTap={{ scale: 1.2 }}
-                                transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
-                                <Repeat size={22} strokeWidth={1.5} />
-                                <span className="text-sm font-mono">{focusedPost.repostCount}</span>
-                              </motion.button>
-
-                              <motion.button
-                                whileTap={{ scale: 1.2 }}
-                                transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleToggleLike(focusedPost.id)}} 
-                                className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all"
-                                style={isFocusedPostLiked ? {
-                                    color: `hsl(${currentAuraColor})`,
-                                    filter: `drop-shadow(0 0 6px hsl(${currentAuraColor}))`
-                                } : {}}
-                              >
-                                <Heart 
-                                    size={20} 
-                                    strokeWidth={1.5}
-                                    fill={isFocusedPostLiked ? 'currentColor' : 'none'} 
-                                />
-                                <span className="text-sm font-mono">{focusedPost.likeCount}</span>
-                              </motion.button>
-                          </div>
-                            <motion.button
-                                whileTap={{ scale: 1.2 }}
-                                transition={{ duration: 0.1 }}
-                                onClick={(e) => { e.stopPropagation(); handleToggleBookmark(focusedPost.id); }}
-                                className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
-                              >
-                                <Bookmark 
-                                  size={20} 
-                                  strokeWidth={1.5} 
-                                  className="transition-all duration-300"
-                                  fill={isFocusedPostBookmarked ? 'currentColor' : 'none'}
-                                />
-                            </motion.button>
-                      </div>
-                    
-                      <AnimatePresence>
-                      {isCommentSectionVisible && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                        >
-                          <h3 className="text-base font-bold lowercase tracking-widest text-slate-400 mb-6">replies</h3>
-                          <div className="flex flex-col gap-6">
-                              {/* New Comment Input */}
-                              <div className="flex gap-3 items-start">
-                                  <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
-                                  <div className="flex-1">
-                                      <div className="relative flex items-center">
-                                        <textarea 
-                                          value={commentText}
-                                          onChange={(e) => setCommentText(e.target.value.toLowerCase())}
-                                          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id))}
-                                          placeholder="post your reply..."
-                                          className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
-                                          rows={1}
-                                        />
-                                        <button 
-                                          onClick={() => handleSendComment(focusedPost.id)}
-                                          disabled={!commentText.trim()}
-                                          className={`absolute right-1 bottom-1 transition-colors ${
-                                            commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
-                                          }`}
-                                        >
-                                          <Send size={16} strokeWidth={2} />
-                                        </button>
-                                      </div>
+                <div className="relative pb-24">
+                  {parentPostForCommentView && (
+                      <div className="mb-4">
+                          <div className="flex gap-3 items-start opacity-70">
+                              <img src={parentPostForCommentView.avatar} alt="parent avatar" className="w-10 h-10 rounded-full border-2" style={{borderColor: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}/>
+                              <div className="flex-1">
+                                  <div className='flex items-center gap-2'>
+                                      <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}>{parentPostForCommentView.username}</span>
+                                      <span className="text-xs text-slate-500 font-mono">@{parentPostForCommentView.handle} &bull; {parentPostForCommentView.time}</span>
                                   </div>
+                                  <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{parentPostForCommentView.text}</p>
                               </div>
-                              
-                              {/* Vibe Thread */}
-                              {focusedPost.comments && focusedPost.comments.length > 0 ? (
-                                focusedPost.comments.map(comment => (
-                                    <div 
-                                        key={comment.id} 
-                                        className="flex gap-3 items-start cursor-pointer hover:bg-white/5 p-2 -m-2 rounded-lg transition-colors"
-                                        onClick={() => pushView({ focusedPost: comment })}
-                                    >
-                                        <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${getPostAuraColor(comment)})`}}/>
-                                        <div className="flex-1">
-                                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar}, focusedPost: null })}} className='flex items-center gap-2 group'>
-                                                <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${getPostAuraColor(comment)})`}}>{comment.username}</span>
-                                                <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
-                                            </div>
-                                            <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
+                          </div>
+                          <div className="ml-5 h-8 w-0.5 bg-white/10" />
+                      </div>
+                  )}
+                  <div 
+                      className="relative"
+                      style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                  >
+                      <div 
+                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar}, focusedPost: null })}}
+                          className="flex items-center gap-4 mb-4 cursor-pointer group"
+                      >
+                          <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h2 className="text-lg font-bold text-white transition-colors group-hover:brightness-125" style={{color: `hsl(${currentAuraColor})`}}>{focusedPost.username}</h2>
+                            </div>
+                            <p className="text-sm font-mono text-slate-400">@{focusedPost.handle}</p>
+                          </div>
+                      </div>
+
+                      <div className='pl-16'>
+                        <div className="p-8 rounded-2xl">
+                          {focusedPost.media && (
+                              <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                              {focusedPost.media.type === 'image' && <img src={focusedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                              {focusedPost.media.type === 'video' && <video src={focusedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                              </div>
+                          )}
+
+                          <p className="text-2xl text-slate-200 leading-loose font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                          
+                          <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
+                        </div>
+                      
+                        <AnimatePresence>
+                        {isCommentSectionVisible && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                          >
+                            <h3 className="text-base font-bold lowercase tracking-widest text-slate-400 my-6">replies</h3>
+                            <div className="flex flex-col gap-6">
+                                {/* New Comment Input */}
+                                <div className="flex gap-3 items-start">
+                                    <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
+                                    <div className="flex-1">
+                                        <div className="relative flex items-center">
+                                          <textarea 
+                                            value={commentText}
+                                            onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id))}
+                                            placeholder="post your reply..."
+                                            className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
+                                            rows={1}
+                                          />
+                                          <button 
+                                            onClick={() => handleSendComment(focusedPost.id)}
+                                            disabled={!commentText.trim()}
+                                            className={`absolute right-1 bottom-1 transition-colors ${
+                                              commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
+                                            }`}
+                                          >
+                                            <Send size={16} strokeWidth={2} />
+                                          </button>
                                         </div>
                                     </div>
-                                ))
-                              ) : (
-                                <div className="text-center py-8">
-                                    <p className="text-sm text-slate-500 font-mono">no replies yet.</p>
                                 </div>
-                              )}
-                          </div>
-                        </motion.div>
-                      )}
-                      </AnimatePresence>
+                                
+                                {/* Vibe Thread */}
+                                {focusedPost.comments && focusedPost.comments.length > 0 ? (
+                                  focusedPost.comments.map(comment => (
+                                      <div 
+                                          key={comment.id} 
+                                          className="flex gap-3 items-start cursor-pointer hover:bg-white/5 p-2 -m-2 rounded-lg transition-colors"
+                                          onClick={() => pushView({ focusedPost: comment })}
+                                      >
+                                          <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${getPostAuraColor(comment)})`}}/>
+                                          <div className="flex-1">
+                                              <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar}, focusedPost: null })}} className='flex items-center gap-2 group'>
+                                                  <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${getPostAuraColor(comment)})`}}>{comment.username}</span>
+                                                  <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
+                                              </div>
+                                              <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
+                                          </div>
+                                      </div>
+                                  ))
+                                ) : (
+                                  <div className="text-center py-8">
+                                      <p className="text-sm text-slate-500 font-mono">no replies yet.</p>
+                                  </div>
+                                )}
+                            </div>
+                          </motion.div>
+                        )}
+                        </AnimatePresence>
+                      </div>
+                  </div>
+                </div>
+
+                <div 
+                    className="fixed bottom-0 left-0 right-0 z-40 bg-black/60 backdrop-blur-xl border-t"
+                    style={{borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)`}}
+                >
+                  <div className="w-full max-w-4xl mx-auto px-6">
+                    <div className="flex justify-between items-center py-3">
+                        <div className="flex items-center gap-10">
+                            <motion.button 
+                              whileTap={{ scale: 1.2 }}
+                              transition={{ duration: 0.1 }}
+                              onClick={(e) => { e.stopPropagation(); setIsCommentSectionVisible(prev => !prev); }}
+                              className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
+                            >
+                              <MessageSquare size={20} strokeWidth={1.5} />
+                              <span className="text-sm font-mono">{focusedPost.commentCount}</span>
+                            </motion.button>
+                          
+                            <motion.button
+                              whileTap={{ scale: 1.2 }}
+                              transition={{ duration: 0.1 }}
+                              onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
+                              <Repeat size={22} strokeWidth={1.5} />
+                              <span className="text-sm font-mono">{focusedPost.repostCount}</span>
+                            </motion.button>
+
+                            <motion.button
+                              whileTap={{ scale: 1.2 }}
+                              transition={{ duration: 0.1 }}
+                              onClick={(e) => {e.stopPropagation(); handleToggleLike(focusedPost.id)}} 
+                              className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all"
+                              style={isFocusedPostLiked ? {
+                                  color: `hsl(${currentAuraColor})`,
+                                  filter: `drop-shadow(0 0 6px hsl(${currentAuraColor}))`
+                              } : {}}
+                            >
+                              <Heart 
+                                  size={20} 
+                                  strokeWidth={1.5}
+                                  fill={isFocusedPostLiked ? 'currentColor' : 'none'} 
+                              />
+                              <span className="text-sm font-mono">{focusedPost.likeCount}</span>
+                            </motion.button>
+                        </div>
+                          <motion.button
+                              whileTap={{ scale: 1.2 }}
+                              transition={{ duration: 0.1 }}
+                              onClick={(e) => { e.stopPropagation(); handleToggleBookmark(focusedPost.id); }}
+                              className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
+                            >
+                              <Bookmark 
+                                size={20} 
+                                strokeWidth={1.5} 
+                                className="transition-all duration-300"
+                                fill={isFocusedPostBookmarked ? 'currentColor' : 'none'}
+                              />
+                          </motion.button>
                     </div>
+                  </div>
                 </div>
               </motion.div>
             ) : (
@@ -1409,14 +1416,14 @@ export default function VibesphereApp() {
                                         <p className="text-slate-300 text-base leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
                                     </div>
                                 ) : (
-                                    <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar' : ''}>
+                                    <div>
                                       {item.media && (
                                          <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
                                            {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
                                            {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
                                          </div>
                                       )}
-                                      <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
+                                      <p className={`text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap ${item.type === 'artikel' ? 'line-clamp-4' : ''}`}>{item.text}</p>
                                     </div>
                                 )}
                             </div>
