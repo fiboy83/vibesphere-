@@ -234,9 +234,16 @@ export default function VibesphereApp() {
         setProfile(defaultProfile);
       }
       const savedFeed = localStorage.getItem(`vibesphere_feed_${wallet.address}`);
-      if(savedFeed) {
-        setFeed(JSON.parse(savedFeed));
-      }
+        if (savedFeed) {
+            try {
+                const parsedFeed = JSON.parse(savedFeed);
+                setFeed(parsedFeed);
+            } catch (e) {
+                console.error("Failed to parse feed from localStorage, resetting.", e);
+                localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
+                setFeed(initialFeedData);
+            }
+        }
       const savedBookmarks = localStorage.getItem(`vibesphere_bookmarks_${wallet.address}`);
       if (savedBookmarks) {
         setBookmarkedPosts(JSON.parse(savedBookmarks));
@@ -252,9 +259,30 @@ export default function VibesphereApp() {
 
   useEffect(() => {
     if (wallet?.address && feed !== initialFeedData) {
-      localStorage.setItem(`vibesphere_feed_${wallet.address}`, JSON.stringify(feed));
+        try {
+            const feedToSave = feed.slice(0, 20);
+            localStorage.setItem(`vibesphere_feed_${wallet.address}`, JSON.stringify(feedToSave));
+        } catch (e: any) {
+            if (e.name === 'QuotaExceededError') {
+                console.warn('LocalStorage quota exceeded. Clearing old feed data to make space.');
+                toast({
+                    variant: "destructive",
+                    title: "Local cache full",
+                    description: "Clearing old feed data to make space. Your session will continue.",
+                });
+                localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
+                try {
+                    const feedToSave = feed.slice(0, 20);
+                    localStorage.setItem(`vibesphere_feed_${wallet.address}`, JSON.stringify(feedToSave));
+                } catch (retryError) {
+                    console.error('Failed to save feed to localStorage on retry:', retryError);
+                }
+            } else {
+                console.error('Failed to save feed to localStorage:', e);
+            }
+        }
     }
-  }, [feed, wallet?.address]);
+  }, [feed, wallet?.address, toast]);
 
   useEffect(() => {
     if (wallet?.address) {
@@ -1219,7 +1247,7 @@ export default function VibesphereApp() {
                           <div 
                             onClick={(e) => { 
                                 e.stopPropagation(); 
-                                const userToView = item.type === 'revibe' ? item.quotedPost.user : item;
+                                const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost.user : item;
                                 pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
                             }}
                             className="flex items-center gap-3 cursor-pointer group"
@@ -1239,13 +1267,13 @@ export default function VibesphereApp() {
                               <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                             </div>
                           </div>
-                          <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
+                          <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
                             <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                           </button>
                         </div>
                         
                         <div className="min-h-[40px]">
-                            {item.type === 'revibe' ? (
+                            {item.type === 'revibe' && item.quotedPost ? (
                                 <div 
                                     className="mt-4 p-4 rounded-3xl border border-white/10" 
                                     style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
