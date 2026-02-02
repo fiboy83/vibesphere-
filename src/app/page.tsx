@@ -1156,7 +1156,7 @@ export default function VibesphereApp() {
                           </div>
                       </div>
 
-                      <div className='pl-16'>
+                      <div>
                         <div className="p-8 rounded-2xl">
                           {focusedPost.media && (
                               <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
@@ -1165,7 +1165,7 @@ export default function VibesphereApp() {
                               </div>
                           )}
 
-                          <p className="text-2xl text-slate-200 leading-relaxed font-light whitespace-pre-wrap">{focusedPost.text}</p>
+                          <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap lowercase tracking-widest ${focusedPost.text.length > 200 ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'}`}>{focusedPost.text}</p>
                           
                           <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
                         </div>
