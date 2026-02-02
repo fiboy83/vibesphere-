@@ -1111,7 +1111,7 @@ export default function VibesphereApp() {
                       <ResonanceCard 
                         key={item.id} 
                         style={cardStyle}
-                        onClick={() => pushView({ focusedPost: item })}
+                        onClick={() => pushView({ focusedPost: item.type === 'revibe' ? item.quotedPost : item })}
                       >
                         {item.type === 'revibe' && (
                             <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
