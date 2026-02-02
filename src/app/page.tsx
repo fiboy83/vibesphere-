@@ -174,6 +174,8 @@ export default function VibesphereApp() {
   ];
   const [feed, setFeed] = useState(initialFeedData);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
+  const [likedPosts, setLikedPosts] = useState<number[]>([]);
+
 
   // --- SOCIAL ACTION STATE ---
   const [showShareModal, setShowShareModal] = useState(false);
@@ -248,6 +250,10 @@ export default function VibesphereApp() {
       if (savedBookmarks) {
         setBookmarkedPosts(JSON.parse(savedBookmarks));
       }
+      const savedLikes = localStorage.getItem(`vibesphere_likes_${wallet.address}`);
+      if (savedLikes) {
+        setLikedPosts(JSON.parse(savedLikes));
+      }
     }
   }, [wallet?.address]);
 
@@ -289,6 +295,12 @@ export default function VibesphereApp() {
         localStorage.setItem(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(bookmarkedPosts));
     }
   }, [bookmarkedPosts, wallet?.address]);
+  
+  useEffect(() => {
+    if (wallet?.address) {
+        localStorage.setItem(`vibesphere_likes_${wallet.address}`, JSON.stringify(likedPosts));
+    }
+  }, [likedPosts, wallet?.address]);
 
 
   // --- GLOBAL THEME CONTROLLER ---
@@ -475,13 +487,65 @@ export default function VibesphereApp() {
     };
   }, [isConnected]);
   
-  const handleSendComment = (postId: number) => {
-    if (commentText.trim() === "") return;
-    console.log(`vibe sent to post ${postId}: ${commentText}`);
-    setCommentText("");
+
+  // --- RECURSIVE FEED UPDATER ---
+  const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
+    let itemFound = false;
+    const updatedItems = items.map(item => {
+        if (item.id === itemId) {
+            itemFound = true;
+            return updateFn(item);
+        }
+        if (item.comments && item.comments.length > 0) {
+            const [updatedComments, nestedFound] = updateItemInFeed(item.comments, itemId, updateFn);
+            if (nestedFound) {
+                itemFound = true;
+                return { ...item, comments: updatedComments };
+            }
+        }
+        // Also check in quoted post
+        if (item.quotedPost) {
+          const [updatedQuotedPost, quotedFound] = updateItemInFeed([item.quotedPost], itemId, updateFn);
+          if (quotedFound) {
+            itemFound = true;
+            return { ...item, quotedPost: updatedQuotedPost[0] };
+          }
+        }
+        return item;
+    });
+    return [updatedItems, itemFound];
   };
 
   // --- SOCIAL ACTIONS ---
+  const handleSendComment = (postId: number) => {
+    if (commentText.trim() === "") return;
+
+    const newComment = {
+        id: Date.now(),
+        userId: profile.handle,
+        username: profile.username,
+        handle: profile.handle,
+        avatar: profile.avatar,
+        time: 'now',
+        text: commentText.trim(),
+        commentCount: 0,
+        repostCount: 0,
+        likeCount: 0,
+        comments: []
+    };
+
+    const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => ({
+        ...item,
+        comments: [newComment, ...(item.comments || [])],
+        commentCount: (item.commentCount || 0) + 1
+    }));
+    
+    if (itemFound) {
+      setFeed(updatedFeed);
+    }
+    setCommentText("");
+  };
+
 
   const handleToggleBookmark = (postId: number) => {
     setBookmarkedPosts(prev => {
@@ -493,23 +557,40 @@ export default function VibesphereApp() {
         }
     });
   };
+  
+  const handleToggleLike = (postId: number) => {
+    const isLiked = likedPosts.includes(postId);
+
+    setLikedPosts(prev => {
+        if (isLiked) {
+            return prev.filter(id => id !== postId);
+        } else {
+            return [...prev, postId];
+        }
+    });
+
+    const [updatedFeed] = updateItemInFeed(feed, postId, (item) => ({
+        ...item,
+        likeCount: isLiked ? item.likeCount - 1 : item.likeCount + 1,
+    }));
+
+    setFeed(updatedFeed);
+  };
 
   const handleRepost = (postId: number) => {
     let originalPost: any = null;
 
-    // Recursive function to find a post or comment by ID
-    const findPostRecursive = (posts: any[], id: number): any | null => {
-        for (const post of posts) {
-            if (post.id === id) return post;
-            if (post.comments && post.comments.length > 0) {
-                const found = findPostRecursive(post.comments, id);
-                if (found) return found;
-            }
+    const findItemRecursive = (items: any[]): any => {
+      for (const item of items) {
+        if (item.id === postId) return item;
+        if (item.comments && item.comments.length > 0) {
+          const found = findItemRecursive(item.comments);
+          if (found) return found;
         }
-        return null;
+      }
+      return null;
     };
-
-    originalPost = findPostRecursive(feed, postId);
+    originalPost = findItemRecursive(feed);
 
     if (!originalPost) {
         toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
@@ -531,25 +612,17 @@ export default function VibesphereApp() {
         quotedPost: originalPost,
     };
 
-    // Recursive function to update the repost count
-    const updateFeedRecursive = (posts: any[]): any[] => {
-         return posts.map(p => {
-            if (p.id === postId) {
-                return { ...p, repostCount: p.repostCount + 1 };
-            }
-            if (p.comments && p.comments.length > 0) {
-                return { ...p, comments: updateFeedRecursive(p.comments) };
-            }
-            return p;
-        });
+    const [feedWithUpdatedCount, itemFound] = updateItemInFeed(feed, postId, (item) => ({
+        ...item,
+        repostCount: item.repostCount + 1,
+    }));
+    
+    if (itemFound) {
+      setFeed([newPost, ...feedWithUpdatedCount]);
+      toast({ title: "vibe re-shared" });
+    } else {
+      toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
     }
-
-    setFeed(prevFeed => {
-        const updatedFeed = updateFeedRecursive(prevFeed);
-        return [newPost, ...updatedFeed];
-    });
-
-    toast({ title: "vibe re-shared" });
   };
   
   const handleOpenShareModal = (post: any) => {
@@ -688,6 +761,8 @@ export default function VibesphereApp() {
   }
   
   const isFocusedPostBookmarked = focusedPost ? bookmarkedPosts.includes(focusedPost.id) : false;
+  const isFocusedPostLiked = focusedPost ? likedPosts.includes(focusedPost.id) : false;
+
 
   const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
 
@@ -1065,25 +1140,45 @@ export default function VibesphereApp() {
                         style={{borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)`}}
                       >
                           <div className="flex items-center gap-10">
-                              <button 
+                              <motion.button 
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
                                 onClick={(e) => { e.stopPropagation(); setIsCommentSectionVisible(prev => !prev); }}
                                 className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
                               >
                                 <MessageSquare size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.commentCount}</span>
-                              </button>
+                              </motion.button>
                             
-                              <button onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
+                              <motion.button
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
+                                onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
                                 <Repeat size={22} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.repostCount}</span>
-                              </button>
+                              </motion.button>
 
-                              <button onClick={(e) => e.stopPropagation()} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
-                                <Heart size={20} strokeWidth={1.5} />
+                              <motion.button
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
+                                onClick={(e) => {e.stopPropagation(); handleToggleLike(focusedPost.id)}} 
+                                className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all"
+                                style={isFocusedPostLiked ? {
+                                    color: `hsl(${currentAuraColor})`,
+                                    filter: `drop-shadow(0 0 6px hsl(${currentAuraColor}))`
+                                } : {}}
+                              >
+                                <Heart 
+                                    size={20} 
+                                    strokeWidth={1.5}
+                                    fill={isFocusedPostLiked ? 'currentColor' : 'none'} 
+                                />
                                 <span className="text-sm font-mono">{focusedPost.likeCount}</span>
-                              </button>
+                              </motion.button>
                           </div>
-                            <button 
+                            <motion.button
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
                                 onClick={(e) => { e.stopPropagation(); handleToggleBookmark(focusedPost.id); }}
                                 className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
                               >
@@ -1093,7 +1188,7 @@ export default function VibesphereApp() {
                                   className="transition-all duration-300"
                                   fill={isFocusedPostBookmarked ? 'currentColor' : 'none'}
                                 />
-                            </button>
+                            </motion.button>
                       </div>
                     
                       <AnimatePresence>
@@ -1207,17 +1302,21 @@ export default function VibesphereApp() {
                         '--primary-glow': postAuraColor.replace(/ /g, ', '),
                     } as React.CSSProperties;
                     const isBookmarked = bookmarkedPosts.includes(item.id);
+                    const isLiked = likedPosts.includes(item.id);
+
 
                     const handleCardClick = () => {
-                        const targetPost = (item.type === 'revibe' && item.quotedPost) ? item.quotedPost : item;
-                        pushView({ focusedPost: targetPost });
+                      if (item.type === 'revibe' && item.quotedPost) {
+                        pushView({ focusedPost: item.quotedPost });
+                      } else {
+                        pushView({ focusedPost: item });
+                      }
                     };
 
                     return (
                       <ResonanceCard 
                         key={item.id} 
                         style={cardStyle}
-                        onClick={handleCardClick}
                       >
                         {item.type === 'revibe' && (
                             <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar}, focusedPost: null }); }}>
@@ -1225,85 +1324,109 @@ export default function VibesphereApp() {
                                 <span>re-vibed by @{item.handle}</span>
                             </div>
                         )}
-                        <div className="flex justify-between items-start mb-4">
-                          <div 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
-                            }}
-                            className="flex items-center gap-3 cursor-pointer group"
-                          >
-                            <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                              <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
-                            </div>
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
-                                  {item.username}
-                                </span>
-                                <div 
-                                    className="w-2 h-2 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
-                                ></div>
+                        <div onClick={handleCardClick} className="cursor-pointer">
+                            <div className="flex justify-between items-start mb-4">
+                              <div 
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
+                                    pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
+                                }}
+                                className="flex items-center gap-3 cursor-pointer group"
+                              >
+                                <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
+                                  <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-white group-hover:text-primary transition-colors duration-500">
+                                      {item.username}
+                                    </span>
+                                    <div 
+                                        className="w-2 h-2 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
+                                    ></div>
+                                  </div>
+                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                                </div>
                               </div>
-                              <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                              <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
+                                <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
+                              </button>
                             </div>
-                          </div>
-                          <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
-                            <Share2 size={18} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
-                          </button>
-                        </div>
-                        
-                        <div className="min-h-[40px]">
-                            {item.type === 'revibe' && item.quotedPost ? (
-                                <div 
-                                    className="mt-4 p-4 rounded-3xl border border-white/10" 
-                                    style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
-                                >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
-                                        <div>
-                                            <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
-                                            <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                            
+                            <div className="min-h-[40px]">
+                                {item.type === 'revibe' && item.quotedPost ? (
+                                    <div 
+                                        className="mt-4 p-4 rounded-3xl border border-white/10" 
+                                        style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
+                                    >
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <img src={item.quotedPost.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
+                                            <div>
+                                                <span className="text-sm font-bold text-white">{item.quotedPost.username}</span>
+                                                <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                                            </div>
                                         </div>
+                                        {item.quotedPost.media && (
+                                            <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
+                                                {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                                {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                            </div>
+                                        )}
+                                        <p className="text-slate-300 text-base leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
                                     </div>
-                                    {item.quotedPost.media && (
-                                        <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
-                                            {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                                            {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                                        </div>
-                                    )}
-                                    <p className="text-slate-300 text-base leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
-                                </div>
-                            ) : (
-                                <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar' : ''}>
-                                  {item.media && (
-                                     <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
-                                       {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
-                                       {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                                     </div>
-                                  )}
-                                  <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className={item.type === 'artikel' ? 'max-h-[250px] overflow-y-auto pr-4 custom-scrollbar' : ''}>
+                                      {item.media && (
+                                         <div className="mb-4 rounded-2xl overflow-hidden border border-white/10">
+                                           {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
+                                           {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                         </div>
+                                      )}
+                                      <p className="text-slate-200 text-lg leading-relaxed font-light mb-2 whitespace-pre-wrap">{item.text}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex justify-between items-center mt-4 -mx-4">
-                            <button onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                            <motion.button 
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
+                                onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <MessageSquare size={18} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{item.commentCount}</span>
-                            </button>
-                            <button onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                            </motion.button>
+                            <motion.button 
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
+                                onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <Repeat size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{item.repostCount}</span>
-                            </button>
-                            <button onClick={(e) => e.stopPropagation()} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
-                                <Heart size={18} strokeWidth={1.5} />
+                            </motion.button>
+                            <motion.button 
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
+                                onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
+                                className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                style={isLiked ? {
+                                    color: `hsl(${postAuraColor})`,
+                                    filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
+                                } : {}}
+                            >
+                                <Heart 
+                                    size={18} 
+                                    strokeWidth={1.5}
+                                    fill={isLiked ? 'currentColor' : 'none'}
+                                />
                                 <span className="text-sm font-mono">{item.likeCount}</span>
-                            </button>
-                            <button onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                            </motion.button>
+                            <motion.button
+                                whileTap={{ scale: 1.2 }}
+                                transition={{ duration: 0.1 }}
+                                onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
-                            </button>
+                            </motion.button>
                         </div>
 
                       </ResonanceCard>
