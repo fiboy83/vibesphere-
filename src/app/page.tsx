@@ -71,8 +71,8 @@ const getDominantColorFromImage = (imageUrl: string, onComplete: (hslValues: str
 
         let [h, s, l] = rgbToHsl(r, g, b);
         
-        s = Math.min(1, s * 1.5); // Boost saturation
-        l = Math.max(0.55, Math.min(0.75, l)); // Adjust lightness for visibility
+        s = Math.min(1, s * 1.5);
+        l = Math.max(0.55, Math.min(0.75, l)); 
 
         const newPrimaryValues = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
         onComplete(newPrimaryValues);
@@ -154,10 +154,13 @@ export default function VibesphereApp() {
 
   // --- FEED & BOOKMARK STATE ---
   const initialFeedData = [
-    { id: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 1, repostCount: 5, likeCount: 42, media: null, comments: [
+    { id: 1, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 4, repostCount: 5, likeCount: 42, media: null, comments: [
         { id: 101, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "1m", text: "this is fire. the future is now.", commentCount: 1, repostCount: 0, likeCount: 3, bookmarked: false, comments: [
              { id: 1011, userId: "nova.opn", username: "Nova_Architect", handle: "nova.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`, time: "now", text: "indeed it is!", commentCount: 0, repostCount: 0, likeCount: 1, bookmarked: false, comments: [] }
-        ] }
+        ] },
+        { id: 201, userId: "alpha_vibes.opn", username: "Alpha_Vibes", handle: "alpha_vibes.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=alpha_vibes.opn&backgroundColor=10b981`, time: "5m", text: "kedaulatan digital adalah kunci. 🚀", commentCount: 0, repostCount: 0, likeCount: 2, bookmarked: false, comments: [] },
+        { id: 202, userId: "beta_coder.opn", username: "Beta_Coder", handle: "beta_coder.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=beta_coder.opn&backgroundColor=3b82f6`, time: "3m", text: "setuju banget, vibesphere makin solid layoutnya.", commentCount: 0, repostCount: 0, likeCount: 5, bookmarked: false, comments: [] },
+        { id: 203, userId: "gamma_soul.opn", username: "Gamma_Soul", handle: "gamma_soul.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gamma_soul.opn&backgroundColor=f97316`, time: "1m", text: "apakah ini sudah terkoneksi ke pharos atlantic testnet?", commentCount: 0, repostCount: 1, likeCount: 1, bookmarked: false, comments: [] }
     ] },
     { id: 2, userId: "ql.opn", username: "Quantum_Leaper", handle: "ql.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`, time: "30m", text: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "tekt", commentCount: 0, repostCount: 2, likeCount: 28, media: null, comments: [] },
     { id: 3, userId: "gov.opn", username: "DAO_Steward", handle: "gov.opn", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`, time: "2h", 
@@ -183,6 +186,10 @@ export default function VibesphereApp() {
   const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
   const currentView = viewStack[viewStack.length - 1];
   const { tab: activeTab, viewingProfile, focusedPost } = currentView;
+  const parentView = viewStack[viewStack.length - 2];
+  const isCommentView = focusedPost && !focusedPost.type;
+  const parentPostForCommentView = isCommentView && parentView?.focusedPost ? parentView.focusedPost : null;
+
 
   const pushView = (newView: Partial<typeof currentView>) => {
     // Merge with the previous view to carry over properties like the tab when opening a focused post
@@ -949,6 +956,21 @@ export default function VibesphereApp() {
                       background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
                     }}
                  />
+                 {parentPostForCommentView && (
+                    <div className="mb-4">
+                        <div className="flex gap-3 items-start opacity-70">
+                            <img src={parentPostForCommentView.avatar} alt="parent avatar" className="w-10 h-10 rounded-full border-2" style={{borderColor: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}/>
+                            <div className="flex-1">
+                                <div className='flex items-center gap-2'>
+                                    <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}>{parentPostForCommentView.username}</span>
+                                    <span className="text-xs text-slate-500 font-mono">@{parentPostForCommentView.handle} &bull; {parentPostForCommentView.time}</span>
+                                </div>
+                                <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{parentPostForCommentView.text}</p>
+                            </div>
+                        </div>
+                        <div className="ml-5 h-8 w-0.5 bg-white/10" />
+                    </div>
+                )}
                 <div 
                     className="relative"
                     style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
@@ -1158,7 +1180,7 @@ export default function VibesphereApp() {
                         onClick={handleCardClick}
                       >
                         {item.type === 'revibe' && (
-                            <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="text-xs font-mono text-slate-400 mb-4 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar}, focusedPost: null }); }}>
                                 <Repeat size={14} />
                                 <span>re-vibed by @{item.handle}</span>
                             </div>
@@ -1196,6 +1218,7 @@ export default function VibesphereApp() {
                             {item.type === 'revibe' ? (
                                 <div 
                                     className="mt-4 p-4 rounded-3xl border border-white/10" 
+                                    onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: item.quotedPost }); }}
                                     style={{ borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)` }}
                                 >
                                     <div className="flex items-center gap-3 mb-3">
@@ -1226,7 +1249,7 @@ export default function VibesphereApp() {
                             )}
                         </div>
 
-                        <div className="flex justify-between items-center mt-4 -mx-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mt-4 -mx-4">
                             <button onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item, viewingProfile: viewingProfile }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <MessageSquare size={18} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{item.commentCount}</span>
