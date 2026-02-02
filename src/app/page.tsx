@@ -270,19 +270,37 @@ export default function VibesphereApp() {
             localStorage.setItem(`vibesphere_feed_${wallet.address}`, JSON.stringify(feedToSave));
         } catch (e: any) {
             if (e.name === 'QuotaExceededError') {
-                console.warn('LocalStorage quota exceeded. Clearing old feed data to make space.');
+                console.warn('LocalStorage quota exceeded. Clearing 50% of old feed data to make space.');
                 toast({
                     variant: "destructive",
                     title: "Local cache full",
-                    description: "Clearing old feed data to make space. Your session will continue.",
+                    description: "Clearing older posts to make space.",
                 });
-                localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
+                
                 try {
+                    const feedKey = `vibesphere_feed_${wallet.address}`;
+                    const currentFeedStr = localStorage.getItem(feedKey);
+                    if (currentFeedStr) {
+                        const currentFeed = JSON.parse(currentFeedStr);
+                        if(Array.isArray(currentFeed) && currentFeed.length > 1) {
+                            const halfIndex = Math.floor(currentFeed.length / 2);
+                            const newStoredFeed = currentFeed.slice(0, halfIndex);
+                            localStorage.setItem(feedKey, JSON.stringify(newStoredFeed));
+                        } else {
+                           localStorage.removeItem(feedKey);
+                        }
+                    }
+                    
+                    // Now retry saving the current state (which includes the new re-vibe)
                     const feedToSave = feed.slice(0, 20);
-                    localStorage.setItem(`vibesphere_feed_${wallet.address}`, JSON.stringify(feedToSave));
-                } catch (retryError) {
-                    console.error('Failed to save feed to localStorage on retry:', retryError);
+                    localStorage.setItem(feedKey, JSON.stringify(feedToSave));
+
+                } catch (cleanupError) {
+                    console.error('Failed to save feed to localStorage even after cleanup:', cleanupError);
+                     // Last resort: wipe the feed if cleanup fails
+                    localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
                 }
+
             } else {
                 console.error('Failed to save feed to localStorage:', e);
             }
@@ -534,14 +552,29 @@ export default function VibesphereApp() {
         comments: []
     };
 
-    const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => ({
-        ...item,
-        comments: [newComment, ...(item.comments || [])],
-        commentCount: (item.commentCount || 0) + 1
+    let updatedParentPost = null;
+
+    const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => {
+        const updatedItem = {
+            ...item,
+            comments: [newComment, ...(item.comments || [])],
+            commentCount: (item.commentCount || 0) + 1
+        };
+        if (focusedPost && item.id === focusedPost.id) {
+            updatedParentPost = updatedItem;
+        }
+        return updatedItem;
     }));
     
     if (itemFound) {
       setFeed(updatedFeed);
+      if (updatedParentPost) {
+          setViewStack(prev => {
+              const newStack = [...prev];
+              newStack[newStack.length - 1] = { ...newStack[newStack.length - 1], focusedPost: updatedParentPost };
+              return newStack;
+          });
+      }
     }
     setCommentText("");
   };
