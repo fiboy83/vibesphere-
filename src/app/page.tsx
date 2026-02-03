@@ -537,33 +537,24 @@ export default function VibesphereApp() {
         avatar: profile.avatar,
         time: 'now',
         text: commentText.trim(),
-        commentCount: 0,
-        repostCount: 0,
-        likeCount: 0,
-        comments: []
-    };
-
-    let updatedParentPost = null;
-
-    const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => {
-        const updatedItem = {
-            ...item,
-            comments: [newComment, ...(item.comments || [])],
-            commentCount: (item.commentCount || 0) + 1
-        };
-        if (focusedPost && item.id === focusedPost.id) {
-            updatedParentPost = updatedItem;
-        }
-        return updatedItem;
-    });
-    
-    if (itemFound) {
-      setFeed(updatedFeed);
-      if (updatedParentPost) {
-          setViewStack(prev => {
-              const newStack = [...prev];
-              newStack[newStack.length - 1] = { ...newStack[newStack.length - 1], focusedPost: updatedParentPost };
-              return newStack;
+        const updatedFeed = feed.map((item) => {
+          if (item.id === parentId || item.id === postId) {
+              itemFound = true;
+              const updatedItem = {
+                  ...item,
+                  parentPost: updatedParentPost || item.parentPost,
+              };
+              if (item.id === parentId) {
+                  updatedParentPost = updatedItem;
+              }
+              return updatedItem;
+          }
+          return item;
+      });
+  
+      if (itemFound) {
+        setFeed(updatedFeed);
+      }             newStack[newStack.length - 1] = 
           });
       }
     }
