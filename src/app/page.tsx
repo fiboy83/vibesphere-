@@ -555,7 +555,7 @@ export default function VibesphereApp() {
             updatedParentPost = updatedItem;
         }
         return updatedItem;
-    }));
+    });
     
     if (itemFound) {
       setFeed(updatedFeed);
@@ -1070,7 +1070,7 @@ export default function VibesphereApp() {
                       />
                       <div className="relative flex items-center gap-4">
                         <User size={20} strokeWidth={1.5} className={`${activeTab === 'profile' && !viewingProfile ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
-                        <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'profile' && !viewingProfile ? 'text-shadow-glow' : ''}`}>profile</span>
+                        <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'profile' && !viewingProfile ? 'text-shadow-glow' : ''}`} style={{color: `hsl(${profile.themeColor})`}}>profile</span>
                       </div>
                     </button>
                     
