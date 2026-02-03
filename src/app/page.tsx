@@ -188,20 +188,26 @@ export default function VibesphereApp() {
   const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
   const currentView = viewStack[viewStack.length - 1];
   const { tab: activeTab, viewingProfile, focusedPost } = currentView;
-  const parentView = viewStack[viewStack.length - 2];
+  const parentView = viewStack.length > 2 ? viewStack[viewStack.length - 2] : null;
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
 
 
   const pushView = (newView: Partial<typeof currentView>) => {
     const isNewTab = newView.tab && newView.tab !== currentView.tab;
-    const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null } : currentView;
     
+    // When switching to a main tab, reset the stack to just that tab
+    if (isNewTab && ['home', 'bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market', 'inbox'].includes(newView.tab!)) {
+        setViewStack([{ tab: newView.tab!, viewingProfile: null, focusedPost: null }]);
+    } else {
+        const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null } : currentView;
+        setViewStack(prev => [...prev, { ...baseView, ...newView }]);
+    }
+
     if (newView.tab === 'profile' || newView.tab === 'user-profile') {
         setProfileTab('vibe');
     }
 
-    setViewStack(prev => [...prev, { ...baseView, ...newView }]);
     setIsSidebarOpen(false); // Always close sidebar on navigation
     if (newView.focusedPost) {
         setIsCommentSectionVisible(false); // Reset comment visibility when focusing a new post
@@ -238,14 +244,15 @@ export default function VibesphereApp() {
                 if (currentFeedStr) {
                     const currentFeed = JSON.parse(currentFeedStr);
                     if(Array.isArray(currentFeed) && currentFeed.length > 1) {
-                        const halfIndex = Math.ceil(currentFeed.length / 2);
-                        const newStoredFeed = currentFeed.slice(halfIndex); // Keep the newer half
+                        // Keep the newer half
+                        const newStoredFeed = currentFeed.slice(Math.ceil(currentFeed.length / 2));
                         localStorage.setItem(feedKey, JSON.stringify(newStoredFeed));
+                        localStorage.setItem(key, value); // Retry
                     } else {
                        localStorage.removeItem(feedKey);
+                       localStorage.setItem(key, value); // Retry
                     }
                 }
-                localStorage.setItem(key, value); // Retry
             } catch (cleanupError) {
                 // Failsafe
             }
@@ -255,7 +262,8 @@ export default function VibesphereApp() {
 
   const saveFeedToStorage = (currentFeed: any[]) => {
       if (!wallet?.address) return;
-      const feedToSave = currentFeed.slice(0, 20); // Keep only the 20 most recent posts
+      // Keep only the 20 most recent posts
+      const feedToSave = currentFeed.slice(0, 20); 
       safeLocalStorageSet(`vibesphere_feed_${wallet.address}`, JSON.stringify(feedToSave));
   }
 
@@ -282,11 +290,18 @@ export default function VibesphereApp() {
       const savedFeed = localStorage.getItem(`vibesphere_feed_${wallet.address}`);
       if (savedFeed) {
           try {
-              setFeed(JSON.parse(savedFeed));
+              const parsedFeed = JSON.parse(savedFeed);
+              if (Array.isArray(parsedFeed)) {
+                setFeed(parsedFeed);
+              } else {
+                setFeed(initialFeedData);
+              }
           } catch (e) {
               localStorage.removeItem(`vibesphere_feed_${wallet.address}`);
               setFeed(initialFeedData);
           }
+      } else {
+        setFeed(initialFeedData);
       }
       
       // Load Bookmarks
@@ -537,31 +552,40 @@ export default function VibesphereApp() {
         avatar: profile.avatar,
         time: 'now',
         text: commentText.trim(),
-        const updatedFeed = feed.map((item) => {
-          if (item.id === parentId || item.id === postId) {
-              itemFound = true;
-              const updatedItem = {
-                  ...item,
-                  parentPost: updatedParentPost || item.parentPost,
-              };
-              if (item.id === parentId) {
-                  updatedParentPost = updatedItem;
+        commentCount: 0,
+        repostCount: 0,
+        likeCount: 0,
+        comments: [],
+    };
+
+    const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => ({
+        ...item,
+        comments: [newComment, ...(item.comments || [])],
+        commentCount: (item.commentCount || 0) + 1,
+    }));
+
+    if (itemFound) {
+      setFeed(updatedFeed);
+      if (focusedPost && focusedPost.id === postId) {
+          setViewStack(prev => {
+              const newStack = [...prev];
+              const currentView = newStack[newStack.length - 1];
+              if (currentView.focusedPost) {
+                currentView.focusedPost = {
+                    ...currentView.focusedPost,
+                    comments: [newComment, ...(currentView.focusedPost.comments || [])],
+                    commentCount: (currentView.focusedPost.commentCount || 0) + 1,
+                };
               }
-              return updatedItem;
-          }
-          return item;
-      });
-  
-      if (itemFound) {
-        setFeed(updatedFeed);
-      }             newStack[newStack.length - 1] = 
+              return newStack;
           });
       }
     }
+    
     setCommentText("");
 
     try {
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network
         saveFeedToStorage(updatedFeed);
     } catch (error) {
         setFeed(originalFeed);
@@ -600,11 +624,14 @@ export default function VibesphereApp() {
     const newLikedPosts = isLiked ? originalLikedPosts.filter(id => id !== postId) : [...originalLikedPosts, postId];
     setLikedPosts(newLikedPosts);
 
-    const [updatedFeed] = updateItemInFeed(feed, postId, (item) => ({
+    const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => ({
         ...item,
         likeCount: isLiked ? item.likeCount - 1 : item.likeCount + 1,
     }));
-    setFeed(updatedFeed);
+    
+    if (itemFound) {
+        setFeed(updatedFeed);
+    }
 
     try {
         await new Promise(r => setTimeout(r, 300));
@@ -826,7 +853,23 @@ export default function VibesphereApp() {
               break;
           case 'like':
               if (profileToShow.handle === profile.handle) {
-                  feedForProfileTab = feed.filter(item => likedPosts.includes(item.id));
+                  // This should find all items, even nested ones. A simple filter is not enough.
+                  const likedFeed: any[] = [];
+                  const findLikedRecursive = (items: any[]) => {
+                      for (const item of items) {
+                          if (likedPosts.includes(item.id)) {
+                              likedFeed.push(item);
+                          }
+                          if (item.comments && item.comments.length > 0) {
+                              findLikedRecursive(item.comments);
+                          }
+                           if (item.quotedPost) {
+                              findLikedRecursive([item.quotedPost]);
+                          }
+                      }
+                  }
+                  findLikedRecursive(feed);
+                  feedForProfileTab = likedFeed;
               } else {
                   feedForProfileTab = [];
               }
@@ -834,8 +877,25 @@ export default function VibesphereApp() {
       }
   }
 
+  const bookmarkedFeed = [];
+  const findBookmarkedRecursive = (items: any[]) => {
+      for (const item of items) {
+          if (bookmarkedPosts.includes(item.id)) {
+              bookmarkedFeed.push(item);
+          }
+          if (item.comments && item.comments.length > 0) {
+              findBookmarkedRecursive(item.comments);
+          }
+          if (item.quotedPost) {
+            findBookmarkedRecursive([item.quotedPost]);
+          }
+      }
+  };
+  findBookmarkedRecursive(feed);
+
+
   const displayedFeed = activeTab === 'bookmarks'
-    ? feed.filter(item => bookmarkedPosts.includes(item.id))
+    ? bookmarkedFeed
     : profileToShow
     ? feedForProfileTab
     : feed;
@@ -845,7 +905,7 @@ export default function VibesphereApp() {
     return null; // or a loading spinner
   }
 
-  const isSubView = viewStack.length > 1;
+  const isSubView = viewStack.length > 1 && currentView.tab !== 'home';
 
   let currentAuraColor = profile.themeColor;
   if (focusedPost) {
@@ -1240,9 +1300,9 @@ export default function VibesphereApp() {
                               </div>
                           )}
 
-                          <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap lowercase tracking-widest ${
-                            focusedPost.text.length > 200 
-                            ? 'text-base md:text-lg' 
+                          <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap ${
+                            focusedPost.type === 'artikel'
+                            ? 'text-base md:text-lg'
                             : 'text-lg md:text-xl'
                           }`}>{focusedPost.text}</p>
                           
@@ -1440,18 +1500,18 @@ export default function VibesphereApp() {
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
                                 <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                  <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                  <img src={(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                      {item.username}
+                                      {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).username}
                                     </span>
                                     <div 
                                         className="w-2 h-2 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).handle} • {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).time}</span>
                                 </div>
                               </div>
                               <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
@@ -1561,7 +1621,7 @@ export default function VibesphereApp() {
                                 className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg transition-all duration-500 group-hover:border-primary/50 group-hover:scale-105"
                                 />
                                 <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-white text-xs font-bold uppercase tracking-widest">change</span>
+                                <span className="text-xs font-bold uppercase tracking-widest" style={{color: 'white'}}>change</span>
                                 </div>
                             </div>
                         ) : (
@@ -1663,18 +1723,18 @@ export default function VibesphereApp() {
                                     className="flex items-center gap-3 cursor-pointer group"
                                 >
                                     <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                    <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                      <img src={(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                     </div>
                                     <div className="flex flex-col">
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                          {item.username}
+                                          {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).username}
                                         </span>
                                         <div 
                                             className="w-2 h-2 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
                                         ></div>
                                       </div>
-                                      <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                                      <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).handle} • {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).time}</span>
                                     </div>
                                   </div>
                                   <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 mt-1">
@@ -1778,7 +1838,7 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=ql.opn&backgroundColor=06b6d4`} alt="Quantum_Leaper avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold">Quantum_Leaper</span> and 2 others liked your vibe.
+                                <span className="font-bold" style={{color: 'white'}}>Quantum_Leaper</span> and 2 others liked your vibe.
                             </p>
                             <p className="text-xs text-slate-500 font-mono mt-1">2 hours ago</p>
                         </div>
@@ -1791,7 +1851,7 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=gov.opn&backgroundColor=ef4444`} alt="DAO_Steward avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold">DAO_Steward</span> saved your article: "New governance proposal PIP-8..."
+                                <span className="font-bold" style={{color: 'white'}}>DAO_Steward</span> saved your article: "New governance proposal PIP-8..."
                             </p>
                             <p className="text-xs text-slate-500 font-mono mt-1">5 hours ago</p>
                         </div>
@@ -1804,7 +1864,7 @@ export default function VibesphereApp() {
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=nova.opn&backgroundColor=a855f7`} alt="Nova_Architect avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                New post from <span className="font-bold">Nova_Architect</span>.
+                                New post from <span className="font-bold" style={{color: 'white'}}>Nova_Architect</span>.
                             </p>
                             <p className="text-xs text-slate-500 font-mono mt-1">1 day ago</p>
                         </div>
@@ -1866,7 +1926,7 @@ export default function VibesphereApp() {
                         <div>
                              <h3 className="text-lg font-light lowercase tracking-[0.2em] text-slate-400 mb-6 text-center">pharos gateway</h3>
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <a href="#" target="_blank" rel="noopener noreferrer" className="group">
+                                <a href="https://pharos.fi/swap" target="_blank" rel="noopener noreferrer" className="group">
                                     <ResonanceCard>
                                         <div className="flex flex-col items-center text-center gap-4">
                                             <Repeat size={24} className="text-primary transition-colors duration-500"/>
@@ -1874,7 +1934,7 @@ export default function VibesphereApp() {
                                         </div>
                                     </ResonanceCard>
                                 </a>
-                                 <a href="#" target="_blank" rel="noopener noreferrer" className="group">
+                                 <a href="https://pharos.fi/stake" target="_blank" rel="noopener noreferrer" className="group">
                                     <ResonanceCard>
                                         <div className="flex flex-col items-center text-center gap-4">
                                             <Landmark size={24} className="text-primary transition-colors duration-500"/>
@@ -1882,7 +1942,7 @@ export default function VibesphereApp() {
                                         </div>
                                     </ResonanceCard>
                                 </a>
-                                 <a href="#" target="_blank" rel="noopener noreferrer" className="group">
+                                 <a href="https://pharos-testnet.socialscan.io/" target="_blank" rel="noopener noreferrer" className="group">
                                     <ResonanceCard>
                                         <div className="flex flex-col items-center text-center gap-4">
                                             <Network size={24} className="text-primary transition-colors duration-500"/>
@@ -2095,7 +2155,7 @@ export default function VibesphereApp() {
         
         {isConnected && (
           <motion.div
-            animate={{ y: isScrolling ? 100 : 0 }}
+            animate={{ y: isScrolling || isSubView ? 100 : 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="fixed bottom-24 left-6 z-50 pointer-events-none"
           >
@@ -2125,7 +2185,7 @@ export default function VibesphereApp() {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
                     <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full border border-primary/50 object-cover" />
-                    <span className="text-sm font-bold lowercase">{profile.username}</span>
+                    <span className="text-sm font-bold lowercase" style={{color: `hsl(${profile.themeColor})`}}>{profile.username}</span>
                   </div>
                   <button onClick={() => setIsComposerOpen(false)} className="p-2 rounded-full hover:bg-white/10 text-slate-400">
                     <X size={18} />
@@ -2135,8 +2195,8 @@ export default function VibesphereApp() {
                 {/* Composer Tabs */}
                 <div className="flex gap-2 mb-4 p-1 bg-white/5 rounded-full">
                   <button onClick={() => setComposerTab('media')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'media' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><FileUp size={14}/>media</button>
-                  <button onClick={() => setComposerTab('tekt')} className={`flex-1 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'tekt' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><Type size={14}/>tekt</button>
-                  <button onClick={() => setComposerTab('artikel')} className={`flex-1 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'artikel' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><FileText size={14}/>artikel</button>
+                  <button onClick={() => setComposerTab('tekt')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'tekt' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><Type size={14}/>tekt</button>
+                  <button onClick={() => setComposerTab('artikel')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'artikel' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><FileText size={14}/>artikel</button>
                 </div>
 
                 {/* Content Area */}
@@ -2311,7 +2371,7 @@ export default function VibesphereApp() {
 
           {/* plus button - center focus */}
           <button onClick={() => setIsComposerOpen(true)} className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-500">
-            <span className="text-3xl font-light">+</span>
+            <span className="text-3xl font-light" style={{color: 'white'}}>+</span>
           </button>
 
           {/* inbok - familiar mail icon */}
