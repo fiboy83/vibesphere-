@@ -604,17 +604,6 @@ export default function VibesphereApp() {
   };
 
 
-  const handleToggleBookmark = (postId: number) => {
-    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
-      ? bookmarkedPosts.filter(id => id !== postId)
-      : [...bookmarkedPosts, postId];
-    
-    setBookmarkedPosts(newBookmarkedPosts);
-    if (wallet?.address) {
-      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
-    }
-  };
-  
   const handleToggleLike = async (postId: number) => {
     const isLiked = likedPosts.includes(postId);
     const originalLikedPosts = [...likedPosts];
