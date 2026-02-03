@@ -1771,7 +1771,8 @@ export default function VibesphereApp() {
 
                         </ResonanceCard>
                         )
-                    }))}
+                    })
+                   )}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
