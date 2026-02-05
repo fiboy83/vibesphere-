@@ -47,44 +47,6 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [h * 360, s, l];
 }
 
-const getDominantColorFromImage = (imageUrl: string, onComplete: (hslValues: string) => void) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.src = imageUrl;
-    img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        canvas.width = 10;
-        canvas.height = 10;
-        ctx.drawImage(img, 0, 0, 10, 10);
-
-        const imageData = ctx.getImageData(0, 0, 10, 10);
-        const data = imageData.data;
-        let r = 0, g = 0, b = 0;
-
-        for (let i = 0; i < data.length; i += 4) {
-            r += data[i];
-            g += data[i + 1];
-            b += data[i + 2];
-        }
-
-        const pixelCount = data.length / 4;
-        r = Math.floor(r / pixelCount);
-        g = Math.floor(g / pixelCount);
-        b = Math.floor(b / pixelCount);
-
-        let [h, s, l] = rgbToHsl(r, g, b);
-        
-        s = Math.min(1, s * 1.5);
-        l = Math.max(0.55, Math.min(0.75, l)); 
-
-        const newPrimaryValues = `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
-        onComplete(newPrimaryValues);
-    };
-};
-
 // --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, style, onClick }: { children: React.ReactNode, style?: React.CSSProperties, onClick?: () => void }) => {
     const cardContent = (
@@ -217,7 +179,7 @@ export default function VibesphereApp() {
   
   const publicClient = React.useMemo(() => createPublicClient({
     chain: pharosTestnet,
-    transport: http(process.env.NEXT_PUBLIC_RPC_URL!),
+    transport: http('https://atlantic.dplabs-internal.com'),
   }), []);
 
   // --- CALLBACKS ---
@@ -403,18 +365,11 @@ export default function VibesphereApp() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const imageUrl = reader.result as string;
-        
-        getDominantColorFromImage(imageUrl, (newColorValues) => {
-            setProfile(prev => ({ 
-              ...prev, 
-              avatar: imageUrl,
-              themeColor: newColorValues,
-            }));
-
-            toast({
-              title: "vibe updated...",
-            });
-        });
+        setProfile(prev => ({
+          ...prev,
+          avatar: imageUrl,
+        }));
+        toast({ title: "Avatar updated", description: "Dynamic theme sync is temporarily disabled." });
       };
       reader.readAsDataURL(file);
     }
@@ -1145,7 +1100,7 @@ export default function VibesphereApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans">
+    <div className="min-h-screen bg-background text-white font-sans">
       
       {!isConnected ? (
         <div className="flex items-center justify-center min-h-screen">
@@ -2325,7 +2280,7 @@ export default function VibesphereApp() {
                                 <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
                                 <p className="text-5xl font-black mt-2 tracking-tighter italic">
                                     {parseFloat(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                                    <span className="text-2xl font-light not-italic text-primary"> $phrs</span>
+                                    <span className="text-2xl font-light not-italic text-primary"> $PHRS</span>
                                 </p>
                             </div>
                         </ResonanceCard>
