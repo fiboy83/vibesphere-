@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env*.local
+
+# Next.js build output
+.next/
+out/
+
+# Other build artifacts
+build/
+cache/
+artifacts/
+
+# Log files
+*.log
+
+# macOS specific
+.DS_Store

@@ -1,0 +1,47 @@
+import type { Metadata } from 'next';
+import { Inter, Roboto_Mono } from 'next/font/google';
+import './globals.css';
+import { Toaster } from '@/components/ui/toaster';
+import { PrivyClientProvider } from '@/components/providers/privy-provider';
+
+
+export const metadata: Metadata = {
+  title: 'Vibesphere',
+  description: 'Vibes of Sovereign',
+};
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const roboto_mono = Roboto_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-roboto-mono',
+});
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className={`${inter.variable} ${roboto_mono.variable} dark`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
+      </head>
+      <body className="font-body antialiased">
+        <PrivyClientProvider>
+          {children}
+        </PrivyClientProvider>
+        <Toaster />
+      </body>
+    </html>
+  );
+}
