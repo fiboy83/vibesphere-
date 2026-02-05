@@ -6,6 +6,7 @@ contract VibespherePost {
     struct Post {
         uint id;
         address author;
+        string content;
         uint timestamp;
     }
 
@@ -24,7 +25,7 @@ contract VibespherePost {
     function createPost(string calldata _content) public {
         require(bytes(_content).length <= 280, "Content exceeds 280 characters");
         postCount++;
-        posts[postCount] = Post(postCount, msg.sender, block.timestamp);
+        posts[postCount] = Post(postCount, msg.sender, _content, block.timestamp);
         emit PostCreated(postCount, msg.sender, _content, block.timestamp);
     }
 
