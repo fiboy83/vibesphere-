@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createPublicClient, http, formatEther, fallback } from 'viem';
+import { createPublicClient, http, formatEther } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 
 export async function GET(request: NextRequest) {
@@ -13,16 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const publicClient = createPublicClient({
       chain: pharosTestnet,
-      transport: fallback(
-        [
-          http('https://rpc.evm.pharos.testnet.cosmostation.io'),
-          http('https://atlantic.dplabs-internal.com'),
-          http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
-        ],
-        {
-          rank: true,
-        }
-      ),
+      transport: http(process.env.NEXT_PUBLIC_RPC_URL!),
     });
 
     const balanceValue = await publicClient.getBalance({ address });

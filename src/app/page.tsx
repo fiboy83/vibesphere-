@@ -196,6 +196,7 @@ export default function VibesphereApp() {
   const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
   const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPosting, setIsPosting] = useState(false);
   
@@ -216,11 +217,7 @@ export default function VibesphereApp() {
   
   const publicClient = React.useMemo(() => createPublicClient({
     chain: pharosTestnet,
-    transport: fallback([
-      http('https://rpc.evm.pharos.testnet.cosmostation.io'),
-      http('https://atlantic.dplabs-internal.com'),
-      http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
-    ]),
+    transport: http(process.env.NEXT_PUBLIC_RPC_URL!),
   }), []);
 
   // --- CALLBACKS ---
@@ -834,6 +831,14 @@ export default function VibesphereApp() {
   };
 
   // --- EFFECTS ---
+  
+  useEffect(() => {
+    // Debug Vercel environment variables
+    console.log("Vibesphere Debug Info:");
+    console.log("NEXT_PUBLIC_RPC_URL:", process.env.NEXT_PUBLIC_RPC_URL);
+    console.log("NEXT_PUBLIC_POST_CONTRACT_ADDRESS:", process.env.NEXT_PUBLIC_POST_CONTRACT_ADDRESS);
+    console.log("NEXT_PUBLIC_IDENTITY_CONTRACT_ADDRESS:", process.env.NEXT_PUBLIC_IDENTITY_CONTRACT_ADDRESS);
+  }, []);
 
   useEffect(() => {
     fetchUserHandle();

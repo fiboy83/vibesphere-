@@ -14,11 +14,7 @@ export const pharosTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [
-        'https://rpc.evm.pharos.testnet.cosmostation.io',
-        'https://atlantic.dplabs-internal.com',
-        'https://sp-pharos-atlantic-rpc.dplabs-internal.com',
-      ],
+      http: [process.env.NEXT_PUBLIC_RPC_URL!],
     },
   },
   blockExplorers: {
@@ -33,7 +29,7 @@ export function PrivyClientProvider({ children }: { children: React.ReactNode })
 
   return (
     <PrivyProvider
-      appId="cml3q7qoi00btkw0cm7usfh1k"
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
       config={{
         appearance: {
           theme: 'dark',

@@ -1,5 +1,5 @@
-export const postContractAddress = "0xE8BDBCe91bFd96bdA93997ab5e9c1A0945525f09";
-export const identityContractAddress = "0x14A985bF09DCB548870A845bf845A8A9fa81BC09";
+export const postContractAddress = process.env.NEXT_PUBLIC_POST_CONTRACT_ADDRESS!;
+export const identityContractAddress = process.env.NEXT_PUBLIC_IDENTITY_CONTRACT_ADDRESS!;
 
 export const postContractAbi = [
   {
