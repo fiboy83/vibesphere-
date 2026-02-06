@@ -49,13 +49,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/:path*',
-        headers: [
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups',
-          },
-          ...securityHeaders,
-        ],
+        headers: securityHeaders,
       },
     ];
   },
