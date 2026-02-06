@@ -141,7 +141,9 @@ export default function VibesphereApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isScrolling, setIsScrolling] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const scrollUpCount = useRef(0);
   const [commentText, setCommentText] = useState("");
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -241,6 +243,7 @@ export default function VibesphereApp() {
   const parentView = viewStack.length > 2 ? viewStack[viewStack.length - 2] : null;
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
+  const isHomeView = activeTab === 'home' && !focusedPost && !viewingProfile;
   
   const handleToggleBookmark = (postId: number) => {
     const newBookmarkedPosts = bookmarkedPosts.includes(postId)
@@ -641,42 +644,49 @@ export default function VibesphereApp() {
   };
 
   
-  // --- SCROLL HANDLING ---
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  // --- TWITTER-LIKE SCROLL HANDLING FOR NAVIGATION ---
   useEffect(() => {
-    if (!isConnected) return;
+    if (!isConnected || !isHomeView) {
+      // If not connected or not in home view, ensure bars are visible and do nothing.
+      setIsNavVisible(true);
+      return;
+    }
+    
+    lastScrollY.current = window.scrollY;
 
     const handleScroll = () => {
-      const isAtTop = window.scrollY < 100;
-      const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 10;
-
-      if (isAtTop || isAtBottom) {
-        setIsScrolling(false);
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-        }
+      const currentScrollY = window.scrollY;
+      
+      // If at the very top, always show the bars.
+      if (currentScrollY < 100) {
+        setIsNavVisible(true);
+        scrollUpCount.current = 0;
+        lastScrollY.current = currentScrollY;
         return;
       }
-      
-      setIsScrolling(true); // Hide bars while scrolling
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
+
+      // Determine scroll direction
+      if (currentScrollY > lastScrollY.current) {
+        // Scrolling Down
+        setIsNavVisible(false);
+        scrollUpCount.current = 0; // Reset up-scroll counter
+      } else {
+        // Scrolling Up
+        scrollUpCount.current += 1;
+        if (scrollUpCount.current >= 2) {
+          setIsNavVisible(true);
+        }
       }
 
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false); // Show bars after scrolling stops
-      }, 300); // 300ms of inactivity
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
     };
-  }, [isConnected]);
+  }, [isConnected, isHomeView]); // Rerun when view changes
   
 
   // --- RECURSIVE FEED UPDATER ---
@@ -1143,7 +1153,6 @@ export default function VibesphereApp() {
   }
 
   const isSubView = viewStack.length > 1;
-  const isHomeView = activeTab === 'home' && !focusedPost && !viewingProfile;
 
   let currentAuraColor = profile.themeColor;
   if (focusedPost) {
@@ -1291,9 +1300,9 @@ export default function VibesphereApp() {
           {isHomeView && (
             <motion.header
               initial={{ y: -100 }}
-              animate={{ y: isScrolling ? -100 : 0 }}
+              animate={{ y: isNavVisible ? 0 : -100 }}
               exit={{ y: -100 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
               className="fixed top-0 w-full p-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl z-50 border-b"
               style={isSubView ? { borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {borderColor: 'rgba(255,255,255,0.05)'} }
             >
@@ -2721,8 +2730,8 @@ export default function VibesphereApp() {
         
         {isConnected && isHomeView && (
           <motion.div
-            animate={{ y: isScrolling ? 100 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            animate={{ y: isNavVisible ? 0 : 100 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
             className="fixed bottom-24 left-6 z-50 pointer-events-none"
           >
               <p className="text-blue-400 text-[10px] font-mono lowercase bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-blue-400/20">
@@ -2911,8 +2920,8 @@ export default function VibesphereApp() {
         {isHomeView && (
             <motion.div
               variants={{ visible: { y: 0, opacity: 1 }, hidden: { y: 100, opacity: 0 } }}
-              animate={isScrolling || isSidebarOpen ? "hidden" : "visible"}
-              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              animate={isNavVisible && !isSidebarOpen ? "visible" : "hidden"}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
               className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-xl border-t border-white/5 z-[80]"
             >
               {/* home - familiar house icon */}
