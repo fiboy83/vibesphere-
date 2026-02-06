@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -16,6 +17,16 @@ import { useDebounce } from 'use-debounce';
 const PHAROS_CHAIN_ID = 688689;
 const GLOBAL_FEED_KEY = 'vibesphere_global_feed';
 const AUTH_KEY = 'vibe_auth';
+
+// --- VIEM PUBLIC CLIENT ---
+const publicClient = createPublicClient({
+  chain: pharosTestnet,
+  transport: fallback([
+    http('https://rpc.evm.pharos.testnet.cosmostation.io'),
+    http('https://atlantic.dplabs-internal.com'),
+    http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
+  ]),
+});
 
 
 // --- Helper Functions ---
@@ -225,6 +236,75 @@ export default function VibesphereApp() {
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
 
+  // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
+  const isConnected = ready && authenticated && !!wallet;
+
+  const fetchUserHandle = useCallback(async () => {
+    if (!wallet?.address) return;
+    try {
+      const handle = await publicClient.readContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'getHandleByAddress',
+        args: [wallet.address as `0x${string}`],
+      }) as string;
+
+      if (handle) {
+        setUserHandle(handle);
+        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
+      } else {
+        setUserHandle(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch handle", error);
+      setUserHandle(null);
+    }
+  }, [wallet?.address]);
+
+  useEffect(() => {
+    fetchUserHandle();
+  }, [fetchUserHandle]);
+
+  useEffect(() => {
+    const checkHandle = async () => {
+      if (!debouncedClaimInput) {
+        setIsHandleAvailable(null);
+        return;
+      }
+      setIsCheckingHandle(true);
+      setHandleCheckError(null);
+      try {
+        const isTaken = await publicClient.readContract({
+          address: identityContractAddress as `0x${string}`,
+          abi: identityContractAbi,
+          functionName: 'isHandleTaken',
+          args: [debouncedClaimInput],
+        });
+        setIsHandleAvailable(!isTaken);
+      } catch (error: any) {
+        setHandleCheckError('Gagal cek handle di jaringan Pharos.');
+        setIsHandleAvailable(null);
+      } finally {
+        setIsCheckingHandle(false);
+      }
+    };
+
+    checkHandle();
+  }, [debouncedClaimInput]);
+  
+  const handleToggleBookmark = (postId: number) => {
+    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
+      ? bookmarkedPosts.filter(id => id !== postId)
+      : [...bookmarkedPosts, postId];
+    setBookmarkedPosts(newBookmarkedPosts);
+    if (wallet?.address) {
+      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
+    }
+  };
+
 
   const pushView = (newView: Partial<typeof currentView>) => {
     // If navigating to home tab, reset the stack
@@ -261,11 +341,6 @@ export default function VibesphereApp() {
     }
   };
 
-  // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
-  const { ready, authenticated, login, logout } = usePrivy();
-  const { wallets } = useWallets();
-  const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
-  const isConnected = ready && authenticated && !!wallet;
   
   // --- STORAGE HELPERS ---
   const safeLocalStorageSet = (key: string, value: string) => {
@@ -819,14 +894,6 @@ export default function VibesphereApp() {
         chain: pharosTestnet,
         transport: custom(provider),
       });
-      const publicClient = createPublicClient({
-        chain: pharosTestnet,
-        transport: fallback([
-          http('https://rpc.evm.pharos.testnet.cosmostation.io'),
-          http('https://atlantic.dplabs-internal.com'),
-          http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
-        ]),
-      });
 
       const [account] = await walletClient.getAddresses();
 
@@ -892,6 +959,60 @@ export default function VibesphereApp() {
     }
   };
 
+  const handleClaim = async () => {
+    if (!wallet || !claimInput || !isHandleAvailable) return;
+
+    setIsClaiming(true);
+    toast({
+      title: 'Registering on Pharos Network...',
+      description: 'Please confirm the transaction in your wallet.',
+    });
+
+    try {
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+      const [account] = await walletClient.getAddresses();
+
+      const hash = await walletClient.writeContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'mintHandle',
+        args: [claimInput],
+        account,
+      });
+
+      toast({
+        title: 'Transaction sent, awaiting confirmation...',
+        description: `tx: ${hash.slice(0, 10)}...`,
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      toast({
+        title: 'Sovereign Identity Claimed! ✨',
+        description: `Welcome, @${claimInput}.vibes`,
+      });
+      
+      // Refetch handle to update UI
+      await fetchUserHandle();
+      setClaimInput('');
+      setIsHandleAvailable(null);
+
+    } catch (error: any) {
+      console.error("Failed to claim handle", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to claim handle",
+        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
+      });
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+  
   const resetComposer = () => {
     setComposerText('');
     setMediaFile(null);
@@ -1042,134 +1163,6 @@ export default function VibesphereApp() {
 
 
   const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
-
-  const handleToggleBookmark = (postId: number) => {
-    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
-      ? bookmarkedPosts.filter(id => id !== postId)
-      : [...bookmarkedPosts, postId];
-    setBookmarkedPosts(newBookmarkedPosts);
-    if (wallet?.address) {
-      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
-    }
-  };
-
-  // --- IDENTITY ---
-  const publicClient = createPublicClient({
-    chain: pharosTestnet,
-    transport: fallback([
-      http('https://rpc.evm.pharos.testnet.cosmostation.io'),
-      http('https://atlantic.dplabs-internal.com'),
-      http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
-    ]),
-  });
-
-  const fetchUserHandle = useCallback(async () => {
-    if (!wallet?.address) return;
-    try {
-      const handle = await publicClient.readContract({
-        address: identityContractAddress as `0x${string}`,
-        abi: identityContractAbi,
-        functionName: 'getHandleByAddress',
-        args: [wallet.address as `0x${string}`],
-      }) as string;
-
-      if (handle) {
-        setUserHandle(handle);
-        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
-      } else {
-        setUserHandle(null);
-      }
-    } catch (error) {
-      console.error("Failed to fetch handle", error);
-      setUserHandle(null);
-    }
-  }, [wallet?.address, publicClient]);
-
-  useEffect(() => {
-    fetchUserHandle();
-  }, [fetchUserHandle]);
-
-  useEffect(() => {
-    const checkHandle = async () => {
-      if (!debouncedClaimInput) {
-        setIsHandleAvailable(null);
-        return;
-      }
-      setIsCheckingHandle(true);
-      setHandleCheckError(null);
-      try {
-        const isTaken = await publicClient.readContract({
-          address: identityContractAddress as `0x${string}`,
-          abi: identityContractAbi,
-          functionName: 'isHandleTaken',
-          args: [debouncedClaimInput],
-        });
-        setIsHandleAvailable(!isTaken);
-      } catch (error: any) {
-        setHandleCheckError('Gagal cek handle di jaringan Pharos.');
-        setIsHandleAvailable(null);
-      } finally {
-        setIsCheckingHandle(false);
-      }
-    };
-
-    checkHandle();
-  }, [debouncedClaimInput, publicClient]);
-
-  const handleClaim = async () => {
-    if (!wallet || !claimInput || !isHandleAvailable) return;
-
-    setIsClaiming(true);
-    toast({
-      title: 'Registering on Pharos Network...',
-      description: 'Please confirm the transaction in your wallet.',
-    });
-
-    try {
-      const provider = await wallet.getEthereumProvider();
-      const walletClient = createWalletClient({
-        chain: pharosTestnet,
-        transport: custom(provider),
-      });
-      const [account] = await walletClient.getAddresses();
-
-      const hash = await walletClient.writeContract({
-        address: identityContractAddress as `0x${string}`,
-        abi: identityContractAbi,
-        functionName: 'mintHandle',
-        args: [claimInput],
-        account,
-      });
-
-      toast({
-        title: 'Transaction sent, awaiting confirmation...',
-        description: `tx: ${hash.slice(0, 10)}...`,
-      });
-
-      await publicClient.waitForTransactionReceipt({ hash });
-
-      toast({
-        title: 'Sovereign Identity Claimed! ✨',
-        description: `Welcome, @${claimInput}.vibes`,
-      });
-      
-      // Refetch handle to update UI
-      await fetchUserHandle();
-      setClaimInput('');
-      setIsHandleAvailable(null);
-
-    } catch (error: any) {
-      console.error("Failed to claim handle", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to claim handle",
-        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
-      });
-    } finally {
-      setIsClaiming(false);
-    }
-  };
-
 
   if (!isAuthorized) {
     return (
@@ -2004,7 +1997,7 @@ export default function VibesphereApp() {
                     initial="hidden" animate="show"
                     variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                 >
-                   <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ')} as React.CSSProperties}>
+                   <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                     <div className="flex flex-col items-center text-center">
                         {profileToShow.handle === profile.handle ? (
                             <div 
