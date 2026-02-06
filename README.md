@@ -1,1 +1,1 @@
-# vibesphere v1.0
+# vibesphere v1.6
