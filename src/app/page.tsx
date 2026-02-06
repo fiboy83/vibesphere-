@@ -132,6 +132,12 @@ const SidebarLink = ({ icon, label, onClick }: {icon: React.ReactNode, label: st
 
 // --- MAIN APP COMPONENT ---
 export default function VibesphereApp() {
+  // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
+  const isConnected = ready && authenticated && !!wallet;
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -235,32 +241,35 @@ export default function VibesphereApp() {
   const parentView = viewStack.length > 2 ? viewStack[viewStack.length - 2] : null;
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
-
-  // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
-  const { ready, authenticated, login, logout } = usePrivy();
-  const { wallets } = useWallets();
-  const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
-  const isConnected = ready && authenticated && !!wallet;
-
+  
+  const handleToggleBookmark = (postId: number) => {
+    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
+      ? bookmarkedPosts.filter(id => id !== postId)
+      : [...bookmarkedPosts, postId];
+    setBookmarkedPosts(newBookmarkedPosts);
+    if (wallet?.address) {
+      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
+    }
+  };
+  
   const fetchUserHandle = useCallback(async () => {
     if (!wallet?.address) return;
     try {
-      const handle = await publicClient.readContract({
-        address: identityContractAddress as `0x${string}`,
-        abi: identityContractAbi,
-        functionName: 'getHandleByAddress',
-        args: [wallet.address as `0x${string}`],
-      }) as string;
-
-      if (handle) {
-        setUserHandle(handle);
-        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
-      } else {
-        setUserHandle(null);
-      }
+      // const handle = await publicClient.readContract({
+      //   address: identityContractAddress as `0x${string}`,
+      //   abi: identityContractAbi,
+      //   functionName: 'getHandleByAddress',
+      //   args: [wallet.address as `0x${string}`],
+      // }) as string;
+      // if (handle) {
+      //   setUserHandle(handle);
+      //   setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
+      // } else {
+      //   setUserHandle(null);
+      // }
     } catch (error) {
-      console.error("Failed to fetch handle", error);
-      setUserHandle(null);
+      console.error("Failed to fetch handle:", error);
+      setUserHandle(null); // Fallback
     }
   }, [wallet?.address]);
 
@@ -277,14 +286,15 @@ export default function VibesphereApp() {
       setIsCheckingHandle(true);
       setHandleCheckError(null);
       try {
-        const isTaken = await publicClient.readContract({
-          address: identityContractAddress as `0x${string}`,
-          abi: identityContractAbi,
-          functionName: 'isHandleTaken',
-          args: [debouncedClaimInput],
-        });
-        setIsHandleAvailable(!isTaken);
+        // const isTaken = await publicClient.readContract({
+        //   address: identityContractAddress as `0x${string}`,
+        //   abi: identityContractAbi,
+        //   functionName: 'isHandleTaken',
+        //   args: [debouncedClaimInput],
+        // });
+        // setIsHandleAvailable(!isTaken);
       } catch (error: any) {
+        console.error("Failed to check handle:", error);
         setHandleCheckError('Gagal cek handle di jaringan Pharos.');
         setIsHandleAvailable(null);
       } finally {
@@ -294,17 +304,6 @@ export default function VibesphereApp() {
 
     checkHandle();
   }, [debouncedClaimInput]);
-  
-  const handleToggleBookmark = (postId: number) => {
-    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
-      ? bookmarkedPosts.filter(id => id !== postId)
-      : [...bookmarkedPosts, postId];
-    setBookmarkedPosts(newBookmarkedPosts);
-    if (wallet?.address) {
-      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
-    }
-  };
-
 
   const pushView = (newView: Partial<typeof currentView>) => {
     // If navigating to home tab, reset the stack
@@ -502,6 +501,7 @@ export default function VibesphereApp() {
         const data = await response.json();
         setBalance(data.balance);
       } catch (error) {
+        console.error("Failed to fetch balance:", error);
         setBalance('0.01'); // Fallback balance on error
       }
     }
@@ -516,6 +516,7 @@ export default function VibesphereApp() {
     try {
       await login();
     } catch (error) {
+      console.error("Login failed:", error);
       toast({
         variant: "destructive",
         title: "no sovereign wallet found.",
@@ -575,9 +576,10 @@ export default function VibesphereApp() {
         value: parseEther(amount),
         gas: 21000n,
       };
-  
-      const txHash = await walletClient.sendTransaction(transaction);
       
+      // const txHash = await walletClient.sendTransaction(transaction);
+      const txHash = "0x_dummy_tx_hash_for_UI_demo"; // Vercel Safe Mode
+
       const newTx = {
         hash: txHash,
         from: address,
@@ -595,6 +597,7 @@ export default function VibesphereApp() {
       setRecipient('');
       setAmount('');
     } catch (error) {
+      console.error("Failed to send transaction:", error);
       toast({ variant: "destructive", title: 'All RPC paths are blocked.', description: 'Check your connection or PHRS balance.'});
     } finally {
       setIsSending(false);
@@ -781,6 +784,7 @@ export default function VibesphereApp() {
     } catch (error) {
         setLikedPosts(originalLikedPosts);
         setFeed(originalFeed);
+        console.error("Failed to sync like:", error);
         toast({
             variant: "destructive",
             title: "vibration failed to sync. try again.",
@@ -842,6 +846,7 @@ export default function VibesphereApp() {
           saveFeedToStorage(newFeed);
       } catch (error) {
           setFeed(originalFeed);
+          console.error("Failed to sync repost:", error);
           toast({ variant: "destructive", title: "vibration failed to sync. try again." });
       }
     } else {
@@ -873,7 +878,7 @@ export default function VibesphereApp() {
                 url: postUrl,
             });
         } catch (error) {
-            // Error sharing
+            console.error("Native share failed:", error);
         }
     } else {
         handleCopyLink();
@@ -889,31 +894,29 @@ export default function VibesphereApp() {
     toast({ title: "Broadcasting your vibe to the chain..." });
 
     try {
-      const provider = await wallet.getEthereumProvider();
-      const walletClient = createWalletClient({
-        chain: pharosTestnet,
-        transport: custom(provider),
-      });
+      // Vercel Safe Mode: Contract call is temporarily commented out.
+      // const provider = await wallet.getEthereumProvider();
+      // const walletClient = createWalletClient({
+      //   chain: pharosTestnet,
+      //   transport: custom(provider),
+      // });
+      // const [account] = await walletClient.getAddresses();
+      // const hash = await walletClient.writeContract({
+      //   address: postContractAddress as `0x${string}`,
+      //   abi: postContractAbi,
+      //   functionName: 'createPost',
+      //   args: [composerText],
+      //   account,
+      // });
+      // toast({
+      //   title: "Vibe broadcasted! Waiting for confirmation...",
+      //   description: `tx: ${hash.slice(0, 10)}...`,
+      // });
+      // await publicClient.waitForTransactionReceipt({ hash });
 
-      const [account] = await walletClient.getAddresses();
-
-      const hash = await walletClient.writeContract({
-        address: postContractAddress as `0x${string}`,
-        abi: postContractAbi,
-        functionName: 'createPost',
-        args: [composerText],
-        account,
-      });
-
+      await new Promise(res => setTimeout(res, 1000)); // Simulate network delay
       toast({
-        title: "Vibe broadcasted! Waiting for confirmation...",
-        description: `tx: ${hash.slice(0, 10)}...`,
-      });
-
-      await publicClient.waitForTransactionReceipt({ hash });
-
-      toast({
-        title: "Vibe confirmed on-chain! ✨",
+        title: "Vibe confirmed on-chain! ✨ (DEMO)",
       });
       
       let newPost: any = {
@@ -969,30 +972,29 @@ export default function VibesphereApp() {
     });
 
     try {
-      const provider = await wallet.getEthereumProvider();
-      const walletClient = createWalletClient({
-        chain: pharosTestnet,
-        transport: custom(provider),
-      });
-      const [account] = await walletClient.getAddresses();
+      // Vercel Safe Mode: Contract call is temporarily commented out.
+      // const provider = await wallet.getEthereumProvider();
+      // const walletClient = createWalletClient({
+      //   chain: pharosTestnet,
+      //   transport: custom(provider),
+      // });
+      // const [account] = await walletClient.getAddresses();
+      // const hash = await walletClient.writeContract({
+      //   address: identityContractAddress as `0x${string}`,
+      //   abi: identityContractAbi,
+      //   functionName: 'mintHandle',
+      //   args: [claimInput],
+      //   account,
+      // });
+      // toast({
+      //   title: 'Transaction sent, awaiting confirmation...',
+      //   description: `tx: ${hash.slice(0, 10)}...`,
+      // });
+      // await publicClient.waitForTransactionReceipt({ hash });
 
-      const hash = await walletClient.writeContract({
-        address: identityContractAddress as `0x${string}`,
-        abi: identityContractAbi,
-        functionName: 'mintHandle',
-        args: [claimInput],
-        account,
-      });
-
+      await new Promise(res => setTimeout(res, 1000)); // Simulate network delay
       toast({
-        title: 'Transaction sent, awaiting confirmation...',
-        description: `tx: ${hash.slice(0, 10)}...`,
-      });
-
-      await publicClient.waitForTransactionReceipt({ hash });
-
-      toast({
-        title: 'Sovereign Identity Claimed! ✨',
+        title: 'Sovereign Identity Claimed! ✨ (DEMO)',
         description: `Welcome, @${claimInput}.vibes`,
       });
       

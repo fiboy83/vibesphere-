@@ -1,5 +1,5 @@
 
-export const postContractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const postContractAddress = "0xE8BDBCe91bFd96bdA93997ab5e9c1A0945525f09";
 
 export const postContractAbi = [
     {
@@ -136,7 +136,7 @@ export const postContractAbi = [
     }
   ];
 
-export const identityContractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+export const identityContractAddress = "0x14A985bF09DCB548870A845bf845A8A9fa81BC09";
 
 export const identityContractAbi = [
   {
