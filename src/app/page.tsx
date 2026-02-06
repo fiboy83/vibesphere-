@@ -295,7 +295,7 @@ export default function VibesphereApp() {
         setIsHandleAvailable(!isTaken);
       } catch (error: any) {
         console.error("Failed to check handle:", error);
-        setHandleCheckError('Gagal cek handle di jaringan Pharos.');
+        setHandleCheckError('Failed to check handle on Pharos network.');
         setIsHandleAvailable(null);
       } finally {
         setIsCheckingHandle(false);
@@ -2029,7 +2029,7 @@ export default function VibesphereApp() {
                               <div className="relative">
                                 <input
                                   type="text"
-                                  placeholder="ketik handle yang kamu mau"
+                                  placeholder="type your desired handle"
                                   value={claimInput}
                                   onChange={(e) => setClaimInput(e.target.value.toLowerCase())}
                                   className={cn(
@@ -2045,8 +2045,8 @@ export default function VibesphereApp() {
                               </div>
                               <div className="text-center text-xs font-mono h-4 mt-2">
                                 {isCheckingHandle && <p className="text-slate-500 animate-pulse">checking...</p>}
-                                {!isCheckingHandle && isHandleAvailable === true && <p className="text-green-400">Handle tersedia! Klaim kedaulatanmu sekarang.</p>}
-                                {!isCheckingHandle && isHandleAvailable === false && <p className="text-red-400">Yah, handle ini sudah ada yang punya, Broo!</p>}
+                                {!isCheckingHandle && isHandleAvailable === true && <p className="text-green-400">Handle available! Claim now.</p>}
+                                {!isCheckingHandle && isHandleAvailable === false && <p className="text-red-400">Oops, this handle is already taken.</p>}
                                 {!isCheckingHandle && handleCheckError && <p className="text-red-400">{handleCheckError}</p>}
                               </div>
                               <button
@@ -2058,7 +2058,7 @@ export default function VibesphereApp() {
                                    "text-primary-foreground"
                                 )}
                               >
-                                {isClaiming ? "Registering on Pharos..." : "Claim"}
+                                {isClaiming ? "Registering on Pharos..." : "Claim Handle"}
                               </button>
                             </div>
                           )}
