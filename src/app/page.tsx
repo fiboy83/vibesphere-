@@ -255,18 +255,18 @@ export default function VibesphereApp() {
   const fetchUserHandle = useCallback(async () => {
     if (!wallet?.address) return;
     try {
-      // const handle = await publicClient.readContract({
-      //   address: identityContractAddress as `0x${string}`,
-      //   abi: identityContractAbi,
-      //   functionName: 'getHandleByAddress',
-      //   args: [wallet.address as `0x${string}`],
-      // }) as string;
-      // if (handle) {
-      //   setUserHandle(handle);
-      //   setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
-      // } else {
-      //   setUserHandle(null);
-      // }
+      const handle = await publicClient.readContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'getHandleByAddress',
+        args: [wallet.address as `0x${string}`],
+      }) as string;
+      if (handle) {
+        setUserHandle(handle);
+        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
+      } else {
+        setUserHandle(null);
+      }
     } catch (error) {
       console.error("Failed to fetch handle:", error);
       setUserHandle(null); // Fallback
@@ -286,13 +286,13 @@ export default function VibesphereApp() {
       setIsCheckingHandle(true);
       setHandleCheckError(null);
       try {
-        // const isTaken = await publicClient.readContract({
-        //   address: identityContractAddress as `0x${string}`,
-        //   abi: identityContractAbi,
-        //   functionName: 'isHandleTaken',
-        //   args: [debouncedClaimInput],
-        // });
-        // setIsHandleAvailable(!isTaken);
+        const isTaken = await publicClient.readContract({
+          address: identityContractAddress as `0x${string}`,
+          abi: identityContractAbi,
+          functionName: 'isHandleTaken',
+          args: [debouncedClaimInput],
+        });
+        setIsHandleAvailable(!isTaken);
       } catch (error: any) {
         console.error("Failed to check handle:", error);
         setHandleCheckError('Gagal cek handle di jaringan Pharos.');
@@ -577,8 +577,7 @@ export default function VibesphereApp() {
         gas: 21000n,
       };
       
-      // const txHash = await walletClient.sendTransaction(transaction);
-      const txHash = "0x_dummy_tx_hash_for_UI_demo"; // Vercel Safe Mode
+      const txHash = await walletClient.sendTransaction(transaction);
 
       const newTx = {
         hash: txHash,
@@ -894,29 +893,27 @@ export default function VibesphereApp() {
     toast({ title: "Broadcasting your vibe to the chain..." });
 
     try {
-      // Vercel Safe Mode: Contract call is temporarily commented out.
-      // const provider = await wallet.getEthereumProvider();
-      // const walletClient = createWalletClient({
-      //   chain: pharosTestnet,
-      //   transport: custom(provider),
-      // });
-      // const [account] = await walletClient.getAddresses();
-      // const hash = await walletClient.writeContract({
-      //   address: postContractAddress as `0x${string}`,
-      //   abi: postContractAbi,
-      //   functionName: 'createPost',
-      //   args: [composerText],
-      //   account,
-      // });
-      // toast({
-      //   title: "Vibe broadcasted! Waiting for confirmation...",
-      //   description: `tx: ${hash.slice(0, 10)}...`,
-      // });
-      // await publicClient.waitForTransactionReceipt({ hash });
-
-      await new Promise(res => setTimeout(res, 1000)); // Simulate network delay
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+      const [account] = await walletClient.getAddresses();
+      const hash = await walletClient.writeContract({
+        address: postContractAddress as `0x${string}`,
+        abi: postContractAbi,
+        functionName: 'createPost',
+        args: [composerText],
+        account,
+      });
       toast({
-        title: "Vibe confirmed on-chain! ✨ (DEMO)",
+        title: "Vibe broadcasted! Waiting for confirmation...",
+        description: `tx: ${hash.slice(0, 10)}...`,
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      toast({
+        title: "Vibe confirmed on-chain! ✨",
       });
       
       let newPost: any = {
@@ -972,29 +969,27 @@ export default function VibesphereApp() {
     });
 
     try {
-      // Vercel Safe Mode: Contract call is temporarily commented out.
-      // const provider = await wallet.getEthereumProvider();
-      // const walletClient = createWalletClient({
-      //   chain: pharosTestnet,
-      //   transport: custom(provider),
-      // });
-      // const [account] = await walletClient.getAddresses();
-      // const hash = await walletClient.writeContract({
-      //   address: identityContractAddress as `0x${string}`,
-      //   abi: identityContractAbi,
-      //   functionName: 'mintHandle',
-      //   args: [claimInput],
-      //   account,
-      // });
-      // toast({
-      //   title: 'Transaction sent, awaiting confirmation...',
-      //   description: `tx: ${hash.slice(0, 10)}...`,
-      // });
-      // await publicClient.waitForTransactionReceipt({ hash });
-
-      await new Promise(res => setTimeout(res, 1000)); // Simulate network delay
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+      const [account] = await walletClient.getAddresses();
+      const hash = await walletClient.writeContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'mintHandle',
+        args: [claimInput],
+        account,
+      });
       toast({
-        title: 'Sovereign Identity Claimed! ✨ (DEMO)',
+        title: 'Transaction sent, awaiting confirmation...',
+        description: `tx: ${hash.slice(0, 10)}...`,
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      toast({
+        title: 'Sovereign Identity Claimed! ✨',
         description: `Welcome, @${claimInput}.vibes`,
       });
       
