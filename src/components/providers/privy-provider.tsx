@@ -27,9 +27,22 @@ export function PrivyClientProvider({ children }: { children: React.ReactNode })
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
+  if (!privyAppId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-red-900 text-white text-center p-4 font-mono">
+        <div>
+            <h1 className="text-2xl font-bold mb-4">Privy App ID Not Found</h1>
+            <p>Please set the <code className="bg-black/50 px-2 py-1 rounded">NEXT_PUBLIC_PRIVY_APP_ID</code> environment variable in your <code className="bg-black/50 px-2 py-1 rounded">.env.local</code> file.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      appId={privyAppId}
       config={{
         appearance: {
           theme: 'dark',
