@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, formatEther, parseEther, fallback, parseGwei, encodeFunctionData } from 'viem';
+import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 import { useToast } from "@/hooks/use-toast";
 import { postContractAddress, postContractAbi, identityContractAddress, identityContractAbi } from '@/constants/contracts';
@@ -121,7 +121,6 @@ const SidebarLink = ({ icon, label, onClick }: {icon: React.ReactNode, label: st
 
 // --- MAIN APP COMPONENT ---
 export default function VibesphereApp() {
-  // --- STATE & REF HOOKS (must be first) ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -135,21 +134,33 @@ export default function VibesphereApp() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { toast } = useToast();
+  
+  // --- INVITE GATE STATE ---
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [authError, setAuthError] = useState('');
+
+  // --- COMPOSER STATE ---
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerTab, setComposerTab] = useState<'media' | 'tekt' | 'artikel'>('tekt');
   const [composerText, setComposerText] = useState('');
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const [isPosting, setIsPosting] = useState(false);
+
+  
+  // --- PROFILE & IDENTITY STATE ENGINE ---
   const [userHandle, setUserHandle] = useState<string | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimInput, setClaimInput] = useState('');
+  const [debouncedClaimInput] = useDebounce(claimInput, 300);
   const [isHandleAvailable, setIsHandleAvailable] = useState<boolean | null>(null);
   const [isCheckingHandle, setIsCheckingHandle] = useState(false);
   const [handleCheckError, setHandleCheckError] = useState<string | null>(null);
+
   const [profile, setProfile] = useState({
     username: 'Sovereign_User',
     handle: 'user.vibes',
@@ -159,7 +170,10 @@ export default function VibesphereApp() {
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileTab, setProfileTab] = useState<'vibe' | 'revibe' | 'like'>('vibe');
+
+  // --- INBOX STATE ---
   const [inboxMessages, setInboxMessages] = useState([
     { id: 1, from: 'nova.vibes', text: 'GM! Just saw your post on PIP-8, great points.', time: '1h', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.vibes&backgroundColor=a855f7`, self: false },
     { id: 2, from: 'user.vibes', text: 'Thanks! Appreciate the feedback.', time: '58m', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`, self: true },
@@ -167,7 +181,10 @@ export default function VibesphereApp() {
     { id: 4, from: 'ql.vibes', text: 'The new DApp is live, check it out on Pharos.', time: '15m', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.vibes&backgroundColor=06b6d4`, self: false },
   ]);
   const [inboxInput, setInboxInput] = useState('');
-  const [initialFeedData] = useState([
+
+
+  // --- FEED & BOOKMARK STATE ---
+  const initialFeedData = [
     { id: 1, userId: "nova.vibes", username: "Nova_Architect", handle: "nova.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.vibes&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 4, repostCount: 5, likeCount: 42, media: null, comments: [
         { id: 201, userId: "alpha_vibes.vibes", username: "Alpha_Vibes", handle: "alpha_vibes.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=alpha_vibes.vibes&backgroundColor=10b981`, time: "5m", text: "kedaulatan digital!", commentCount: 0, repostCount: 0, likeCount: 2, bookmarked: false, comments: [] },
         { id: 202, userId: "beta_coder.vibes", username: "Beta_Coder", handle: "beta_coder.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=beta_coder.vibes&backgroundColor=3b82f6`, time: "3m", text: "layout mantap bro", commentCount: 0, repostCount: 0, likeCount: 5, bookmarked: false, comments: [] },
@@ -185,66 +202,32 @@ export default function VibesphereApp() {
       ]
     },
     { id: 4, userId: "user.vibes", username: "Sovereign_User", handle: "user.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.vibes&backgroundColor=f59e0b`, time: "5h", text: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "tekt", commentCount: 0, repostCount: 3, likeCount: 66, media: null, comments: [] },
-  ]);
+  ];
   const [feed, setFeed] = useState(initialFeedData);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
+
+
+  // --- SOCIAL ACTION STATE ---
   const [showShareModal, setShowShareModal] = useState(false);
   const [postToShare, setPostToShare] = useState<any | null>(null);
+
+  // --- FOCUS MODE & COMMENT STATE ---
   const [isCommentSectionVisible, setIsCommentSectionVisible] = useState(false);
   const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
-  const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaInputRef = useRef<HTMLInputElement>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isPosting, setIsPosting] = useState(false);
-  
-  // --- CUSTOM HOOKS ---
-  const { ready, authenticated, login, logout } = usePrivy();
-  const { wallets } = useWallets();
-  const { toast } = useToast();
-  const [debouncedClaimInput] = useDebounce(claimInput, 300);
 
-  // --- DERIVED STATE & CLIENTS ---
-  const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
-  const isConnected = ready && authenticated && !!wallet;
+  // --- NAVIGATION STATE ---
+  const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
   const currentView = viewStack[viewStack.length - 1];
   const { tab: activeTab, viewingProfile, focusedPost } = currentView;
   const parentView = viewStack.length > 2 ? viewStack[viewStack.length - 2] : null;
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
-  
-  const publicClient = React.useMemo(() => createPublicClient({
-    chain: pharosTestnet,
-    transport: http(process.env.NEXT_PUBLIC_RPC_URL!),
-  }), []);
 
-  // --- CALLBACKS ---
-
-  const fetchUserHandle = useCallback(async () => {
-    if (!wallet?.address) return;
-    try {
-      const handle = await publicClient.readContract({
-        address: identityContractAddress as `0x${string}`,
-        abi: identityContractAbi,
-        functionName: 'getHandleByAddress',
-        args: [wallet.address as `0x${string}`],
-      }) as string;
-
-      if (handle) {
-        setUserHandle(handle);
-        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
-      } else {
-        setUserHandle(null);
-      }
-    } catch (error) {
-      console.error("Failed to fetch handle", error);
-      setUserHandle(null);
-    }
-  }, [wallet?.address, publicClient]);
 
   const pushView = (newView: Partial<typeof currentView>) => {
+    // If navigating to home tab, reset the stack
     if (newView.tab === 'home' && !newView.focusedPost && !newView.viewingProfile) {
         setViewStack([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
         setIsSidebarOpen(false);
@@ -253,9 +236,11 @@ export default function VibesphereApp() {
 
     const isNewTab = newView.tab && newView.tab !== currentView.tab;
     
+    // When switching to ANY OTHER main tab, ADD to the stack
     if (isNewTab && ['bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market', 'inbox'].includes(newView.tab!)) {
         setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: null, focusedPost: null }]);
     } else {
+        // This handles drilling down (e.g. focusing a post, or a user profile which is not a main tab)
         const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null } : currentView;
         setViewStack(prev => [...prev, { ...baseView, ...newView }]);
     }
@@ -264,9 +249,9 @@ export default function VibesphereApp() {
         setProfileTab('vibe');
     }
 
-    setIsSidebarOpen(false);
+    setIsSidebarOpen(false); // Always close sidebar on navigation
     if (newView.focusedPost) {
-        setIsCommentSectionVisible(true);
+        setIsCommentSectionVisible(true); // Auto-expand comments in detail view
     }
   };
 
@@ -275,7 +260,14 @@ export default function VibesphereApp() {
         setViewStack(prev => prev.slice(0, -1));
     }
   };
+
+  // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
+  const isConnected = ready && authenticated && !!wallet;
   
+  // --- STORAGE HELPERS ---
   const safeLocalStorageSet = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
@@ -293,12 +285,13 @@ export default function VibesphereApp() {
                 if (currentFeedStr) {
                     const currentFeed = JSON.parse(currentFeedStr);
                     if(Array.isArray(currentFeed) && currentFeed.length > 1) {
+                        // Keep the newer half
                         const newStoredFeed = currentFeed.slice(Math.ceil(currentFeed.length / 2));
                         localStorage.setItem(feedKey, JSON.stringify(newStoredFeed));
-                        localStorage.setItem(key, value);
+                        localStorage.setItem(key, value); // Retry
                     } else {
                        localStorage.removeItem(feedKey);
-                       localStorage.setItem(key, value);
+                       localStorage.setItem(key, value); // Retry
                     }
                 }
             } catch (cleanupError) {
@@ -310,9 +303,61 @@ export default function VibesphereApp() {
 
   const saveFeedToStorage = (currentFeed: any[]) => {
       if (!wallet?.address) return;
+      // Keep only the 20 most recent posts
       const feedToSave = currentFeed.slice(0, 20); 
       safeLocalStorageSet(GLOBAL_FEED_KEY, JSON.stringify(feedToSave));
   }
+
+
+  // --- LOCALSTORAGE & PROFILE/BOOKMARK/LIKE SYNC ---
+  useEffect(() => {
+    if (wallet?.address) {
+      // Load Profile
+      const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile);
+        // Don't load handle from here, it will be fetched from chain
+        setProfile({...parsed, handle: parsed.handle || `${wallet.address.slice(0, 6)}.vibes`});
+      } else {
+        const defaultProfile = {
+          username: 'Sovereign_User',
+          handle: `${wallet.address.slice(0, 6)}.vibes`,
+          avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${wallet.address}&backgroundColor=a855f7`,
+          joinDate: 'vibing since now',
+          themeColor: '262 100% 70%',
+        };
+        setProfile(defaultProfile);
+      }
+      
+      // Load Bookmarks
+      const savedBookmarks = localStorage.getItem(`vibesphere_bookmarks_${wallet.address}`);
+      if (savedBookmarks) {
+        setBookmarkedPosts(JSON.parse(savedBookmarks));
+      }
+
+      // Load Likes
+      const savedLikes = localStorage.getItem(`vibesphere_likes_${wallet.address}`);
+      if (savedLikes) {
+        setLikedPosts(JSON.parse(savedLikes));
+      }
+
+      // Load Transactions
+      const savedTransactions = localStorage.getItem(`vibesphere_transactions_${wallet.address}`);
+      if (savedTransactions) {
+        setTransactions(JSON.parse(savedTransactions));
+      } else {
+        setTransactions([]); // Reset on account change
+      }
+    }
+  }, [wallet?.address]);
+
+  // --- INVITE GATE CHECK ---
+  useEffect(() => {
+    const auth = localStorage.getItem(AUTH_KEY);
+    if (auth === 'true') {
+        setIsAuthorized(true);
+    }
+  }, []);
 
   const handleInviteSubmit = () => {
     const validCodes = ["VIBE-001", "VIBE-100", "PHRS-777"];
@@ -324,6 +369,72 @@ export default function VibesphereApp() {
         setAuthError('invalid code. sovereignty denied.');
     }
   };
+
+  // --- REAL-TIME SOVEREIGN FEED ---
+  useEffect(() => {
+    const fetchGlobalFeed = () => {
+      const savedFeed = localStorage.getItem(GLOBAL_FEED_KEY);
+      if (savedFeed) {
+        try {
+          const parsedFeed = JSON.parse(savedFeed);
+          if (Array.isArray(parsedFeed)) {
+            setFeed(parsedFeed);
+          } else {
+            setFeed(initialFeedData);
+          }
+        } catch (e) {
+          setFeed(initialFeedData);
+        }
+      } else {
+        setFeed(initialFeedData);
+      }
+    };
+    
+    fetchGlobalFeed(); // Initial fetch
+    const intervalId = setInterval(fetchGlobalFeed, 3000); // Poll every 3 seconds
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    if (wallet?.address && profile.handle !== 'user.vibes') {
+      safeLocalStorageSet(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
+    }
+  }, [profile, wallet?.address]);
+
+
+  // --- GLOBAL THEME CONTROLLER ---
+  useEffect(() => {
+    if (profile.themeColor) {
+        document.documentElement.style.setProperty('--primary', profile.themeColor);
+        const glowColor = profile.themeColor.replace(/ /g, ', ');
+        document.documentElement.style.setProperty('--primary-glow', glowColor);
+        document.body.classList.add('theme-transition');
+        setTimeout(() => document.body.classList.remove('theme-transition'), 1000);
+    }
+  }, [profile.themeColor]);
+  
+  
+  // --- REAL-TIME BALANCE ---
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!wallet?.address) return;
+      try {
+        const response = await fetch(`/api/balance?address=${wallet.address}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setBalance(data.balance);
+      } catch (error) {
+        setBalance('0.01'); // Fallback balance on error
+      }
+    }
+
+    if (isConnected && wallet?.address) {
+      fetchBalance();
+    }
+  }, [isConnected, wallet?.address]);
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
@@ -340,6 +451,13 @@ export default function VibesphereApp() {
     }
   };
 
+  // Auto-switch chain if the connected wallet is on the wrong chain
+  useEffect(() => {
+    if (isConnected && wallet && wallet.chainId !== `eip155:${PHAROS_CHAIN_ID}`) {
+      wallet.switchChain(PHAROS_CHAIN_ID);
+    }
+  }, [isConnected, wallet]);
+
   const disconnectWallet = async () => {
     if (window.confirm("exit vibesphere? your sovereignty remains on-chain.")) {
       await logout();
@@ -347,6 +465,7 @@ export default function VibesphereApp() {
     }
   };
 
+  // --- WALLET & PROFILE FUNCTIONS ---
   const copyAddress = () => {
     if (wallet?.address) {
       navigator.clipboard.writeText(wallet.address);
@@ -356,40 +475,54 @@ export default function VibesphereApp() {
 
   const handleSend = async () => {
     if (!wallet || !recipient || !amount) {
-        toast({ variant: "destructive", title: "recipient and amount are required." });
-        return;
+      toast({ variant: "destructive", title: "recipient and amount are required."});
+      return;
     }
-
+    const walletAddress = wallet.address;
+    if (!walletAddress) {
+      toast({ variant: "destructive", title: "Wallet address not found."});
+      return;
+    }
+  
     setIsSending(true);
     try {
-        const transactionRequest = {
-            to: recipient as `0x${string}`,
-            value: parseEther(amount),
-        };
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+  
+      const [address] = await walletClient.getAddresses();
+  
+      const transaction = {
+        account: address,
+        to: recipient as `0x${string}`,
+        value: parseEther(amount),
+        gas: 21000n,
+      };
+  
+      const txHash = await walletClient.sendTransaction(transaction);
+      
+      const newTx = {
+        hash: txHash,
+        from: address,
+        to: recipient,
+        value: parseEther(amount).toString(), // Save BigInt as string for JSON
+        timestamp: Date.now(),
+      };
+      const updatedTransactions = [newTx, ...transactions];
+      setTransactions(updatedTransactions);
+      safeLocalStorageSet(`vibesphere_transactions_${walletAddress}`, JSON.stringify(updatedTransactions));
 
-        const txHash = await wallet.sendTransaction(transactionRequest);
-
-        const newTx = {
-            hash: txHash,
-            from: wallet.address,
-            to: recipient,
-            value: parseEther(amount).toString(),
-            timestamp: Date.now(),
-        };
-        const updatedTransactions = [newTx, ...transactions];
-        setTransactions(updatedTransactions);
-        safeLocalStorageSet(`vibesphere_transactions_${wallet.address}`, JSON.stringify(updatedTransactions));
-
-        toast({ title: "transaction sent", description: `view on explorer: ${txHash.slice(0, 10)}...` });
-
-        setShowSendModal(false);
-        setRecipient('');
-        setAmount('');
+      toast({ title: "transaction sent", description: `view on explorer: ${txHash.slice(0,10)}...`});
+  
+      setShowSendModal(false);
+      setRecipient('');
+      setAmount('');
     } catch (error) {
-        console.error("Failed to send transaction", error);
-        toast({ variant: "destructive", title: 'Transaction failed', description: 'Could not send transaction. Please try again.' });
+      toast({ variant: "destructive", title: 'All RPC paths are blocked.', description: 'Check your connection or PHRS balance.'});
     } finally {
-        setIsSending(false);
+      setIsSending(false);
     }
   };
   
@@ -429,7 +562,47 @@ export default function VibesphereApp() {
     setProfile(prev => ({ ...prev, username: tempProfile.username, joinDate: tempProfile.joinDate }));
     setIsProfileModalOpen(false);
   };
+
   
+  // --- SCROLL HANDLING ---
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleScroll = () => {
+      const isAtTop = window.scrollY < 100;
+      const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 10;
+
+      if (isAtTop || isAtBottom) {
+        setIsScrolling(false);
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+        return;
+      }
+      
+      setIsScrolling(true); // Hide bars while scrolling
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false); // Show bars after scrolling stops
+      }, 300); // 300ms of inactivity
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [isConnected]);
+  
+
+  // --- RECURSIVE FEED UPDATER ---
   const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
     let itemFound = false;
     const updatedItems = items.map(item => {
@@ -456,6 +629,7 @@ export default function VibesphereApp() {
     return [updatedItems, itemFound];
   };
 
+  // --- SOCIAL ACTIONS ---
   const handleSendComment = (postId: number) => {
     if (commentText.trim() === "") return;
 
@@ -504,11 +678,13 @@ export default function VibesphereApp() {
     }
   };
 
+
   const handleToggleLike = async (postId: number) => {
     const isLiked = likedPosts.includes(postId);
     const originalLikedPosts = [...likedPosts];
-    const originalFeed = JSON.parse(JSON.stringify(feed));
+    const originalFeed = JSON.parse(JSON.stringify(feed)); // Deep copy for rollback
 
+    // Optimistic UI Update
     const newLikedPosts = isLiked ? originalLikedPosts.filter(id => id !== postId) : [...originalLikedPosts, postId];
     setLikedPosts(newLikedPosts);
 
@@ -638,19 +814,29 @@ export default function VibesphereApp() {
     toast({ title: "Broadcasting your vibe to the chain..." });
 
     try {
-      const data = encodeFunctionData({
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+      const publicClient = createPublicClient({
+        chain: pharosTestnet,
+        transport: fallback([
+          http('https://rpc.evm.pharos.testnet.cosmostation.io'),
+          http('https://atlantic.dplabs-internal.com'),
+          http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
+        ]),
+      });
+
+      const [account] = await walletClient.getAddresses();
+
+      const hash = await walletClient.writeContract({
+        address: postContractAddress as `0x${string}`,
         abi: postContractAbi,
         functionName: 'createPost',
         args: [composerText],
+        account,
       });
-
-      const transactionRequest = {
-        to: postContractAddress as `0x${string}`,
-        data,
-        gasPrice: parseGwei('1.1'),
-      };
-      
-      const hash = await wallet.sendTransaction(transactionRequest);
 
       toast({
         title: "Vibe broadcasted! Waiting for confirmation...",
@@ -754,7 +940,7 @@ export default function VibesphereApp() {
     }
   };
 
-  const handleSendInboxMessage = () => {
+    const handleSendInboxMessage = () => {
     if (!inboxInput.trim()) return;
     const newMessage = {
       id: Date.now(),
@@ -768,250 +954,6 @@ export default function VibesphereApp() {
     setInboxInput('');
   };
 
-  const handleToggleBookmark = (postId: number) => {
-    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
-      ? bookmarkedPosts.filter(id => id !== postId)
-      : [...bookmarkedPosts, postId];
-    setBookmarkedPosts(newBookmarkedPosts);
-    if (wallet?.address) {
-      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
-    }
-  };
-
-  const handleClaim = async () => {
-    if (!wallet || !claimInput || !isHandleAvailable) return;
-  
-    setIsClaiming(true);
-    toast({
-      title: 'Registering on Pharos Network...',
-      description: 'Please confirm the transaction in your wallet.',
-    });
-  
-    try {
-      const data = encodeFunctionData({
-        abi: identityContractAbi,
-        functionName: 'mintHandle',
-        args: [claimInput],
-      });
-  
-      const transactionRequest = {
-        to: identityContractAddress as `0x${string}`,
-        data,
-        gasPrice: parseGwei('1.1'),
-      };
-      
-      const hash = await wallet.sendTransaction(transactionRequest);
-  
-      toast({
-        title: 'Transaction sent, awaiting confirmation...',
-        description: `tx: ${hash.slice(0, 10)}...`,
-      });
-  
-      await publicClient.waitForTransactionReceipt({ hash });
-  
-      toast({
-        title: 'Sovereign Identity Claimed! ✨',
-        description: `Welcome, @${claimInput}.vibes`,
-      });
-      
-      await fetchUserHandle();
-      setClaimInput('');
-      setIsHandleAvailable(null);
-  
-    } catch (error: any) {
-      console.error("Failed to claim handle", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to claim handle",
-        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
-      });
-    } finally {
-      setIsClaiming(false);
-    }
-  };
-
-  // --- EFFECTS ---
-  
-  useEffect(() => {
-    // Debug Vercel environment variables
-    console.log("Vibesphere Debug Info:");
-    console.log("NEXT_PUBLIC_RPC_URL:", process.env.NEXT_PUBLIC_RPC_URL);
-    console.log("NEXT_PUBLIC_POST_CONTRACT_ADDRESS:", process.env.NEXT_PUBLIC_POST_CONTRACT_ADDRESS);
-    console.log("NEXT_PUBLIC_IDENTITY_CONTRACT_ADDRESS:", process.env.NEXT_PUBLIC_IDENTITY_CONTRACT_ADDRESS);
-  }, []);
-
-  useEffect(() => {
-    fetchUserHandle();
-  }, [fetchUserHandle]);
-
-  useEffect(() => {
-    const checkHandle = async () => {
-      if (!debouncedClaimInput) {
-        setIsHandleAvailable(null);
-        return;
-      }
-      setIsCheckingHandle(true);
-      setHandleCheckError(null);
-      try {
-        const isTaken = await publicClient.readContract({
-          address: identityContractAddress as `0x${string}`,
-          abi: identityContractAbi,
-          functionName: 'isHandleTaken',
-          args: [debouncedClaimInput],
-        });
-        setIsHandleAvailable(!isTaken);
-      } catch (error: any) {
-        setHandleCheckError('Gagal cek handle di jaringan Pharos.');
-        setIsHandleAvailable(null);
-      } finally {
-        setIsCheckingHandle(false);
-      }
-    };
-
-    checkHandle();
-  }, [debouncedClaimInput, publicClient]);
-  
-  useEffect(() => {
-    if (wallet?.address) {
-      const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
-      if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        setProfile({...parsed, handle: parsed.handle || `${wallet.address.slice(0, 6)}.vibes`});
-      } else {
-        const defaultProfile = {
-          username: 'Sovereign_User',
-          handle: `${wallet.address.slice(0, 6)}.vibes`,
-          avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${wallet.address}&backgroundColor=a855f7`,
-          joinDate: 'vibing since now',
-          themeColor: '262 100% 70%',
-        };
-        setProfile(defaultProfile);
-      }
-      
-      const savedBookmarks = localStorage.getItem(`vibesphere_bookmarks_${wallet.address}`);
-      if (savedBookmarks) setBookmarkedPosts(JSON.parse(savedBookmarks));
-
-      const savedLikes = localStorage.getItem(`vibesphere_likes_${wallet.address}`);
-      if (savedLikes) setLikedPosts(JSON.parse(savedLikes));
-
-      const savedTransactions = localStorage.getItem(`vibesphere_transactions_${wallet.address}`);
-      if (savedTransactions) {
-        setTransactions(JSON.parse(savedTransactions));
-      } else {
-        setTransactions([]);
-      }
-    }
-  }, [wallet?.address]);
-
-  useEffect(() => {
-    const auth = localStorage.getItem(AUTH_KEY);
-    if (auth === 'true') {
-        setIsAuthorized(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    const fetchGlobalFeed = () => {
-      const savedFeed = localStorage.getItem(GLOBAL_FEED_KEY);
-      if (savedFeed) {
-        try {
-          const parsedFeed = JSON.parse(savedFeed);
-          if (Array.isArray(parsedFeed)) {
-            setFeed(parsedFeed);
-          } else {
-            setFeed(initialFeedData);
-          }
-        } catch (e) {
-          setFeed(initialFeedData);
-        }
-      } else {
-        setFeed(initialFeedData);
-      }
-    };
-    
-    fetchGlobalFeed();
-    const intervalId = setInterval(fetchGlobalFeed, 3000);
-    
-    return () => clearInterval(intervalId);
-  }, [initialFeedData]);
-
-  useEffect(() => {
-    if (wallet?.address && profile.handle !== 'user.vibes') {
-      safeLocalStorageSet(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
-    }
-  }, [profile, wallet?.address]);
-
-  useEffect(() => {
-    if (profile.themeColor) {
-        document.documentElement.style.setProperty('--primary', profile.themeColor);
-        const glowColor = profile.themeColor.replace(/ /g, ', ');
-        document.documentElement.style.setProperty('--primary-glow', glowColor);
-        document.body.classList.add('theme-transition');
-        setTimeout(() => document.body.classList.remove('theme-transition'), 1000);
-    }
-  }, [profile.themeColor]);
-  
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (!wallet?.address) return;
-      try {
-        const response = await fetch(`/api/balance?address=${wallet.address}`);
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        setBalance(data.balance);
-      } catch (error) {
-        setBalance('0.01');
-      }
-    }
-
-    if (isConnected && wallet?.address) {
-      fetchBalance();
-    }
-  }, [isConnected, wallet?.address]);
-
-  useEffect(() => {
-    if (isConnected && wallet && wallet.chainId !== `eip155:${PHAROS_CHAIN_ID}`) {
-      wallet.switchChain(PHAROS_CHAIN_ID);
-    }
-  }, [isConnected, wallet]);
-
-  useEffect(() => {
-    if (!isConnected) return;
-
-    const handleScroll = () => {
-      const isAtTop = window.scrollY < 100;
-      const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 10;
-
-      if (isAtTop || isAtBottom) {
-        setIsScrolling(false);
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-        }
-        return;
-      }
-      
-      setIsScrolling(true);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-      }, 300);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [isConnected]);
-
-  // --- RENDER LOGIC ---
 
   const profileToShow = (activeTab === 'profile' && !viewingProfile) 
       ? profile 
@@ -1030,6 +972,7 @@ export default function VibesphereApp() {
               break;
           case 'like':
               if (profileToShow.handle === profile.handle) {
+                  // This should find all items, even nested ones. A simple filter is not enough.
                   const likedFeed: any[] = [];
                   const findLikedRecursive = (items: any[]) => {
                       for (const item of items) {
@@ -1076,6 +1019,11 @@ export default function VibesphereApp() {
     ? feedForProfileTab
     : feed;
   
+  
+  if (!ready) {
+    return null; // or a loading spinner
+  }
+
   const isSubView = viewStack.length > 1;
   const isHomeView = activeTab === 'home' && !focusedPost && !viewingProfile;
 
@@ -1092,12 +1040,137 @@ export default function VibesphereApp() {
   const isFocusedPostBookmarked = focusedPost ? bookmarkedPosts.includes(focusedPost.id) : false;
   const isFocusedPostLiked = focusedPost ? likedPosts.includes(focusedPost.id) : false;
 
+
   const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
 
-  if (!ready) {
-    return null;
-  }
-  
+  const handleToggleBookmark = (postId: number) => {
+    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
+      ? bookmarkedPosts.filter(id => id !== postId)
+      : [...bookmarkedPosts, postId];
+    setBookmarkedPosts(newBookmarkedPosts);
+    if (wallet?.address) {
+      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
+    }
+  };
+
+  // --- IDENTITY ---
+  const publicClient = createPublicClient({
+    chain: pharosTestnet,
+    transport: fallback([
+      http('https://rpc.evm.pharos.testnet.cosmostation.io'),
+      http('https://atlantic.dplabs-internal.com'),
+      http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
+    ]),
+  });
+
+  const fetchUserHandle = useCallback(async () => {
+    if (!wallet?.address) return;
+    try {
+      const handle = await publicClient.readContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'getHandleByAddress',
+        args: [wallet.address as `0x${string}`],
+      }) as string;
+
+      if (handle) {
+        setUserHandle(handle);
+        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
+      } else {
+        setUserHandle(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch handle", error);
+      setUserHandle(null);
+    }
+  }, [wallet?.address, publicClient]);
+
+  useEffect(() => {
+    fetchUserHandle();
+  }, [fetchUserHandle]);
+
+  useEffect(() => {
+    const checkHandle = async () => {
+      if (!debouncedClaimInput) {
+        setIsHandleAvailable(null);
+        return;
+      }
+      setIsCheckingHandle(true);
+      setHandleCheckError(null);
+      try {
+        const isTaken = await publicClient.readContract({
+          address: identityContractAddress as `0x${string}`,
+          abi: identityContractAbi,
+          functionName: 'isHandleTaken',
+          args: [debouncedClaimInput],
+        });
+        setIsHandleAvailable(!isTaken);
+      } catch (error: any) {
+        setHandleCheckError('Gagal cek handle di jaringan Pharos.');
+        setIsHandleAvailable(null);
+      } finally {
+        setIsCheckingHandle(false);
+      }
+    };
+
+    checkHandle();
+  }, [debouncedClaimInput, publicClient]);
+
+  const handleClaim = async () => {
+    if (!wallet || !claimInput || !isHandleAvailable) return;
+
+    setIsClaiming(true);
+    toast({
+      title: 'Registering on Pharos Network...',
+      description: 'Please confirm the transaction in your wallet.',
+    });
+
+    try {
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+      const [account] = await walletClient.getAddresses();
+
+      const hash = await walletClient.writeContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'mintHandle',
+        args: [claimInput],
+        account,
+      });
+
+      toast({
+        title: 'Transaction sent, awaiting confirmation...',
+        description: `tx: ${hash.slice(0, 10)}...`,
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      toast({
+        title: 'Sovereign Identity Claimed! ✨',
+        description: `Welcome, @${claimInput}.vibes`,
+      });
+      
+      // Refetch handle to update UI
+      await fetchUserHandle();
+      setClaimInput('');
+      setIsHandleAvailable(null);
+
+    } catch (error: any) {
+      console.error("Failed to claim handle", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to claim handle",
+        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
+      });
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
+
   if (!isAuthorized) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-[#050505]">
@@ -1326,7 +1399,7 @@ export default function VibesphereApp() {
                 style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor.replace(/ /g, ', ') } as React.CSSProperties}
               >
                 <div className="flex flex-col gap-6 mb-12">
-                   <button onClick={popView} className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors duration-500">
+                   <button onClick={() => popView()} className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors duration-500">
                     <ArrowLeft size={18} strokeWidth={1.5} />
                     <span className="text-[10px] font-mono tracking-widest uppercase">back</span>
                   </button>
@@ -1627,7 +1700,7 @@ export default function VibesphereApp() {
                                 
                                 {/* Vibe Thread */}
                                 {focusedPost.comments && focusedPost.comments.length > 0 ? (
-                                  focusedPost.comments.map((comment: any) => {
+                                  focusedPost.comments.map(comment => {
                                     const commentAuraColor = getPostAuraColor(comment);
                                     const isCommentFocused = focusedCommentId === comment.id;
 
@@ -1665,7 +1738,8 @@ export default function VibesphereApp() {
                                                             <motion.button
                                                                 whileTap={{ scale: 1.2 }}
                                                                 onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
-                                                                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary"
+                                                                className="flex items-center gap-1.5 text-xs hover:brightness-125"
+                                                                style={{color: 'hsl(var(--primary))'}}
                                                             >
                                                                 <MessageSquare size={14}/>
                                                                 <span>Reply</span>
@@ -1864,8 +1938,8 @@ export default function VibesphereApp() {
                                 <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
                             </motion.button>
                         </div>
-
-                             {item.comments && item.comments.length > 0 && (
+                        
+                        {item.comments && item.comments.length > 0 && (
                             <div className="mt-3 pt-3 border-t pl-12" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.1)`}}>
                                 {item.comments.slice(0, 2).map((comment: any) => {
                                     const commentAuraColor = getPostAuraColor(comment);
@@ -1919,9 +1993,10 @@ export default function VibesphereApp() {
                                 })}
                             </div>
                         )}
-                        </ResonanceCard>
-                        );
-                    })}
+                      </ResonanceCard>
+                    );
+                  })}
+                  <div className="h-20"></div>
                 </motion.div>
               ) : profileToShow ? (
                 <motion.div 
@@ -2248,6 +2323,7 @@ export default function VibesphereApp() {
                                 })}
                             </div>
                         )}
+
                         </ResonanceCard>
                         );
                     })

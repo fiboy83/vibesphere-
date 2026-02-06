@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const publicClient = createPublicClient({
       chain: pharosTestnet,
-      transport: http(process.env.NEXT_PUBLIC_RPC_URL!),
+      transport: http('https://atlantic.dplabs-internal.com'),
     });
 
     const balanceValue = await publicClient.getBalance({ address });

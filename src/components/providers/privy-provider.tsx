@@ -14,7 +14,7 @@ export const pharosTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_RPC_URL!],
+      http: ['https://atlantic.dplabs-internal.com'],
     },
   },
   blockExplorers: {

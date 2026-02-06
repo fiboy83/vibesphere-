@@ -6,7 +6,7 @@ async function main() {
   const VibesphereIdentity = await hre.ethers.getContractFactory("VibesphereIdentity");
   console.log("Deploying VibesphereIdentity...");
   
-  const vibesphereIdentity = await VibesphereIdentity.deploy({ gasLimit: 2000000 });
+  const vibesphereIdentity = await VibesphereIdentity.deploy();
 
   await vibesphereIdentity.waitForDeployment();
 
@@ -18,7 +18,7 @@ async function main() {
   console.log(
     `Contract is live on pharos at address: ${contractAddress}`
   );
-  console.log("\nIMPORTANT: Copy this address and paste it into 'src/constants/identityContract.ts'");
+  console.log("\nIMPORTANT: Copy this address and paste it into 'src/constants/contracts.ts'");
 }
 
 main().catch((error) => {
