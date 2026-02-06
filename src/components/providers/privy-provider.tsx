@@ -25,7 +25,15 @@ export const pharosTestnet = defineChain({
 
 export function PrivyClientProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Return null on the server and during the initial client-side render
+  // to prevent Privy from initializing during the build or prerender.
+  if (!mounted) {
+    return null;
+  }
 
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
@@ -57,7 +65,7 @@ export function PrivyClientProvider({ children }: { children: React.ReactNode })
         supportedChains: [pharosTestnet],
       }}
     >
-      {mounted ? children : null}
+      {children}
     </PrivyProvider>
   );
 }
