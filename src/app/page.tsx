@@ -2679,48 +2679,77 @@ export default function VibesphereApp() {
                   {/* Market data would go here */}
                 </motion.div>
               ) : activeTab === 'inbox' ? (
-                <motion.div className="flex flex-col h-[80vh]">
-                  <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-8">inbox</h2>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 -mr-4">
-                      <div className="flex flex-col gap-6">
-                          {inboxMessages.map((msg) => (
-                              <div key={msg.id} className={`flex items-end gap-3 ${msg.self ? 'justify-end' : 'justify-start'}`}>
-                                  {!msg.self && (
-                                      <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{ borderColor: `hsl(${getPostAuraColor(msg)})` }} />
-                                  )}
-                                  <div 
-                                    className={`max-w-xs md:max-w-md p-4 rounded-3xl ${msg.self ? 'bg-primary text-primary-foreground rounded-br-lg' : 'rounded-bl-lg'}`}
-                                    style={!msg.self ? { backgroundColor: `hsla(${getPostAuraColor(msg).replace(/ /g, ',')}, 0.2)` } : {backgroundColor: `hsla(${profile.themeColor.replace(/ /g, ',')}, 0.8)`}}
-                                  >
-                                      <p className="text-sm font-light leading-relaxed">{msg.text}</p>
-                                  </div>
-                                  {msg.self && (
-                                      <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{ borderColor: `hsl(${profile.themeColor})` }} />
-                                  )}
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-                  <div className="mt-auto pt-6">
-                      <div className="relative flex items-center">
-                          <input 
-                              value={inboxInput}
-                              onChange={(e) => setInboxInput(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendInboxMessage())}
-                              placeholder="send a sovereign message..."
-                              className="w-full bg-white/5 border border-white/10 rounded-full py-3 pl-6 pr-14 text-sm font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
-                          />
-                          <button 
-                              onClick={handleSendInboxMessage}
-                              disabled={!inboxInput.trim()}
-                              className={`absolute right-2 transition-all duration-300 p-2 rounded-full ${
-                                  inboxInput.trim() ? 'bg-primary text-primary-foreground hover:brightness-110' : 'bg-slate-700 text-slate-500'
-                              }`}
-                          >
-                              <Send size={16} strokeWidth={2} className="-rotate-45" />
-                          </button>
-                      </div>
-                  </div>
+                <motion.div 
+                  className="flex flex-col h-[85vh] max-w-2xl mx-auto"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                    <h2 className="text-center text-slate-300 font-light tracking-[0.3em] uppercase text-2xl mb-8"
+                        style={{ color: `hsl(${profile.themeColor})`, textShadow: `0 0 10px hsla(${profile.themeColor.replace(/ /g, ',')}, 0.5)` }}
+                    >
+                        Inbox
+                    </h2>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar -mr-4 pr-4">
+                        <motion.div 
+                            className="flex flex-col gap-4"
+                            initial="hidden"
+                            animate="show"
+                            variants={{ show: { transition: { staggerChildren: 0.1 } } }}
+                        >
+                            {inboxMessages.map((msg) => {
+                                const messageAuraColor = msg.self ? profile.themeColor : getPostAuraColor(msg);
+                                const cardStyle = {
+                                    '--primary': messageAuraColor,
+                                    '--primary-glow': messageAuraColor.replace(/ /g, ', '),
+                                } as React.CSSProperties;
+
+                                return (
+                                    <ResonanceCard key={msg.id} style={cardStyle}>
+                                        <div className="flex items-start gap-4">
+                                            <img 
+                                                src={msg.avatar} 
+                                                alt="avatar" 
+                                                className="w-10 h-10 rounded-full border-2 object-cover" 
+                                                style={{ borderColor: `hsl(${messageAuraColor})` }}
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-sm" style={{ color: `hsl(${messageAuraColor})` }}>
+                                                        {msg.self ? profile.username : msg.from}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500 font-mono">{msg.time}</span>
+                                                </div>
+                                                <p className="text-slate-200 mt-1 font-light leading-relaxed">{msg.text}</p>
+                                            </div>
+                                        </div>
+                                    </ResonanceCard>
+                                );
+                            })}
+                        </motion.div>
+                    </div>
+                    <div className="mt-auto pt-6">
+                        <div className="relative flex items-center">
+                            <input 
+                                value={inboxInput}
+                                onChange={(e) => setInboxInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendInboxMessage())}
+                                placeholder="send a sovereign message..."
+                                className="w-full bg-white/5 border border-primary/20 rounded-full py-4 pl-6 pr-16 text-sm font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
+                            />
+                            <button 
+                                onClick={handleSendInboxMessage}
+                                disabled={!inboxInput.trim()}
+                                className={`absolute right-2 transition-all duration-300 p-3 rounded-full ${
+                                    inboxInput.trim() 
+                                    ? 'bg-primary text-primary-foreground hover:shadow-glow-md' 
+                                    : 'bg-slate-800 text-slate-600'
+                                }`}
+                            >
+                                <Send size={18} strokeWidth={2} className="-rotate-45" />
+                            </button>
+                        </div>
+                    </div>
                 </motion.div>
               ) : null}
             </motion.div>
