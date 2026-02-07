@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -2862,7 +2863,7 @@ export default function VibesphereApp() {
                                             } as React.CSSProperties;
 
                                             const bubbleBaseClasses = "relative p-3 px-4 backdrop-blur-xl transition-all duration-500 shadow-lg shadow-primary/10 border border-primary/20";
-                                            const selfBubbleClasses = "rounded-2xl rounded-br-lg bg-primary/80 text-primary-foreground";
+                                            const selfBubbleClasses = "rounded-2xl rounded-br-lg bg-primary/20";
                                             const otherBubbleClasses = "rounded-2xl rounded-bl-lg bg-white/[0.03]";
 
                                             return (
@@ -2882,7 +2883,7 @@ export default function VibesphereApp() {
                                                         )}
                                                     >
                                                         <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"></div>
-                                                        <p className="relative text-base font-light leading-relaxed">{msg.text}</p>
+                                                        <p className="relative text-base font-light leading-relaxed text-slate-100">{msg.text}</p>
                                                     </div>
                                         
                                                     {msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
@@ -3188,3 +3189,4 @@ export default function VibesphereApp() {
 }
 
     
+
