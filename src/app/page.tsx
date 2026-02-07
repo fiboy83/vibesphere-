@@ -146,7 +146,7 @@ export default function VibesphereApp() {
   const lastScrollY = useRef(0);
   const scrollUpCount = useRef(0);
   const [commentText, setCommentText] = useState("");
-  const [showReceiveModal, setShowReceiveModal] = useState(showReceiveModal);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
