@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -141,6 +142,7 @@ export default function VibesphereApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const lastScrollY = useRef(0);
   const scrollUpCount = useRef(0);
@@ -307,6 +309,46 @@ export default function VibesphereApp() {
 
     checkHandle();
   }, [debouncedClaimInput]);
+  
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    
+    const foundIds = new Set<number>();
+    const results: any[] = [];
+
+    const searchRecursive = (items: any[]) => {
+      if (!items) return;
+      for (const item of items) {
+        if (foundIds.has(item.id)) continue;
+
+        const contentMatch = item.text?.toLowerCase().includes(lowerCaseQuery);
+        const userMatch = item.username?.toLowerCase().includes(lowerCaseQuery);
+        const handleMatch = item.handle?.toLowerCase().includes(lowerCaseQuery);
+
+        if (contentMatch || userMatch || handleMatch) {
+          results.push(item);
+          foundIds.add(item.id);
+        }
+        
+        if (item.comments) {
+           searchRecursive(item.comments);
+        }
+        if (item.quotedPost) {
+          searchRecursive([item.quotedPost]);
+        }
+      }
+    };
+    
+    searchRecursive(feed);
+    setSearchResults(results);
+
+  }, [searchQuery, feed]);
+
 
   const pushView = (newView: Partial<typeof currentView>) => {
     // If navigating to home tab, reset the stack
@@ -1141,7 +1183,9 @@ export default function VibesphereApp() {
   findBookmarkedRecursive(feed);
 
 
-  const displayedFeed = activeTab === 'bookmarks'
+  const displayedFeed = searchQuery.trim()
+    ? searchResults
+    : activeTab === 'bookmarks'
     ? bookmarkedFeed
     : profileToShow
     ? feedForProfileTab
@@ -1346,7 +1390,12 @@ export default function VibesphereApp() {
                       autoFocus
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="search sovereign users..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && searchQuery.trim()) {
+                          window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                      placeholder="search vibes, users, or the web..."
                       className="w-full bg-white/5 border border-purple-500/30 rounded-full py-2 pl-10 pr-12 text-sm font-mono lowercase tracking-wider focus:outline-none focus:border-purple-500 transition-all"
                     />
                     <Search size={16} className="absolute left-4 text-purple-400" />
@@ -1771,21 +1820,35 @@ export default function VibesphereApp() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'home' || activeTab === 'bookmarks' ? (
+              {(isHomeView && searchQuery.trim() !== "") || activeTab === 'home' || activeTab === 'bookmarks' ? (
                 <motion.div 
                   initial="hidden" animate="show"
                   variants={{ show: { transition: { staggerChildren: 0.1 } } }}
                   className="flex flex-col items-center gap-4"
                 >
-                  {displayedFeed.length === 0 && activeTab === 'bookmarks' && (
+                  {displayedFeed.length === 0 && (
                       <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
-                          <Bookmark size={32} strokeWidth={1.5} className="mb-6"/>
-                          <h2 className="text-xl font-light lowercase tracking-widest text-slate-300">
-                            no saved vibes
-                          </h2>
-                          <p className="text-sm font-mono mt-2">
-                            your saved posts will appear here.
-                          </p>
+                          {activeTab === 'bookmarks' ? (
+                            <>
+                              <Bookmark size={32} strokeWidth={1.5} className="mb-6"/>
+                              <h2 className="text-xl font-light lowercase tracking-widest text-slate-300">
+                                no saved vibes
+                              </h2>
+                              <p className="text-sm font-mono mt-2">
+                                your saved posts will appear here.
+                              </p>
+                            </>
+                          ) : (
+                             <>
+                              <Search size={32} strokeWidth={1.5} className="mb-6"/>
+                              <h2 className="text-xl font-light lowercase tracking-widest text-slate-300">
+                                no vibes found
+                              </h2>
+                              <p className="text-sm font-mono mt-2">
+                                try a different search or check back later.
+                              </p>
+                            </>
+                          )}
                       </motion.div>
                   )}
                   {displayedFeed.map((item, index) => {
