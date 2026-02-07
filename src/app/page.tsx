@@ -1840,7 +1840,7 @@ export default function VibesphereApp() {
               </motion.div>
             ) : (
             <motion.div
-              key={activeTab + (viewingProfile?.handle || '')}
+              key={activeTab + (viewingProfile?.handle || '') + (conversationWith || '')}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -2602,7 +2602,7 @@ export default function VibesphereApp() {
                           send
                         </button>
                         <button 
-                          onClick={() => setShowReceiveModal(true)}
+                          onClick={() => setShowReceiveModal(false)}
                           className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
                         >
                           receive
@@ -2860,15 +2860,33 @@ export default function VibesphereApp() {
                                                 '--primary': msgAuraColor,
                                                 '--primary-glow': msgAuraColor.replace(/ /g, ', '),
                                             } as React.CSSProperties;
-                                            
+
+                                            const bubbleBaseClasses = "relative p-3 px-4 backdrop-blur-xl transition-all duration-500 shadow-lg shadow-primary/10 border border-primary/20";
+                                            const selfBubbleClasses = "rounded-2xl rounded-br-lg bg-primary/80 text-primary-foreground";
+                                            const otherBubbleClasses = "rounded-2xl rounded-bl-lg bg-white/[0.03]";
+
                                             return (
-                                                <div key={msg.id} className={`flex items-start gap-3 ${msg.self ? 'justify-end' : 'justify-start'}`}>
+                                                <motion.div 
+                                                    key={msg.id}
+                                                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                                                    className={`flex items-start gap-3 ${msg.self ? 'justify-end' : 'justify-start'}`}
+                                                >
                                                     {!msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
-                                                    <div className={`max-w-xs md:max-w-md p-3 px-4 rounded-2xl ${msg.self ? 'bg-primary/80 text-primary-foreground rounded-br-none' : 'bg-white/[0.03] rounded-bl-none border border-white/10'}`}>
-                                                        <p className="text-base font-light leading-relaxed">{msg.text}</p>
+                                                    
+                                                    <div 
+                                                        style={cardStyle}
+                                                        className={cn(
+                                                            "max-w-xs md:max-w-md",
+                                                            bubbleBaseClasses,
+                                                            msg.self ? selfBubbleClasses : otherBubbleClasses
+                                                        )}
+                                                    >
+                                                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"></div>
+                                                        <p className="relative text-base font-light leading-relaxed">{msg.text}</p>
                                                     </div>
+                                        
                                                     {msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
-                                                </div>
+                                                </motion.div>
                                             );
                                         })}
                                     </motion.div>
