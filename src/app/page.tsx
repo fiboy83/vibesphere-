@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -147,7 +146,7 @@ export default function VibesphereApp() {
   const lastScrollY = useRef(0);
   const scrollUpCount = useRef(0);
   const [commentText, setCommentText] = useState("");
-  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(showReceiveModal);
   const [showSendModal, setShowSendModal] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
@@ -239,9 +238,9 @@ export default function VibesphereApp() {
   const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
 
   // --- NAVIGATION STATE ---
-  const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
+  const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
   const currentView = viewStack[viewStack.length - 1];
-  const { tab: activeTab, viewingProfile, focusedPost } = currentView;
+  const { tab: activeTab, viewingProfile, focusedPost, conversationWith } = currentView;
   const parentView = viewStack.length > 2 ? viewStack[viewStack.length - 2] : null;
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
@@ -353,7 +352,7 @@ export default function VibesphereApp() {
   const pushView = (newView: Partial<typeof currentView>) => {
     // If navigating to home tab, reset the stack
     if (newView.tab === 'home' && !newView.focusedPost && !newView.viewingProfile) {
-        setViewStack([{ tab: 'home', viewingProfile: null, focusedPost: null }]);
+        setViewStack([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
         setIsSidebarOpen(false);
         return;
     }
@@ -362,10 +361,10 @@ export default function VibesphereApp() {
     
     // When switching to ANY OTHER main tab, ADD to the stack
     if (isNewTab && ['bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market', 'inbox'].includes(newView.tab!)) {
-        setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: null, focusedPost: null }]);
+        setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: null, focusedPost: null, conversationWith: null }]);
     } else {
         // This handles drilling down (e.g. focusing a post, or a user profile which is not a main tab)
-        const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null } : currentView;
+        const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null } : currentView;
         setViewStack(prev => [...prev, { ...baseView, ...newView }]);
     }
 
@@ -1110,7 +1109,34 @@ export default function VibesphereApp() {
     }
   };
 
-    const handleSendInboxMessage = () => {
+  const conversationPartners = React.useMemo(() => {
+    const partners = new Map();
+    // Create a list of unique conversation partners from the inbox messages
+    inboxMessages.forEach(msg => {
+      if (!msg.self) {
+        const partnerHandle = msg.from;
+        const username = partnerHandle.split('.')[0].replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        const existing = partners.get(partnerHandle);
+        if (!existing || msg.id > existing.lastMessageId) {
+            partners.set(partnerHandle, {
+                handle: partnerHandle,
+                username: username,
+                avatar: msg.avatar,
+                lastMessage: msg.text,
+                time: msg.time,
+                lastMessageId: msg.id,
+            });
+        }
+      }
+    });
+
+    // Sort conversations by the most recent message
+    return Array.from(partners.values()).sort((a, b) => b.lastMessageId - a.lastMessageId);
+  }, [inboxMessages]);
+
+
+  const handleSendInboxMessage = () => {
     if (!inboxInput.trim()) return;
     const newMessage = {
       id: Date.now(),
@@ -2734,85 +2760,147 @@ export default function VibesphereApp() {
                       )}
                     </AnimatePresence>
                   </motion.div>
-              ) : activeTab === 'market' ? (
+                ) : activeTab === 'market' ? (
                 <motion.div
                   className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
                   <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Atlantic Testnet</h2>
                   {/* Market data would go here */}
                 </motion.div>
-              ) : activeTab === 'inbox' ? (
-                <motion.div 
-                  className="flex flex-col h-[85vh] max-w-2xl mx-auto"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                ) : activeTab === 'inbox' ? (
+                <motion.div
+                    key="inbox-view"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex flex-col h-[85vh] max-w-2xl mx-auto"
                 >
-                    <h2 className="text-center text-slate-300 font-light tracking-[0.3em] uppercase text-2xl mb-8"
-                        style={{ color: `hsl(${profile.themeColor})`, textShadow: `0 0 10px hsla(${profile.themeColor.replace(/ /g, ',')}, 0.5)` }}
-                    >
-                        Inbox
-                    </h2>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar -mr-4 pr-4">
-                        <motion.div 
-                            className="flex flex-col gap-4"
-                            initial="hidden"
-                            animate="show"
-                            variants={{ show: { transition: { staggerChildren: 0.1 } } }}
+                    { !conversationWith ? (
+                    <>
+                        <h2 className="text-center text-slate-300 font-light tracking-[0.3em] uppercase text-2xl mb-8"
+                            style={{ color: `hsl(${profile.themeColor})`, textShadow: `0 0 10px hsla(${profile.themeColor.replace(/ /g, ',')}, 0.5)` }}
                         >
-                            {inboxMessages.map((msg) => {
-                                const messageAuraColor = msg.self ? profile.themeColor : getPostAuraColor(msg);
-                                const cardStyle = {
-                                    '--primary': messageAuraColor,
-                                    '--primary-glow': messageAuraColor.replace(/ /g, ', '),
-                                } as React.CSSProperties;
-
-                                return (
-                                    <ResonanceCard key={msg.id} style={cardStyle}>
-                                        <div className="flex items-start gap-4">
-                                            <img 
-                                                src={msg.avatar} 
-                                                alt="avatar" 
-                                                className="w-10 h-10 rounded-full border-2 object-cover" 
-                                                style={{ borderColor: `hsl(${messageAuraColor})` }}
-                                            />
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-sm" style={{ color: `hsl(${messageAuraColor})` }}>
-                                                        {msg.self ? profile.username : msg.from}
-                                                    </span>
-                                                    <span className="text-xs text-slate-500 font-mono">{msg.time}</span>
-                                                </div>
-                                                <p className="text-slate-200 mt-1 font-light leading-relaxed">{msg.text}</p>
-                                            </div>
-                                        </div>
-                                    </ResonanceCard>
-                                );
-                            })}
-                        </motion.div>
-                    </div>
-                    <div className="mt-auto pt-6">
-                        <div className="relative flex items-center">
-                            <input 
-                                value={inboxInput}
-                                onChange={(e) => setInboxInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendInboxMessage())}
-                                placeholder="send a sovereign message..."
-                                className="w-full bg-white/5 border border-primary/20 rounded-full py-4 pl-6 pr-16 text-sm font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
-                            />
-                            <button 
-                                onClick={handleSendInboxMessage}
-                                disabled={!inboxInput.trim()}
-                                className={`absolute right-2 transition-all duration-300 p-3 rounded-full ${
-                                    inboxInput.trim() 
-                                    ? 'bg-primary text-primary-foreground hover:shadow-glow-md' 
-                                    : 'bg-slate-800 text-slate-600'
-                                }`}
+                            Inbox
+                        </h2>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar -mr-4 pr-4">
+                            <motion.div 
+                                className="flex flex-col gap-4"
+                                initial="hidden"
+                                animate="show"
+                                variants={{ show: { transition: { staggerChildren: 0.1 } } }}
                             >
-                                <Send size={18} strokeWidth={2} className="-rotate-45" />
-                            </button>
+                                {conversationPartners.map((partner) => {
+                                    const partnerAuraColor = getPostAuraColor({avatar: partner.avatar});
+                                    const cardStyle = {
+                                        '--primary': partnerAuraColor,
+                                        '--primary-glow': partnerAuraColor.replace(/ /g, ', '),
+                                    } as React.CSSProperties;
+
+                                    return (
+                                        <ResonanceCard key={partner.handle} style={cardStyle} onClick={() => pushView({ tab: 'inbox', conversationWith: partner.handle })}>
+                                            <div className="flex items-start gap-4">
+                                                <img 
+                                                    src={partner.avatar} 
+                                                    alt="avatar" 
+                                                    className="w-10 h-10 rounded-full border-2 object-cover" 
+                                                    style={{ borderColor: `hsl(${partnerAuraColor})` }}
+                                                />
+                                                <div className="flex-1 overflow-hidden">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-sm" style={{ color: `hsl(${partnerAuraColor})` }}>
+                                                            {partner.username}
+                                                        </span>
+                                                        <span className="text-xs text-slate-500 font-mono flex-shrink-0">{partner.time}</span>
+                                                    </div>
+                                                      <p className="text-slate-400 mt-1 font-light text-sm truncate">{partner.lastMessage}</p>
+                                                </div>
+                                            </div>
+                                        </ResonanceCard>
+                                    );
+                                })}
+                            </motion.div>
                         </div>
-                    </div>
+                    </>
+                    ) : (
+                    (() => {
+                        const partnerInfo = conversationPartners.find(p => p.handle === conversationWith) || inboxMessages.find(m => m.from === conversationWith);
+                        if (!partnerInfo) return <div>User not found.</div>;
+                        
+                        // This logic is a simplification for the demo.
+                        // It shows messages FROM the partner and all messages sent BY the current user.
+                        const threadMessages = inboxMessages.filter(msg => msg.from === conversationWith || msg.self);
+                        
+                        const partnerAuraColor = getPostAuraColor({ avatar: partnerInfo.avatar });
+                        const headerAuraStyle = { '--primary': partnerAuraColor, '--primary-glow': partnerAuraColor.replace(/ /g, ', ') } as React.CSSProperties;
+
+                        return (
+                            <>
+                                <div 
+                                  onClick={() => pushView({ tab: 'user-profile', viewingProfile: { handle: partnerInfo.handle, username: partnerInfo.username, avatar: partnerInfo.avatar }, focusedPost: null })}
+                                  className="flex items-center gap-3 mb-6 cursor-pointer group"
+                                  style={headerAuraStyle}
+                                >
+                                    <img src={partnerInfo.avatar} alt="avatar" className="w-10 h-10 rounded-full border-2 border-primary object-cover group-hover:scale-105 transition-transform" />
+                                    <div>
+                                        <h3 className="font-bold text-primary text-lg group-hover:brightness-125 transition-all">{partnerInfo.username}</h3>
+                                        <p className="text-sm font-mono text-slate-400">@{partnerInfo.handle}</p>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar -mr-4 pr-4">
+                                    <motion.div 
+                                        className="flex flex-col gap-4"
+                                        initial="hidden"
+                                        animate="show"
+                                        variants={{ show: { transition: { staggerChildren: 0.1 } } }}
+                                    >
+                                        {threadMessages.map((msg) => {
+                                            const msgAuraColor = msg.self ? profile.themeColor : getPostAuraColor(msg);
+                                            const cardStyle = {
+                                                '--primary': msgAuraColor,
+                                                '--primary-glow': msgAuraColor.replace(/ /g, ', '),
+                                            } as React.CSSProperties;
+                                            
+                                            return (
+                                                <div key={msg.id} className={`flex items-start gap-3 ${msg.self ? 'justify-end' : 'justify-start'}`}>
+                                                    {!msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
+                                                    <div className={`max-w-xs md:max-w-md p-3 px-4 rounded-2xl ${msg.self ? 'bg-primary/80 text-primary-foreground rounded-br-none' : 'bg-white/[0.03] rounded-bl-none border border-white/10'}`}>
+                                                        <p className="text-base font-light leading-relaxed">{msg.text}</p>
+                                                    </div>
+                                                    {msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
+                                                </div>
+                                            );
+                                        })}
+                                    </motion.div>
+                                </div>
+                                <div className="mt-auto pt-6">
+                                    <div className="relative flex items-center">
+                                        <input 
+                                            value={inboxInput}
+                                            onChange={(e) => setInboxInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendInboxMessage())}
+                                            placeholder="send a sovereign message..."
+                                            className="w-full bg-white/5 border border-primary/20 rounded-full py-4 pl-6 pr-16 text-sm font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
+                                            style={headerAuraStyle}
+                                        />
+                                        <button 
+                                            onClick={handleSendInboxMessage}
+                                            disabled={!inboxInput.trim()}
+                                            className={`absolute right-2 transition-all duration-300 p-3 rounded-full ${
+                                                inboxInput.trim() 
+                                                ? 'bg-primary text-primary-foreground hover:shadow-glow-md' 
+                                                : 'bg-slate-800 text-slate-600'
+                                            }`}
+                                            style={headerAuraStyle}
+                                        >
+                                            <Send size={18} strokeWidth={2} className="-rotate-45" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        );
+                    })()
+                    )}
                 </motion.div>
               ) : null}
             </motion.div>
@@ -2821,15 +2909,15 @@ export default function VibesphereApp() {
         </main>
         
         {isConnected && isHomeView && (
-          <motion.div
-            animate={{ y: isNavVisible ? 0 : 100 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="fixed bottom-24 left-6 z-50 pointer-events-none"
-          >
+            <motion.div
+              animate={{ y: isNavVisible ? 0 : 100 }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className="fixed bottom-24 left-6 z-50 pointer-events-none"
+            >
               <p className="text-blue-400 text-[10px] font-mono lowercase bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-blue-400/20">
                   network: pharos atlantic testnet
               </p>
-          </motion.div>
+            </motion.div>
         )}
 
         {/* --- COMPOSER MODAL --- */}
@@ -2931,6 +3019,7 @@ export default function VibesphereApp() {
               <motion.div 
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
               >
@@ -3079,3 +3168,5 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
