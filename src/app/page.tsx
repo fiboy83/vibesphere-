@@ -2563,59 +2563,63 @@ export default function VibesphereApp() {
                 </motion.div>
               ) : activeTab === 'wallet' ? (
                   <motion.div 
-                    className="w-full max-w-md mx-auto p-6"
+                    className="w-full max-w-md mx-auto"
+                    style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                   >
                     {/* 1. balance card: the core resonance */}
-                    <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-purple-600/20 to-cyan-600/20 border border-white/10 p-8 backdrop-blur-3xl shadow-2xl">
-                      <div className="absolute top-0 right-0 p-6 opacity-20">
-                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1">
-                           <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
-                         </svg>
-                      </div>
-                      
-                      <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
-                      <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
-                        {isConnected ? parseFloat(balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '---'} <span className="text-sm font-light not-italic text-purple-400">phrs</span>
-                      </h3>
-                      {isConnected && <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>}
-
-                      <div className="mt-4 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
-                          <code className="text-[10px] font-mono text-purple-300">
-                            {wallet?.address && `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`}
-                          </code>
+                    <ResonanceCard>
+                      <div className="p-4">
+                        <div className="absolute top-0 right-0 p-6 opacity-20">
+                          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1">
+                            <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
                         </div>
-                        <button 
-                          onClick={copyAddress}
-                          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
-                        >
-                          <Copy size={14} />
-                        </button>
-                      </div>
+                        
+                        <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
+                        <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
+                          {isConnected ? parseFloat(balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '---'} <span className="text-sm font-light not-italic text-primary">phrs</span>
+                        </h3>
+                        {isConnected && <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>}
 
-                      {/* quick actions */}
-                      <div className="flex gap-4 mt-6">
-                        <button 
-                            onClick={() => setShowSendModal(true)}
-                            className="flex-1 py-3 rounded-2xl bg-purple-600 text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
-                        >
-                          send
-                        </button>
-                        <button 
-                          onClick={() => setShowReceiveModal(false)}
-                          className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
-                        >
-                          receive
-                        </button>
+                        <div className="mt-4 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
+                            <code className="text-[10px] font-mono text-primary">
+                              {wallet?.address && `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`}
+                            </code>
+                          </div>
+                          <button 
+                            onClick={copyAddress}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
+
+                        {/* quick actions */}
+                        <div className="flex gap-4 mt-6">
+                          <button 
+                              onClick={() => setShowSendModal(true)}
+                              style={{ backgroundColor: `hsl(${currentAuraColor})`, color: 'hsl(var(--primary-foreground))' }}
+                              className="flex-1 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest hover:shadow-glow-md transition-all"
+                          >
+                            send
+                          </button>
+                          <button 
+                            onClick={() => setShowReceiveModal(true)}
+                            className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
+                          >
+                            receive
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </ResonanceCard>
 
                     {/* 2. transaction history */}
                     <div className="mt-12 flex flex-col gap-4">
                       <div className="flex justify-between items-center px-2">
                           <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
-                          {wallet?.address && <a href={`https://pharos-testnet.socialscan.io/address/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-purple-400 hover:underline">view all on explorer</a>}
+                          {wallet?.address && <a href={`https://pharos-testnet.socialscan.io/address/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-primary hover:underline">view all on explorer</a>}
                       </div>
                       
                       <div className="flex flex-col gap-3">
@@ -2623,52 +2627,58 @@ export default function VibesphereApp() {
                            transactions.map((tx, i) => {
                             const isSent = tx.from.toLowerCase() === wallet?.address.toLowerCase();
                             return (
-                              <div key={tx.hash || i} className="flex items-center justify-between gap-4 p-4 rounded-[1.5rem] bg-white/[0.02] border border-white/5">
-                                  <div className="flex items-center gap-4">
-                                      <div className={`p-2 rounded-full ${isSent ? 'bg-red-500/10' : 'bg-green-500/10'}`}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isSent ? 'text-red-400 -rotate-90' : 'text-green-400 rotate-90'}>
-                                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                                        </svg>
-                                      </div>
-                                      <div>
-                                          <p className="text-sm font-light lowercase">{isSent ? `sent to ${tx.to.slice(0,6)}...` : `received from ${tx.from.slice(0,6)}...`}</p>
-                                          <p className="text-[11px] font-mono text-slate-500">{new Date(tx.timestamp).toLocaleDateString()}</p>
-                                      </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className={`text-sm font-mono ${isSent ? 'text-red-400' : 'text-green-400'}`}>
-                                        {isSent ? '-' : '+'}
-                                        {formatEther(BigInt(tx.value))} phrs
-                                    </p>
-                                    <a 
-                                        href={`https://pharos-testnet.socialscan.io/tx/${tx.hash}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-mono text-purple-400 hover:underline"
-                                      >
-                                        view details
-                                    </a>
-                                  </div>
-                              </div>
+                              <ResonanceCard key={tx.hash || i}>
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`p-2 rounded-full ${isSent ? 'bg-red-500/10' : 'bg-green-500/10'}`}>
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isSent ? 'text-red-400 -rotate-90' : 'text-green-400 rotate-90'}>
+                                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                                          </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-light lowercase">{isSent ? `sent to ${tx.to.slice(0,6)}...` : `received from ${tx.from.slice(0,6)}...`}</p>
+                                            <p className="text-[11px] font-mono text-slate-500">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className={`text-sm font-mono ${isSent ? 'text-red-400' : 'text-green-400'}`}>
+                                          {isSent ? '-' : '+'}
+                                          {formatEther(BigInt(tx.value))} phrs
+                                      </p>
+                                      <a 
+                                          href={`https://pharos-testnet.socialscan.io/tx/${tx.hash}`} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-[11px] font-mono text-primary hover:underline"
+                                        >
+                                          view details
+                                      </a>
+                                    </div>
+                                </div>
+                              </ResonanceCard>
                             );
                           })
                         ) : parseFloat(balance) > 0.01 ? (
-                            <div className="flex items-center justify-between gap-4 p-6 rounded-[2rem] bg-white/[0.02] border border-white/5">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-green-500/10 rounded-full">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400"><path d="M12 5L12 19M19 12L12 19L5 12"/></svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-light lowercase">faucet received</p>
-                                        <p className="text-[11px] font-mono text-slate-500">confirmed</p>
-                                    </div>
-                                </div>
-                                <p className="text-sm font-mono text-green-400">+0.03 phrs</p>
-                            </div>
+                            <ResonanceCard>
+                              <div className="flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-4">
+                                      <div className="p-2 bg-green-500/10 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400"><path d="M12 5L12 19M19 12L12 19L5 12"/></svg>
+                                      </div>
+                                      <div>
+                                          <p className="text-sm font-light lowercase">faucet received</p>
+                                          <p className="text-[11px] font-mono text-slate-500">confirmed</p>
+                                      </div>
+                                  </div>
+                                  <p className="text-sm font-mono text-green-400">+0.03 phrs</p>
+                              </div>
+                            </ResonanceCard>
                         ) : (
-                            <div className="flex items-center gap-4 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group justify-center text-center">
-                                <p className="text-sm text-slate-400 font-mono lowercase">your transaction history is synced on-chain.</p>
-                            </div>
+                            <ResonanceCard>
+                              <div className="flex items-center gap-4 p-4 justify-center text-center">
+                                  <p className="text-sm text-slate-400 font-mono lowercase">your transaction history is synced on-chain.</p>
+                              </div>
+                            </ResonanceCard>
                         )}
                       </div>
                     </div>
@@ -2688,7 +2698,7 @@ export default function VibesphereApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 flex flex-col items-center shadow-2xl"
                           >
-                            <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-purple-400">receive PHRS</h3>
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-primary">receive PHRS</h3>
                             
                             <div className="w-48 h-48 bg-white p-4 rounded-3xl mb-8 shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center justify-center">
                                 {wallet?.address && <img 
@@ -2734,19 +2744,19 @@ export default function VibesphereApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
                           >
-                            <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">send PHRS</h3>
+                            <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-primary">send PHRS</h3>
                             <input 
                               placeholder="recipient address (0x...)"
                               value={recipient}
                               onChange={(e) => setRecipient(e.target.value)}
-                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-4 text-[10px] font-mono focus:outline-none focus:border-purple-500"
+                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-4 text-[10px] font-mono focus:outline-none focus:border-primary"
                             />
                             <input 
                               placeholder="amount"
                               type="number"
                               value={amount}
                               onChange={(e) => setAmount(e.target.value)}
-                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-6 text-[10px] font-mono focus:outline-none focus:border-purple-500"
+                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-6 text-[10px] font-mono focus:outline-none focus:border-primary"
                             />
                             <button 
                               onClick={handleSend} 
@@ -2828,8 +2838,6 @@ export default function VibesphereApp() {
                         const partnerInfo = conversationPartners.find(p => p.handle === conversationWith) || inboxMessages.find(m => m.from === conversationWith);
                         if (!partnerInfo) return <div>User not found.</div>;
                         
-                        // This logic is a simplification for the demo.
-                        // It shows messages FROM the partner and all messages sent BY the current user.
                         const threadMessages = inboxMessages.filter(msg => msg.from === conversationWith || msg.self);
                         
                         const partnerAuraColor = getPostAuraColor({ avatar: partnerInfo.avatar });
@@ -2862,10 +2870,6 @@ export default function VibesphereApp() {
                                                 '--primary-glow': msgAuraColor.replace(/ /g, ', '),
                                             } as React.CSSProperties;
 
-                                            const bubbleBaseClasses = "relative p-3 px-4 backdrop-blur-xl transition-all duration-500 shadow-lg shadow-primary/10 border border-primary/20";
-                                            const selfBubbleClasses = "rounded-2xl rounded-br-lg bg-primary/20";
-                                            const otherBubbleClasses = "rounded-2xl rounded-bl-lg bg-white/[0.03]";
-
                                             return (
                                                 <motion.div 
                                                     key={msg.id}
@@ -2874,16 +2878,12 @@ export default function VibesphereApp() {
                                                 >
                                                     {!msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
                                                     
-                                                    <div 
-                                                        style={cardStyle}
-                                                        className={cn(
-                                                            "max-w-xs md:max-w-md",
-                                                            bubbleBaseClasses,
-                                                            msg.self ? selfBubbleClasses : otherBubbleClasses
-                                                        )}
-                                                    >
-                                                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"></div>
-                                                        <p className="relative text-base font-light leading-relaxed text-slate-100">{msg.text}</p>
+                                                     <div className={`max-w-xs md:max-w-md`}>
+                                                        <ResonanceCard style={cardStyle}>
+                                                            <div className={cn("p-1", msg.self ? "rounded-br-none" : "rounded-bl-none")}>
+                                                                <p className="relative text-base font-light leading-relaxed text-slate-100">{msg.text}</p>
+                                                            </div>
+                                                        </ResonanceCard>
                                                     </div>
                                         
                                                     {msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
@@ -3189,4 +3189,5 @@ export default function VibesphereApp() {
 }
 
     
+
 
