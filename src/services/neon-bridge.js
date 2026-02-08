@@ -29,7 +29,7 @@ export async function getLayout(pharos_address) {
   try {
     const dbPool = getDbPool();
     const res = await dbPool.query(
-      'SELECT sovereign_layout FROM users WHERE pharos_address = $1',
+      'SELECT sovereign_layout FROM users WHERE pharos_address = $1::text',
       [pharos_address]
     );
 
@@ -115,8 +115,8 @@ export async function getFeed(pharos_address) {
         u.sovereign_layout,
         (SELECT COUNT(*) FROM likes WHERE post_id_onchain = p.id::text) AS like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id_onchain = p.id::text) AS comment_count,
-        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM likes WHERE post_id_onchain = p.id::text AND pharos_address = $1) ELSE FALSE END AS user_has_liked,
-        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM bookmarks WHERE post_id_onchain = p.id::text AND pharos_address = $1) ELSE FALSE END AS user_has_bookmarked,
+        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM likes WHERE post_id_onchain = p.id::text AND pharos_address = $1::text) ELSE FALSE END AS user_has_liked,
+        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM bookmarks WHERE post_id_onchain = p.id::text AND pharos_address = $1::text) ELSE FALSE END AS user_has_bookmarked,
         (
             SELECT COALESCE(json_agg(c_sub.* ORDER BY c_sub.created_at DESC), '[]'::json)
             FROM (
@@ -153,7 +153,7 @@ export async function addLike(postId, pharos_address) {
 
 export async function removeLike(postId, pharos_address) {
   const dbPool = getDbPool();
-  await dbPool.query('DELETE FROM likes WHERE post_id_onchain = $1::text AND pharos_address = $2', [postId, pharos_address]);
+  await dbPool.query('DELETE FROM likes WHERE post_id_onchain = $1::text AND pharos_address = $2::text', [postId, pharos_address]);
 }
 
 export async function addBookmark(postId, pharos_address) {
@@ -163,7 +163,7 @@ export async function addBookmark(postId, pharos_address) {
 
 export async function removeBookmark(postId, pharos_address) {
   const dbPool = getDbPool();
-  await dbPool.query('DELETE FROM bookmarks WHERE post_id_onchain = $1::text AND pharos_address = $2', [postId, pharos_address]);
+  await dbPool.query('DELETE FROM bookmarks WHERE post_id_onchain = $1::text AND pharos_address = $2::text', [postId, pharos_address]);
 }
 
 export async function addComment(postId, pharos_address, content) {
