@@ -14,7 +14,7 @@ if (!pool) {
 /**
  * Fetches the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
- * @returns {Promise<{vibe_color: string, avatar: string} | null>} The layout metadata or null if not found.
+ * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string} | null>} The layout metadata or null if not found.
  */
 export async function getLayout(pharos_address) {
   if (!pharos_address) return null;
@@ -31,6 +31,8 @@ export async function getLayout(pharos_address) {
       return {
         vibe_color: layout?.vibe_color || null,
         avatar: layout?.avatar || null,
+        username: layout?.username || null,
+        handle: layout?.handle || null,
       };
     }
     return null;
@@ -43,16 +45,13 @@ export async function getLayout(pharos_address) {
 /**
  * Updates or inserts the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
- * @param {{vibe_color: string, avatar: string}} metadata The layout metadata to save.
+ * @param {object} metadata The layout metadata to save.
  * @returns {Promise<void>}
  */
 export async function updateLayout(pharos_address, metadata) {
   if (!pharos_address || !metadata) return;
 
   try {
-    // This query performs an "upsert":
-    // It attempts to INSERT a new user.
-    // If the user (based on pharos_address) already exists, it does an UPDATE instead.
     const query = `
       INSERT INTO users (pharos_address, sovereign_layout)
       VALUES ($1, $2)
@@ -71,13 +70,14 @@ export async function updateLayout(pharos_address, metadata) {
  * Saves a new post to the database.
  * @param {string} pharos_address The author's Pharos wallet address.
  * @param {string} content The content of the post.
+ * @param {string} tx_hash The on-chain transaction hash.
  * @returns {Promise<void>}
  */
-export async function savePost(pharos_address, content) {
+export async function savePost(pharos_address, content, tx_hash) {
   if (!pharos_address || !content) return;
   try {
-    const query = 'INSERT INTO posts (pharos_address, content) VALUES ($1, $2)';
-    await pool.query(query, [pharos_address, content]);
+    const query = 'INSERT INTO posts (pharos_address, content, tx_hash) VALUES ($1, $2, $3)';
+    await pool.query(query, [pharos_address, content, tx_hash]);
   } catch (error) {
     console.error('Error saving post to Neon:', error);
     throw error;

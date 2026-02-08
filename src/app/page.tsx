@@ -286,7 +286,7 @@ export default function VibesphereApp() {
             description: "Failed to connect to the sovereign network.",
         });
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (isConnected) {
@@ -971,14 +971,19 @@ export default function VibesphereApp() {
       });
       
       // Save to Neon DB
-      await fetch('/api/posts', {
+      const dbResponse = await fetch('/api/posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
               pharos_address: wallet.address,
               content: composerText,
+              tx_hash: hash,
           }),
       });
+
+      if (!dbResponse.ok) {
+        throw new Error('Failed to sync vibe to the global feed.');
+      }
       
       await fetchFeed();
       
@@ -990,7 +995,7 @@ export default function VibesphereApp() {
       toast({
         variant: "destructive",
         title: "Vibe failed to broadcast",
-        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
+        description: error.message || error.shortMessage || "The network might be congested or the transaction was rejected.",
       });
     } finally {
       setIsPosting(false);
@@ -2783,7 +2788,7 @@ export default function VibesphereApp() {
                                 variants={{ show: { transition: { staggerChildren: 0.1 } } }}
                             >
                                 {conversationPartners.map((partner) => {
-                                    const partnerAuraColor = getPostAuraColor({avatar: partner.avatar});
+                                    const partnerAuraColor = getPostAuraColor({ avatar: partner.avatar });
                                     const cardStyle = {
                                         '--primary': partnerAuraColor,
                                         '--primary-glow': partnerAuraColor.replace(/ /g, ', '),
