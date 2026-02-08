@@ -115,8 +115,8 @@ export async function getFeed(pharos_address) {
         u.sovereign_layout,
         (SELECT COUNT(*) FROM likes WHERE post_id_onchain = p.id::text) AS like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id_onchain = p.id::text) AS comment_count,
-        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM likes WHERE post_id_onchain = p.id::text AND pharos_address = $1::text) ELSE FALSE END AS user_has_liked,
-        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM bookmarks WHERE post_id_onchain = p.id::text AND pharos_address = $1::text) ELSE FALSE END AS user_has_bookmarked,
+        CASE WHEN $1::text IS NOT NULL THEN EXISTS(SELECT 1 FROM likes WHERE post_id_onchain = p.id::text AND pharos_address = $1::text) ELSE FALSE END AS user_has_liked,
+        CASE WHEN $1::text IS NOT NULL THEN EXISTS(SELECT 1 FROM bookmarks WHERE post_id_onchain = p.id::text AND pharos_address = $1::text) ELSE FALSE END AS user_has_bookmarked,
         (
             SELECT COALESCE(json_agg(c_sub.* ORDER BY c_sub.created_at DESC), '[]'::json)
             FROM (
@@ -148,7 +148,7 @@ export async function getFeed(pharos_address) {
 
 export async function addLike(postId, pharos_address) {
   const dbPool = getDbPool();
-  await dbPool.query('INSERT INTO likes (post_id_onchain, pharos_address) VALUES ($1::text, $2) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
+  await dbPool.query('INSERT INTO likes (post_id_onchain, pharos_address) VALUES ($1::text, $2::text) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
 }
 
 export async function removeLike(postId, pharos_address) {
@@ -158,7 +158,7 @@ export async function removeLike(postId, pharos_address) {
 
 export async function addBookmark(postId, pharos_address) {
   const dbPool = getDbPool();
-  await dbPool.query('INSERT INTO bookmarks (post_id_onchain, pharos_address) VALUES ($1::text, $2) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
+  await dbPool.query('INSERT INTO bookmarks (post_id_onchain, pharos_address) VALUES ($1::text, $2::text) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
 }
 
 export async function removeBookmark(postId, pharos_address) {
@@ -169,7 +169,7 @@ export async function removeBookmark(postId, pharos_address) {
 export async function addComment(postId, pharos_address, content) {
     const dbPool = getDbPool();
     const res = await dbPool.query(
-        'INSERT INTO comments (post_id_onchain, pharos_address, content) VALUES ($1::text, $2, $3) RETURNING *',
+        'INSERT INTO comments (post_id_onchain, pharos_address, content) VALUES ($1::text, $2::text, $3) RETURNING *',
         [postId, pharos_address, content]
     );
     return res.rows[0];
