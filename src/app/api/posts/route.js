@@ -22,7 +22,11 @@ export async function POST(request) {
     await savePost(pharos_address, content, tx_hash);
     return NextResponse.json({ message: 'Post saved successfully' });
   } catch (error) {
-    console.error('Failed to save post to Neon:', error);
+    console.error('[API /api/posts ERROR]: Failed to save post to Neon.', {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        fullError: error,
+    });
     return NextResponse.json({ error: 'Failed to save post to Neon', details: error.message }, { status: 500 });
   }
 }

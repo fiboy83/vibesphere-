@@ -2,13 +2,19 @@ import { Pool } from 'pg';
 
 let pool;
 
-if (!pool) {
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
+const getDbPool = () => {
+    if (!pool) {
+        if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL is not set. Cannot connect to Neon.');
+        }
+        pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: {
+              rejectUnauthorized: false
+            }
+        });
     }
-  });
+    return pool;
 }
 
 /**
@@ -20,7 +26,8 @@ export async function getLayout(pharos_address) {
   if (!pharos_address) return null;
 
   try {
-    const res = await pool.query(
+    const dbPool = getDbPool();
+    const res = await dbPool.query(
       'SELECT sovereign_layout FROM users WHERE pharos_address = $1',
       [pharos_address]
     );
@@ -52,13 +59,14 @@ export async function updateLayout(pharos_address, metadata) {
   if (!pharos_address || !metadata) return;
 
   try {
+    const dbPool = getDbPool();
     const query = `
       INSERT INTO users (pharos_address, sovereign_layout)
       VALUES ($1, $2)
       ON CONFLICT (pharos_address)
       DO UPDATE SET sovereign_layout = users.sovereign_layout || $2;
     `;
-    await pool.query(query, [pharos_address, metadata]);
+    await dbPool.query(query, [pharos_address, metadata]);
   } catch (error) {
     console.error('Error updating layout in Neon:', error);
     throw error;
@@ -76,8 +84,9 @@ export async function updateLayout(pharos_address, metadata) {
 export async function savePost(pharos_address, content, tx_hash) {
   if (!pharos_address || !content) return;
   try {
+    const dbPool = getDbPool();
     const query = 'INSERT INTO posts (pharos_address, content, tx_hash) VALUES ($1, $2, $3)';
-    await pool.query(query, [pharos_address, content, tx_hash]);
+    await dbPool.query(query, [pharos_address, content, tx_hash]);
   } catch (error) {
     console.error('Error saving post to Neon:', error);
     throw error;
@@ -90,6 +99,7 @@ export async function savePost(pharos_address, content, tx_hash) {
  */
 export async function getFeed() {
   try {
+    const dbPool = getDbPool();
     const query = `
       SELECT
         p.id,
@@ -102,7 +112,7 @@ export async function getFeed() {
       ORDER BY p.created_at DESC
       LIMIT 50;
     `;
-    const res = await pool.query(query);
+    const res = await dbPool.query(query);
     return res.rows;
   } catch (error) {
     console.error('Error fetching feed from Neon:', error);
