@@ -9,7 +9,11 @@ export async function GET(request) {
     const feed = await getFeed(pharos_address);
     return NextResponse.json(feed);
   } catch (error) {
-    console.error('Failed to fetch feed from Neon:', error);
+    console.error('[API /api/posts GET ERROR]: Failed to fetch feed from Neon.', {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        fullError: error,
+    });
     return NextResponse.json({ error: 'Failed to fetch feed', details: error.message }, { status: 500 });
   }
 }
