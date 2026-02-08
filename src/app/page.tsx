@@ -654,21 +654,35 @@ export default function VibesphereApp() {
 
   const handleProfileFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (file && wallet?.address) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const imageUrl = reader.result as string;
         
-        getDominantColorFromImage(imageUrl, (newColorValues) => {
-            setProfile(prev => ({ 
-              ...prev, 
-              avatar: imageUrl,
-              themeColor: newColorValues,
-            }));
+        getDominantColorFromImage(imageUrl, async (newColorValues) => {
+            const metadata = { vibe_color: newColorValues, avatar: imageUrl };
 
-            toast({
-              title: "vibe updated...",
-            });
+            try {
+                const response = await fetch('/api/layout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pharos_address: wallet.address, metadata }),
+                });
+
+                if (!response.ok) throw new Error('Failed to sync vibe with Neon DB');
+
+                setProfile(prev => ({ 
+                  ...prev, 
+                  avatar: imageUrl,
+                  themeColor: newColorValues,
+                }));
+
+                toast({ title: "vibe updated..." });
+
+            } catch (error) {
+                console.error("Error updating profile in DB:", error);
+                toast({ variant: "destructive", title: "Failed to sync vibe" });
+            }
         });
       };
       reader.readAsDataURL(file);
@@ -730,6 +744,27 @@ export default function VibesphereApp() {
     };
   }, [isConnected, isHomeView]); // Rerun when view changes
   
+    // Fetch layout from Neon DB
+    useEffect(() => {
+        const fetchLayout = async () => {
+            if (wallet?.address) {
+                try {
+                    const response = await fetch(`/api/layout?pharos_address=${wallet.address}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setProfile(prev => ({
+                            ...prev,
+                            avatar: data.avatar || prev.avatar,
+                            themeColor: data.vibe_color || prev.themeColor,
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Could not fetch layout from Neon", error);
+                }
+            }
+        };
+        fetchLayout();
+    }, [wallet?.address]);
 
   // --- RECURSIVE FEED UPDATER ---
   const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
@@ -3189,5 +3224,6 @@ export default function VibesphereApp() {
 }
 
     
+
 
 
