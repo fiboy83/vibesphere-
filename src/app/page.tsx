@@ -96,6 +96,34 @@ const getDominantColorFromImage = (imageUrl: string, onComplete: (hslValues: str
     };
 };
 
+const nestComments = (commentList: any[]): any[] => {
+    if (!commentList || commentList.length === 0) return [];
+    
+    const commentMap: { [key: string]: any } = {};
+    
+    // First pass: create a map of all comments
+    commentList.forEach(comment => {
+        commentMap[comment.id] = { ...comment, comments: [] };
+    });
+
+    const nestedComments: any[] = [];
+    
+    // Second pass: link children to their parents
+    commentList.forEach(comment => {
+        const currentComment = commentMap[comment.id];
+        if (comment.parent_id && commentMap[comment.parent_id]) {
+            // This is a reply, add it to its parent's 'comments' array
+            commentMap[comment.parent_id].comments.unshift(currentComment); // unshift to keep newest first
+        } else {
+            // This is a top-level comment
+            nestedComments.push(currentComment);
+        }
+    });
+
+    return nestedComments;
+};
+
+
 // --- COMPONENT: RESONANCE CARD ---
 const ResonanceCard = ({ children, style, onClick }: { children: React.ReactNode, style?: React.CSSProperties, onClick?: () => void }) => {
     const cardContent = (
@@ -217,6 +245,8 @@ export default function VibesphereApp() {
   // --- FOCUS MODE & COMMENT STATE ---
   const [isCommentSectionVisible, setIsCommentSectionVisible] = useState(false);
   const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+
 
   // --- NAVIGATION STATE ---
   const [viewStack, setViewStack] = useState<any[]>([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
@@ -283,8 +313,12 @@ export default function VibesphereApp() {
                     commentCount: 0,
                     repostCount: 0,
                     comments: [],
+                    parent_id: comment.parent_id,
+                    post_id_onchain: post.id
                 };
             });
+
+            const nestedComments = nestComments(processedComments);
 
             return {
                 id: post.id,
@@ -297,7 +331,7 @@ export default function VibesphereApp() {
                 commentCount: parseInt(post.comment_count, 10) || 0, 
                 repostCount: 0, // Not stored in DB yet
                 likeCount: parseInt(post.like_count, 10) || 0,
-                comments: processedComments,
+                comments: nestedComments,
                 type: 'tekt', // Placeholder
                 media: null, // Placeholder
             };
@@ -319,6 +353,13 @@ export default function VibesphereApp() {
         fetchUserHandle();
     }
   }, [isConnected, fetchFeed, fetchUserHandle]);
+
+  useEffect(() => {
+      // Clear comment text when the reply target changes to avoid stale text
+      if (replyingTo) {
+          setCommentText("");
+      }
+  }, [replyingTo]);
 
 
   useEffect(() => {
@@ -788,7 +829,7 @@ export default function VibesphereApp() {
   };
 
   // --- SOCIAL ACTIONS ---
-  const handleSendComment = async (postId: number) => {
+  const handleSendComment = async (postId: number, parentId: number | null) => {
     if (commentText.trim() === "" || !wallet?.address) return;
 
     try {
@@ -797,6 +838,7 @@ export default function VibesphereApp() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 postId, 
+                parentId,
                 pharos_address: wallet.address, 
                 content: commentText.trim() 
             }),
@@ -807,6 +849,7 @@ export default function VibesphereApp() {
         }
         
         setCommentText("");
+        setReplyingTo(null);
         toast({ title: "Reply sent" });
         await fetchFeed(); // Refresh the feed to show the new comment
     } catch (error) {
@@ -1251,6 +1294,98 @@ export default function VibesphereApp() {
   const isFocusedPostBookmarked = focusedPost ? bookmarkedPosts.includes(focusedPost.id) : false;
   const isFocusedPostLiked = focusedPost ? likedPosts.includes(focusedPost.id) : false;
 
+
+  const CommentItem: React.FC<{
+      comment: any;
+      postId: number;
+      level?: number;
+    }> = ({ comment, postId, level = 0 }) => {
+        const commentAuraColor = getPostAuraColor(comment);
+        const isCommentFocused = focusedCommentId === comment.id;
+        const isReplying = replyingTo === comment.id;
+  
+        return (
+            <div className={`mt-4 ${level > 0 ? "ml-4 border-l border-white/10 pl-4" : ""}`}>
+                <ResonanceCard 
+                    key={comment.id}
+                    onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
+                    style={{'--primary': commentAuraColor, '--primary-glow': commentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                >
+                    <div className="flex gap-3 items-start">
+                        <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${commentAuraColor})`}}/>
+                        <div className="flex-1">
+                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar, themeColor: comment.themeColor}, focusedPost: null })}} className='flex items-center gap-2 group'>
+                                <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
+                                <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
+                            </div>
+                            <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
+                            <AnimatePresence>
+                                {isCommentFocused && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        animate={{ opacity: 1, height: 'auto', marginTop: '8px' }}
+                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        className="flex items-center gap-4 text-primary"
+                                    >
+                                        <motion.button
+                                            whileTap={{ scale: 1.2 }}
+                                            onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
+                                            className="flex items-center gap-1.5 text-xs hover:brightness-125"
+                                            style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {color: 'hsl(var(--primary))'}}
+                                        >
+                                            <Heart size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
+                                            <span>{comment.likeCount}</span>
+                                        </motion.button>
+                                        <motion.button
+                                            whileTap={{ scale: 1.2 }}
+                                            onClick={(e) => { e.stopPropagation(); setReplyingTo(replyingTo === comment.id ? null : comment.id) }}
+                                            className="flex items-center gap-1.5 text-xs hover:brightness-125"
+                                            style={{color: 'hsl(var(--primary))'}}
+                                        >
+                                            <MessageSquare size={14}/>
+                                            <span>Reply</span>
+                                        </motion.button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                </ResonanceCard>
+  
+                <AnimatePresence>
+                {isReplying && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mt-2 ml-10">
+                        <div className="relative flex items-center">
+                            <textarea 
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(postId, comment.id))}
+                                placeholder={`reply to @${comment.handle}...`}
+                                className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
+                                rows={1}
+                                autoFocus
+                            />
+                            <button 
+                                onClick={() => handleSendComment(postId, comment.id)}
+                                disabled={!commentText.trim()}
+                                className={`absolute right-1 bottom-1 transition-colors ${
+                                  commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
+                                }`}
+                            >
+                                <Send size={16} strokeWidth={2} />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+                </AnimatePresence>
+  
+                {/* Recursive call for nested replies */}
+                {comment.comments && comment.comments.map((reply: any) => (
+                    <CommentItem key={reply.id} comment={reply} postId={postId} level={level + 1} />
+                ))}
+            </div>
+        );
+    };
 
   const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
 
@@ -1764,82 +1899,39 @@ export default function VibesphereApp() {
                                 <div className="flex gap-3 items-start">
                                     <img src={profile.avatar} alt="Your avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${profile.themeColor})`}}/>
                                     <div className="flex-1">
-                                        <div className="relative flex items-center">
-                                          <textarea 
-                                            value={commentText}
-                                            onChange={(e) => setCommentText(e.target.value.toLowerCase())}
-                                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id))}
-                                            placeholder="post your reply..."
-                                            className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
-                                            rows={1}
-                                          />
-                                          <button 
-                                            onClick={() => handleSendComment(focusedPost.id)}
-                                            disabled={!commentText.trim()}
-                                            className={`absolute right-1 bottom-1 transition-colors ${
-                                              commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
-                                            }`}
-                                          >
-                                            <Send size={16} strokeWidth={2} />
-                                          </button>
-                                        </div>
+                                    <AnimatePresence>
+                                        {!replyingTo && (
+                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                                <div className="relative flex items-center">
+                                                <textarea 
+                                                    value={commentText}
+                                                    onChange={(e) => setCommentText(e.target.value.toLowerCase())}
+                                                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id, null))}
+                                                    placeholder="post your reply..."
+                                                    className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
+                                                    rows={1}
+                                                />
+                                                <button 
+                                                    onClick={() => handleSendComment(focusedPost.id, null)}
+                                                    disabled={!commentText.trim()}
+                                                    className={`absolute right-1 bottom-1 transition-colors ${
+                                                    commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
+                                                    }`}
+                                                >
+                                                    <Send size={16} strokeWidth={2} />
+                                                </button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                     </div>
                                 </div>
                                 
                                 {/* Vibe Thread */}
                                 {focusedPost.comments && focusedPost.comments.length > 0 ? (
-                                  focusedPost.comments.map((comment: any) => {
-                                    const commentAuraColor = getPostAuraColor(comment);
-                                    const isCommentFocused = focusedCommentId === comment.id;
-
-                                    return (
-                                      <ResonanceCard 
-                                        key={comment.id}
-                                        onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
-                                        style={{'--primary': commentAuraColor, '--primary-glow': commentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
-                                      >
-                                        <div className="flex gap-3 items-start">
-                                          <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${commentAuraColor})`}}/>
-                                          <div className="flex-1">
-                                              <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar, themeColor: comment.themeColor}, focusedPost: null })}} className='flex items-center gap-2 group'>
-                                                  <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
-                                                  <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
-                                              </div>
-                                              <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
-                                                <AnimatePresence>
-                                                    {isCommentFocused && (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                                                            animate={{ opacity: 1, height: 'auto', marginTop: '8px' }}
-                                                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                                            className="flex items-center gap-4 text-primary"
-                                                        >
-                                                            <motion.button
-                                                                whileTap={{ scale: 1.2 }}
-                                                                onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
-                                                                className="flex items-center gap-1.5 text-xs hover:brightness-125"
-                                                                style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {color: 'hsl(var(--primary))'}}
-                                                            >
-                                                                <Heart size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
-                                                                <span>{comment.likeCount}</span>
-                                                            </motion.button>
-                                                            <motion.button
-                                                                whileTap={{ scale: 1.2 }}
-                                                                onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
-                                                                className="flex items-center gap-1.5 text-xs hover:brightness-125"
-                                                                style={{color: 'hsl(var(--primary))'}}
-                                                            >
-                                                                <MessageSquare size={14}/>
-                                                                <span>Reply</span>
-                                                            </motion.button>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                          </div>
-                                        </div>
-                                      </ResonanceCard>
-                                    )
-                                  })
+                                    focusedPost.comments.map((comment: any) => (
+                                        <CommentItem key={comment.id} comment={comment} postId={focusedPost.id} />
+                                    ))
                                 ) : (
                                   <div className="text-center py-8">
                                       <p className="text-sm text-slate-500 font-mono">no replies yet.</p>

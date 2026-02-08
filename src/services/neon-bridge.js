@@ -125,6 +125,7 @@ export async function getFeed(pharos_address) {
                     c.content,
                     c.created_at,
                     c.pharos_address,
+                    c.parent_id,
                     cu.sovereign_layout as user_layout
                 FROM comments c
                 LEFT JOIN users cu ON c.pharos_address = cu.pharos_address
@@ -166,11 +167,11 @@ export async function removeBookmark(postId, pharos_address) {
   await dbPool.query('DELETE FROM bookmarks WHERE post_id_onchain = $1::text AND pharos_address = $2::text', [postId, pharos_address]);
 }
 
-export async function addComment(postId, pharos_address, content) {
+export async function addComment(postId, pharos_address, content, parentId = null) {
     const dbPool = getDbPool();
     const res = await dbPool.query(
-        'INSERT INTO comments (post_id_onchain, pharos_address, content) VALUES ($1::text, $2::text, $3) RETURNING *',
-        [postId, pharos_address, content]
+        'INSERT INTO comments (post_id_onchain, pharos_address, content, parent_id) VALUES ($1::text, $2::text, $3, $4) RETURNING *',
+        [postId, pharos_address, content, parentId]
     );
     return res.rows[0];
 }
