@@ -83,7 +83,7 @@ export async function savePost(pharos_address, content, tx_hash) {
   if (!pharos_address || !content) return;
   try {
     const dbPool = getDbPool();
-    const query = 'INSERT INTO posts (pharos_address, content, tx_hash) VALUES ($1, $2, $3)';
+    const query = 'INSERT INTO interactions (pharos_address, content, tx_hash) VALUES ($1, $2, $3)';
     await dbPool.query(query, [pharos_address, content, tx_hash]);
   } catch (error) {
     console.error('Error saving post to Neon:', error);
@@ -105,7 +105,7 @@ export async function getFeed() {
         p.created_at,
         p.pharos_address,
         u.sovereign_layout
-      FROM posts p
+      FROM interactions p
       LEFT JOIN users u ON p.pharos_address = u.pharos_address
       ORDER BY p.created_at DESC
       LIMIT 50;
