@@ -178,7 +178,7 @@ export async function removeBookmark(postId, pharos_address) {
 export async function addComment(postId, pharos_address, content, parentId = null) {
     const dbPool = getDbPool();
     const res = await dbPool.query(
-        'INSERT INTO comments (post_id_onchain, pharos_address, content, parent_id) VALUES ($1::text, $2::text, $3::text, $4)',
+        'INSERT INTO comments (post_id_onchain, pharos_address, content, parent_id) VALUES ($1::text, $2::text, $3::text, $4::integer) RETURNING *',
         [postId, pharos_address, content, parentId]
     );
     return res.rows[0];
