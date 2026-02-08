@@ -81,15 +81,14 @@ export async function updateLayout(pharos_address, metadata) {
  * @param {string} content The content of the post.
  * @param {string} tx_hash The on-chain transaction hash.
  * @param {string | null} image_url URL of the attached media.
- * @param {string | null} media_type Type of the attached media ('image' or 'video').
  * @returns {Promise<void>}
  */
-export async function savePost(pharos_address, content, tx_hash, image_url, media_type) {
+export async function savePost(pharos_address, content, tx_hash, image_url) {
   if (!pharos_address || (!content && !image_url)) return;
   try {
     const dbPool = getDbPool();
-    const query = 'INSERT INTO posts (pharos_address, content, tx_hash, image_url, media_type) VALUES ($1::text, $2::text, $3::text, $4::text, $5::text)';
-    await dbPool.query(query, [pharos_address, content, tx_hash, image_url, media_type]);
+    const query = 'INSERT INTO posts (pharos_address, content, tx_hash, image_url) VALUES ($1::text, $2::text, $3::text, $4::text)';
+    await dbPool.query(query, [pharos_address, content, tx_hash, image_url]);
   } catch (error) {
     console.error('[NEON SAVE POST ERROR]', {
         message: error.message,
@@ -116,7 +115,11 @@ export async function getFeed(pharos_address) {
         p.tx_hash,
         p.pharos_address,
         p.image_url AS media_url,
-        p.media_type,
+        CASE
+            WHEN p.image_url LIKE 'data:video%' OR p.image_url LIKE '%.mp4' OR p.image_url LIKE '%.webm' THEN 'video'
+            WHEN p.image_url IS NOT NULL AND p.image_url != '' THEN 'image'
+            ELSE NULL
+        END AS media_type,
         u.sovereign_layout,
         (SELECT COUNT(*) FROM likes WHERE post_id_onchain = p.id::text) AS like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id_onchain = p.id::text) AS comment_count,
