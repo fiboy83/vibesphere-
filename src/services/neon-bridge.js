@@ -57,11 +57,55 @@ export async function updateLayout(pharos_address, metadata) {
       INSERT INTO users (pharos_address, sovereign_layout)
       VALUES ($1, $2)
       ON CONFLICT (pharos_address)
-      DO UPDATE SET sovereign_layout = EXCLUDED.sovereign_layout;
+      DO UPDATE SET sovereign_layout = users.sovereign_layout || $2;
     `;
     await pool.query(query, [pharos_address, metadata]);
   } catch (error) {
     console.error('Error updating layout in Neon:', error);
     throw error;
+  }
+}
+
+
+/**
+ * Saves a new post to the database.
+ * @param {string} pharos_address The author's Pharos wallet address.
+ * @param {string} content The content of the post.
+ * @returns {Promise<void>}
+ */
+export async function savePost(pharos_address, content) {
+  if (!pharos_address || !content) return;
+  try {
+    const query = 'INSERT INTO posts (pharos_address, content) VALUES ($1, $2)';
+    await pool.query(query, [pharos_address, content]);
+  } catch (error) {
+    console.error('Error saving post to Neon:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches the global feed from the database.
+ * @returns {Promise<any[]>} A list of posts with user data.
+ */
+export async function getFeed() {
+  try {
+    const query = `
+      SELECT
+        p.id,
+        p.content,
+        p.created_at,
+        p.pharos_address,
+        u.sovereign_layout
+      FROM posts p
+      LEFT JOIN users u ON p.pharos_address = u.pharos_address
+      ORDER BY p.created_at DESC
+      LIMIT 50;
+    `;
+    const res = await pool.query(query);
+    return res.rows;
+  } catch (error) {
+    console.error('Error fetching feed from Neon:', error);
+    return [];
   }
 }

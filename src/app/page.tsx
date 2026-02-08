@@ -11,11 +11,11 @@ import { useToast } from "@/hooks/use-toast";
 import { postContractAddress, postContractAbi, identityContractAddress, identityContractAbi } from '@/constants/contracts';
 import { cn } from '@/lib/utils';
 import { useDebounce } from 'use-debounce';
+import { formatDistanceToNow } from 'date-fns';
 
 
 // --- PHAROS CHAIN ID ---
 const PHAROS_CHAIN_ID = 688689;
-const GLOBAL_FEED_KEY = 'vibesphere_global_feed';
 const AUTH_KEY = 'vibe_auth';
 
 // --- VIEM PUBLIC CLIENT ---
@@ -204,26 +204,7 @@ export default function VibesphereApp() {
 
 
   // --- FEED & BOOKMARK STATE ---
-  const initialFeedData = [
-    { id: 1, userId: "nova.vibes", username: "Nova_Architect", handle: "nova.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.vibes&backgroundColor=a855f7`, time: "2m", text: "GM PHAROS Fam! The sovereign vibes are strong today.", type: "tekt", commentCount: 4, repostCount: 5, likeCount: 42, media: null, comments: [
-        { id: 201, userId: "alpha_vibes.vibes", username: "Alpha_Vibes", handle: "alpha_vibes.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=alpha_vibes.vibes&backgroundColor=10b981`, time: "5m", text: "digital sovereignty!", commentCount: 0, repostCount: 0, likeCount: 2, bookmarked: false, comments: [] },
-        { id: 202, userId: "beta_coder.vibes", username: "Beta_Coder", handle: "beta_coder.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=beta_coder.vibes&backgroundColor=3b82f6`, time: "3m", text: "nice layout bro", commentCount: 0, repostCount: 0, likeCount: 5, bookmarked: false, comments: [] },
-        { id: 203, userId: "gamma_soul.vibes", username: "Gamma_Soul", handle: "gamma_soul.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gamma_soul.vibes&backgroundColor=f97316`, time: "1m", text: "check pharos rpc", commentCount: 1, repostCount: 1, likeCount: 1, bookmarked: false, comments: [] },
-        { id: 101, userId: "ql.vibes", username: "Quantum_Leaper", handle: "ql.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.vibes&backgroundColor=06b6d4`, time: "1m", text: "this is fire. the future is now.", commentCount: 1, repostCount: 0, likeCount: 3, bookmarked: false, comments: [
-             { id: 1011, userId: "nova.vibes", username: "Nova_Architect", handle: "nova.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.vibes&backgroundColor=a855f7`, time: "now", text: "indeed it is!", commentCount: 0, repostCount: 0, likeCount: 1, bookmarked: false, comments: [] }
-        ] }
-    ] },
-    { id: 2, userId: "ql.vibes", username: "Quantum_Leaper", handle: "ql.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.vibes&backgroundColor=06b6d4`, time: "30m", text: "Just deployed a new DApp on PHAROS... the speed is unreal. Year 3000 is now.", type: "tekt", commentCount: 0, repostCount: 2, likeCount: 28, media: null, comments: [] },
-    { id: 3, userId: "gov.vibes", username: "DAO_Steward", handle: "gov.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.vibes&backgroundColor=ef4444`, time: "2h", 
-      text: `New governance proposal PIP-8 is live. It suggests adjusting the liquidity provider rewards to incentivize smaller, more diverse pools. This is critical for network health and decentralization.\n\nKey points:\n- Reduce rewards for top 5 pools by 10%\n- Increase rewards for pools outside top 20 by 15%\n- Introduce a 2-week lock-up period for new LPs to claim boosted rewards.\n\nThis will prevent whale dominance and foster a more resilient ecosystem. Please review the full proposal on-chain and cast your vote. Your vibe matters.`, 
-      type: "artikel" , commentCount: 1, repostCount: 15, likeCount: 99, media: null,
-      comments: [
-          { id: 301, userId: "user.vibes", username: "Sovereign_User", handle: "user.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.vibes&backgroundColor=f59e0b`, time: "1h", text: "Important proposal. Everyone should vote.", commentCount: 0, repostCount: 2, likeCount: 10, bookmarked: false, comments: [] }
-      ]
-    },
-    { id: 4, userId: "user.vibes", username: "Sovereign_User", handle: "user.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.vibes&backgroundColor=f59e0b`, time: "5h", text: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "tekt", commentCount: 0, repostCount: 3, likeCount: 66, media: null, comments: [] },
-  ];
-  const [feed, setFeed] = useState<any[]>(initialFeedData);
+  const [feed, setFeed] = useState<any[]>([]);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
@@ -268,11 +249,52 @@ export default function VibesphereApp() {
     }
   }, [wallet?.address]);
 
-  useEffect(() => {
-    if(isConnected) {
-      fetchUserHandle();
+  const fetchFeed = useCallback(async () => {
+    try {
+        const response = await fetch('/api/posts');
+        if (!response.ok) {
+            throw new Error('Failed to fetch feed from server');
+        }
+        const data = await response.json();
+        
+        const processedFeed = data.map((post: any) => {
+            const layout = post.sovereign_layout || {};
+            const handle = layout.handle || `${post.pharos_address.slice(0, 6)}.vibes`;
+            
+            return {
+                id: post.id,
+                text: post.content,
+                time: formatDistanceToNow(new Date(post.created_at)),
+                handle: handle,
+                username: layout.username || 'Sovereign_User',
+                avatar: layout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${post.pharos_address}&backgroundColor=a855f7`,
+                themeColor: layout.vibe_color || '262 100% 70%',
+                commentCount: 0, 
+                repostCount: 0,
+                likeCount: 0,
+                comments: [],
+                type: 'tekt',
+                media: null,
+            };
+        });
+        setFeed(processedFeed);
+    } catch (error) {
+        console.error("Could not fetch feed:", error);
+        toast({
+            variant: "destructive",
+            title: "Could not load vibes",
+            description: "Failed to connect to the sovereign network.",
+        });
     }
-  }, [isConnected, fetchUserHandle]);
+  }, []);
+
+  useEffect(() => {
+    if (isConnected) {
+        fetchFeed();
+        fetchUserHandle();
+    }
+  }, [isConnected, fetchFeed, fetchUserHandle]);
+
 
   useEffect(() => {
     const checkHandle = async () => {
@@ -585,10 +607,15 @@ export default function VibesphereApp() {
         const imageUrl = reader.result as string;
         
         getDominantColorFromImage(imageUrl, async (newColorValues) => {
-            const newLayout = { avatar: imageUrl, vibe_color: newColorValues };
+            const newLayout = { 
+                username: profile.username,
+                handle: profile.handle,
+                avatar: imageUrl,
+                vibe_color: newColorValues,
+            };
 
             // Optimistic UI update
-            setProfile(prev => ({ ...prev, ...newLayout }));
+            setProfile(prev => ({ ...prev, avatar: imageUrl, themeColor: newColorValues }));
             
             try {
                 const response = await fetch('/api/layout', {
@@ -609,7 +636,7 @@ export default function VibesphereApp() {
             } catch (error) {
                 console.error('Error updating profile avatar:', error);
                 toast({ variant: "destructive", title: "Failed to sync vibe" });
-                // Note: No rollback implemented for optimistic UI, as per original code.
+                // Note: No rollback implemented for optimistic UI.
             }
         });
       };
@@ -622,9 +649,24 @@ export default function VibesphereApp() {
     setIsProfileModalOpen(true);
   };
 
-  const handleProfileSave = () => {
+  const handleProfileSave = async () => {
     setProfile(prev => ({ ...prev, username: tempProfile.username, joinDate: tempProfile.joinDate }));
     setIsProfileModalOpen(false);
+
+    if (wallet?.address) {
+        try {
+            await fetch('/api/layout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pharos_address: wallet.address,
+                    metadata: { username: tempProfile.username },
+                })
+            });
+        } catch (error) {
+            console.error("Failed to save username:", error);
+        }
+    }
   };
 
   
@@ -684,9 +726,11 @@ export default function VibesphereApp() {
                     }
                     const data = await response.json();
                     
-                    if (data && (data.avatar || data.vibe_color)) {
+                    if (data && (data.avatar || data.vibe_color || data.username || data.handle)) {
                         setProfile(prev => ({
                             ...prev,
+                            username: data.username || prev.username,
+                            handle: data.handle || prev.handle,
                             avatar: data.avatar || prev.avatar,
                             themeColor: data.vibe_color || prev.themeColor,
                         }));
@@ -696,8 +740,10 @@ export default function VibesphereApp() {
                 }
             }
         };
-        fetchLayout();
-    }, [wallet?.address]);
+        if(isConnected) {
+            fetchLayout();
+        }
+    }, [isConnected, wallet?.address]);
 
   // --- RECURSIVE FEED UPDATER ---
   const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
@@ -921,32 +967,20 @@ export default function VibesphereApp() {
       await publicClient.waitForTransactionReceipt({ hash });
 
       toast({
-        title: "Vibe confirmed on-chain! ✨",
+        title: "Vibe confirmed on-chain! ✨ Syncing to global feed...",
       });
       
-      const newPost = {
-          id: Date.now(),
-          userId: profile.handle,
-          username: profile.username,
-          handle: profile.handle,
-          avatar: profile.avatar,
-          themeColor: profile.themeColor,
-          time: 'now',
-          text: composerText,
-          type: composerTab === 'artikel' ? 'artikel' : (mediaFile ? 'media' : 'tekt'),
-          media: mediaPreview ? { url: mediaPreview, type: mediaType } : null,
-          commentCount: 0,
-          repostCount: 0,
-          likeCount: 0,
-          comments: [],
-      };
-
-      const updatedFeed = [newPost, ...feed];
-      setFeed(updatedFeed);
-
-      if (wallet?.address) {
-          safeLocalStorageSet(GLOBAL_FEED_KEY, JSON.stringify(updatedFeed.slice(0, 20)));
-      }
+      // Save to Neon DB
+      await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              pharos_address: wallet.address,
+              content: composerText,
+          }),
+      });
+      
+      await fetchFeed();
       
       setIsComposerOpen(false);
       resetComposer();
@@ -1001,6 +1035,17 @@ export default function VibesphereApp() {
       });
       
       await fetchUserHandle();
+      
+      // Save new handle to Neon DB
+      await fetch('/api/layout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              pharos_address: wallet.address,
+              metadata: { handle: `${claimInput}.vibes` },
+          })
+      });
+
       setClaimInput('');
       setIsHandleAvailable(null);
 
@@ -1042,30 +1087,8 @@ export default function VibesphereApp() {
   };
 
   const getPostAuraColor = (post: any) => {
-    if (!post || !post.avatar) return '262 100% 70%';
-    // If the post object itself has a theme color, use it. This happens for posts from the live feed.
-    if (post.themeColor) return post.themeColor;
-    
-    // Fallback for old mock data or when theme color is missing
-    if (post.handle === profile.handle) {
-      return profile.themeColor;
-    }
-    try {
-      const url = new URL(post.avatar);
-      const bgColorHex = url.searchParams.get('backgroundColor');
-      if (bgColorHex) {
-        const rgb = hexToRgb(bgColorHex);
-        if (rgb) {
-          let [h, s, l] = rgbToHsl(...rgb);
-          s = Math.min(1, s * 1.5);
-          l = Math.max(0.55, Math.min(0.75, l));
-          return `${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%`;
-        }
-      }
-      return '262 100% 70%';
-    } catch(e) {
-      return '262 100% 70%';
-    }
+    if (!post) return '262 100% 70%';
+    return post.themeColor || '262 100% 70%';
   };
 
   const conversationPartners = React.useMemo(() => {
@@ -3145,14 +3168,3 @@ export default function VibesphereApp() {
     </div>
   );
 }
-
-    
-
-
-
-
-
-
-
-
-    
