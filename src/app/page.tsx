@@ -285,7 +285,7 @@ export default function VibesphereApp() {
         const response = await fetch(`/api/posts?pharos_address=${userAddress || ''}`);
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ details: `Server responded with ${response.status}` }));
-            throw new Error(errorData.details || 'Failed to fetch feed from server');
+            throw new Error(errorData.details || "Failed to fetch feed from server.");
         }
         const data = await response.json();
         
@@ -1045,6 +1045,8 @@ export default function VibesphereApp() {
               pharos_address: wallet.address,
               content: composerText,
               tx_hash: hash,
+              media_url: mediaFile ? mediaPreview : null,
+              media_type: mediaFile ? mediaType : null,
           }),
       });
 

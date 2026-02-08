@@ -63,7 +63,7 @@ export async function updateLayout(pharos_address, metadata) {
     const dbPool = getDbPool();
     const query = `
       INSERT INTO users (pharos_address, sovereign_layout)
-      VALUES ($1, $2)
+      VALUES ($1::text, $2)
       ON CONFLICT (pharos_address)
       DO UPDATE SET sovereign_layout = users.sovereign_layout || $2;
     `;
@@ -80,20 +80,21 @@ export async function updateLayout(pharos_address, metadata) {
  * @param {string} pharos_address The author's Pharos wallet address.
  * @param {string} content The content of the post.
  * @param {string} tx_hash The on-chain transaction hash.
+ * @param {string | null} media_url URL of the attached media.
+ * @param {string | null} media_type Type of the attached media ('image' or 'video').
  * @returns {Promise<void>}
  */
-export async function savePost(pharos_address, content, tx_hash) {
-  if (!pharos_address || !content) return;
+export async function savePost(pharos_address, content, tx_hash, media_url, media_type) {
+  if (!pharos_address || (!content && !media_url)) return;
   try {
     const dbPool = getDbPool();
-    const query = 'INSERT INTO posts (pharos_address, content, tx_hash) VALUES ($1, $2, $3)';
-    await dbPool.query(query, [pharos_address, content, tx_hash]);
+    const query = 'INSERT INTO posts (pharos_address, content, tx_hash, media_url, media_type) VALUES ($1::text, $2::text, $3::text, $4::text, $5::text)';
+    await dbPool.query(query, [pharos_address, content, tx_hash, media_url, media_type]);
   } catch (error) {
     console.error('[NEON SAVE POST ERROR]', {
         message: error.message,
         stack: error.stack,
         detail: error.detail,
-        query: error.query,
     });
     throw error;
   }
@@ -174,7 +175,7 @@ export async function removeBookmark(postId, pharos_address) {
 export async function addComment(postId, pharos_address, content, parentId = null) {
     const dbPool = getDbPool();
     const res = await dbPool.query(
-        'INSERT INTO comments (post_id_onchain, pharos_address, content, parent_id) VALUES ($1::text, $2::text, $3, $4) RETURNING *',
+        'INSERT INTO comments (post_id_onchain, pharos_address, content, parent_id) VALUES ($1::text, $2::text, $3::text, $4)',
         [postId, pharos_address, content, parentId]
     );
     return res.rows[0];
