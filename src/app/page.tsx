@@ -12,8 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { postContractAddress, postContractAbi, identityContractAddress, identityContractAbi } from '@/constants/contracts';
 import { cn } from '@/lib/utils';
 import { useDebounce } from 'use-debounce';
-import { supabase } from '@/lib/supabaseClient';
-import { formatDistanceToNow } from 'date-fns';
 
 
 // --- PHAROS CHAIN ID ---
@@ -259,66 +257,6 @@ export default function VibesphereApp() {
     }
   };
   
-  const fetchUserHandle = useCallback(async () => {
-    if (!wallet?.address || !supabase) return;
-    try {
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('handle')
-            .eq('pharos_address', wallet.address)
-            .single();
-
-        if (error && error.code !== 'PGRST116') { // Ignore 'not found' errors
-            throw error;
-        }
-
-        if (user && user.handle) {
-            setUserHandle(user.handle);
-            setProfile(p => ({ ...p, handle: `${user.handle}.vibes` }));
-        } else {
-            setUserHandle(null);
-        }
-    } catch (error) {
-      console.error("Failed to fetch handle:", error);
-      setUserHandle(null); // Fallback
-    }
-  }, [wallet?.address]);
-
-  useEffect(() => {
-    fetchUserHandle();
-  }, [fetchUserHandle]);
-
-  useEffect(() => {
-    const checkHandle = async () => {
-      if (!debouncedClaimInput || !supabase) {
-        setIsHandleAvailable(null);
-        return;
-      }
-      setIsCheckingHandle(true);
-      setHandleCheckError(null);
-      try {
-        const { data, error } = await supabase
-            .from('users')
-            .select('handle')
-            .eq('handle', debouncedClaimInput)
-            .single();
-
-        if (error && error.code !== 'PGRST116') {
-            throw error;
-        }
-        setIsHandleAvailable(!data);
-      } catch (error: any) {
-        console.error("Failed to check handle:", error);
-        setHandleCheckError('Failed to check handle on Pharos network.');
-        setIsHandleAvailable(null);
-      } finally {
-        setIsCheckingHandle(false);
-      }
-    };
-
-    checkHandle();
-  }, [debouncedClaimInput]);
-  
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setSearchResults([]);
@@ -455,59 +393,6 @@ export default function VibesphereApp() {
     }
   };
 
-  // --- REAL-TIME SOVEREIGN FEED ---
-    useEffect(() => {
-        const fetchFeed = async () => {
-            if (!supabase) {
-                setFeed(initialFeedData); // Fallback to mock data if supabase isn't configured
-                return;
-            }
-
-            try {
-                const { data, error } = await supabase
-                    .from('posts')
-                    .select('id, content, media_url, media_type, created_at, users(handle, sovereign_layout)')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-
-                if (error) throw error;
-                
-                const formattedFeed = data.map((post: any) => {
-                    const userHandle = post.users?.handle || 'anonymous';
-                    const userLayout = post.users?.sovereign_layout;
-                    const avatar = userLayout?.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${userHandle}&backgroundColor=a855f7`;
-                    
-                    return {
-                        id: post.id,
-                        userId: userHandle,
-                        username: userHandle.split('.')[0].replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-                        handle: `${userHandle}.vibes`,
-                        avatar: avatar,
-                        themeColor: userLayout?.vibe_color || getPostAuraColor({ avatar }),
-                        time: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
-                        text: post.content,
-                        type: post.media_url ? 'media' : 'tekt',
-                        media: post.media_url ? { url: post.media_url, type: post.media_type } : null,
-                        commentCount: 0, // placeholder
-                        repostCount: 0, // placeholder
-                        likeCount: 0, // placeholder
-                        comments: [], // placeholder
-                    };
-                });
-                setFeed(formattedFeed);
-            } catch (error) {
-                console.error("Error fetching feed:", error);
-                setFeed(initialFeedData); // Fallback to mock data on error
-            }
-        };
-
-        fetchFeed();
-        const intervalId = setInterval(fetchFeed, 5000); // Poll every 5 seconds
-
-        return () => clearInterval(intervalId);
-    }, [supabase]);
-
-
   // --- GLOBAL THEME CONTROLLER ---
   useEffect(() => {
     if (profile.themeColor) {
@@ -519,26 +404,6 @@ export default function VibesphereApp() {
     }
   }, [profile.themeColor]);
   
-  // Sync Privy auth with Supabase
-    useEffect(() => {
-        const syncSupabaseAuth = async () => {
-            if (authenticated && getAccessToken && supabase) {
-                try {
-                    const accessToken = await getAccessToken();
-                    if (accessToken) {
-                        const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' });
-                        if (error) {
-                            console.error('Supabase auth error:', error);
-                        }
-                    }
-                } catch (e) {
-                    console.error('Error getting access token', e)
-                }
-            }
-        };
-
-        syncSupabaseAuth();
-    }, [authenticated, getAccessToken, supabase]);
   
   // --- REAL-TIME BALANCE ---
   useEffect(() => {
@@ -659,10 +524,6 @@ export default function VibesphereApp() {
   };
 
   const handleProfileFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!supabase) {
-        toast({ variant: "destructive", title: "Database connection not available." });
-        return;
-    }
     const file = event.target.files?.[0];
     if (file && wallet?.address) {
       const reader = new FileReader();
@@ -675,22 +536,26 @@ export default function VibesphereApp() {
             // Optimistic UI update
             setProfile(prev => ({ ...prev, ...newLayout }));
             
-            // Upsert to Supabase
-            const { data, error } = await supabase
-                .from('users')
-                .upsert({
-                    pharos_address: wallet.address,
-                    handle: userHandle || privyUser?.wallet?.address.slice(0, 6),
-                    sovereign_layout: newLayout,
-                }, { onConflict: 'pharos_address' })
-                .select()
-                .single();
+            try {
+                const response = await fetch('/api/layout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pharos_address: wallet.address,
+                        metadata: newLayout,
+                    })
+                });
 
-            if (error) {
+                if (!response.ok) {
+                    throw new Error('Failed to update layout');
+                }
+                
+                toast({ title: "vibe updated..." });
+
+            } catch (error) {
                 console.error('Error updating profile avatar:', error);
                 toast({ variant: "destructive", title: "Failed to sync vibe" });
-            } else {
-                toast({ title: "vibe updated..." });
+                // Note: No rollback implemented for optimistic UI, as per original code.
             }
         });
       };
@@ -753,35 +618,32 @@ export default function VibesphereApp() {
     };
   }, [isConnected, isHomeView]); // Rerun when view changes
   
-    // Fetch layout from Neon DB (now Supabase)
+    // Fetch layout from Neon DB
     useEffect(() => {
         const fetchLayout = async () => {
-            if (wallet?.address && supabase) {
+            if (wallet?.address) {
                 try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('sovereign_layout, handle')
-                        .eq('pharos_address', wallet.address)
-                        .single();
-
-                    if (error && error.code !== 'PGRST116') throw error;
+                    const response = await fetch(`/api/layout?pharos_address=${wallet.address}`);
+                    if (!response.ok) {
+                        console.error("Could not fetch layout from Neon", response.statusText);
+                        return;
+                    }
+                    const data = await response.json();
                     
-                    if (data) {
+                    if (data && (data.avatar || data.vibe_color)) {
                         setProfile(prev => ({
                             ...prev,
-                            avatar: data.sovereign_layout?.avatar || prev.avatar,
-                            themeColor: data.sovereign_layout?.vibe_color || prev.themeColor,
-                            handle: data.handle ? `${data.handle}.vibes` : prev.handle,
-                            username: data.handle ? data.handle.split('.')[0].replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : prev.username,
+                            avatar: data.avatar || prev.avatar,
+                            themeColor: data.vibe_color || prev.themeColor,
                         }));
                     }
                 } catch (error) {
-                    console.error("Could not fetch layout from Supabase", error);
+                    console.error("Could not fetch layout from Neon", error);
                 }
             }
         };
         fetchLayout();
-    }, [wallet?.address, supabase]);
+    }, [wallet?.address]);
 
   // --- RECURSIVE FEED UPDATER ---
   const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
@@ -969,7 +831,7 @@ export default function VibesphereApp() {
   };
 
   const handlePost = async () => {
-    if (!wallet || !supabase) {
+    if (!wallet) {
       toast({ variant: "destructive", title: "Connection not available." });
       return;
     }
@@ -980,71 +842,54 @@ export default function VibesphereApp() {
     setIsPosting(true);
     toast({ title: "Broadcasting your vibe..." });
 
-    try {
-        const { error } = await supabase.from('posts').insert({
-            user_id: privyUser?.id, // Assumes RLS policy uses auth.uid()
-            content: composerText,
-            media_type: mediaType,
-            // media_url handling would require storage upload, omitted for now
-        });
-        
-        if (error) throw error;
+    // Revert to local state update, as there is no Neon endpoint for posts
+    setTimeout(() => {
+        const newPost = {
+            id: Date.now(),
+            userId: profile.handle,
+            username: profile.username,
+            handle: profile.handle,
+            avatar: profile.avatar,
+            themeColor: profile.themeColor,
+            time: 'now',
+            text: composerText,
+            type: composerTab === 'artikel' ? 'artikel' : (mediaFile ? 'media' : 'tekt'),
+            media: mediaPreview ? { url: mediaPreview, type: mediaType } : null,
+            commentCount: 0,
+            repostCount: 0,
+            likeCount: 0,
+            comments: [],
+        };
+
+        const updatedFeed = [newPost, ...feed];
+        setFeed(updatedFeed);
+
+        if (wallet?.address) {
+            safeLocalStorageSet(GLOBAL_FEED_KEY, JSON.stringify(updatedFeed.slice(0, 20)));
+        }
+
+        toast({ title: "Vibe broadcasted locally! ✨" });
       
-        toast({ title: "Vibe broadcasted! ✨" });
-      
-        // The feed will auto-refresh via polling, so no need to manually add the post
         setIsComposerOpen(false);
         resetComposer();
-
-    } catch (error: any) {
-      console.error("Failed to post vibe", error);
-      toast({
-        variant: "destructive",
-        title: "Vibe failed to broadcast",
-        description: error.message || "The network might be congested or the database denied the request.",
-      });
-    } finally {
-      setIsPosting(false);
-    }
+        setIsPosting(false);
+    }, 1000); // Simulate network delay
   };
 
   const handleClaim = async () => {
-    if (!wallet || !claimInput || !isHandleAvailable || !supabase) return;
+    if (!wallet || !claimInput || !isHandleAvailable) return;
 
     setIsClaiming(true);
     toast({
-      title: 'Registering on Supabase...',
-      description: 'Securing your sovereign identity.',
+      title: 'Claiming on-chain is not fully implemented.',
+      description: 'Database portion of handle claiming is disabled.',
     });
-
-    try {
-        const { error } = await supabase
-            .from('users')
-            .update({ handle: claimInput })
-            .eq('pharos_address', wallet.address);
-
-        if (error) throw error;
-
-        toast({
-            title: 'Sovereign Identity Claimed! ✨',
-            description: `Welcome, @${claimInput}.vibes`,
-        });
-
-      // Refetch handle to update UI
-      await fetchUserHandle();
-      setClaimInput('');
-      setIsHandleAvailable(null);
-
-    } catch (error: any) {
-      console.error("Failed to claim handle", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to claim handle",
-        description: error.message || "The database might be congested or the transaction was rejected.",
-      });
-    } finally {
-      setIsClaiming(false);
-    }
+    console.warn("handleClaim: Database interaction is disabled. Only on-chain logic (if present) will execute.");
+    
+    // Simulating completion for UI feedback
+    setTimeout(() => {
+        setIsClaiming(false);
+    }, 1500)
   };
   
   const resetComposer = () => {
@@ -3178,6 +3023,7 @@ export default function VibesphereApp() {
 }
 
     
+
 
 
 
