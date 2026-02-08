@@ -89,9 +89,11 @@ export async function savePost(pharos_address, content, tx_hash) {
     const query = 'INSERT INTO posts (pharos_address, content, tx_hash) VALUES ($1, $2, $3)';
     await dbPool.query(query, [pharos_address, content, tx_hash]);
   } catch (error) {
-    console.error('Error saving post to Neon:', {
+    console.error('[NEON SAVE POST ERROR]', {
         message: error.message,
         stack: error.stack,
+        detail: error.detail,
+        query: error.query,
     });
     throw error;
   }
@@ -112,6 +114,8 @@ export async function getFeed(pharos_address) {
         p.created_at,
         p.tx_hash,
         p.pharos_address,
+        p.media_url,
+        p.media_type,
         u.sovereign_layout,
         (SELECT COUNT(*) FROM likes WHERE post_id_onchain = p.id::text) AS like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id_onchain = p.id::text) AS comment_count,

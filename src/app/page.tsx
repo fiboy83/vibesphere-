@@ -319,6 +319,7 @@ export default function VibesphereApp() {
             });
 
             const nestedComments = nestComments(processedComments);
+            const media = post.media_url ? { url: post.media_url, type: post.media_type } : null;
 
             return {
                 id: post.id,
@@ -332,8 +333,8 @@ export default function VibesphereApp() {
                 repostCount: 0, // Not stored in DB yet
                 likeCount: parseInt(post.like_count, 10) || 0,
                 comments: nestedComments,
-                type: 'tekt', // Placeholder
-                media: null, // Placeholder
+                type: media ? 'media' : 'tekt',
+                media: media,
             };
         });
         setFeed(processedFeed);
