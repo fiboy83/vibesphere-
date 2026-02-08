@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network } from 'lucide-react';
-import { usePrivy, useWallets, useUser } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 import { useToast } from "@/hooks/use-toast";
@@ -246,6 +245,61 @@ export default function VibesphereApp() {
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
   const isHomeView = activeTab === 'home' && !focusedPost && !viewingProfile;
+
+  const fetchUserHandle = useCallback(async () => {
+    if (!wallet?.address) return;
+    try {
+      const handle = await publicClient.readContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'getHandleByAddress',
+        args: [wallet.address as `0x${string}`],
+      }) as string;
+
+      if (handle) {
+        setUserHandle(handle);
+        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
+      } else {
+        setUserHandle(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch handle", error);
+      setUserHandle(null);
+    }
+  }, [wallet?.address]);
+
+  useEffect(() => {
+    if(isConnected) {
+      fetchUserHandle();
+    }
+  }, [isConnected, fetchUserHandle]);
+
+  useEffect(() => {
+    const checkHandle = async () => {
+      if (!debouncedClaimInput) {
+        setIsHandleAvailable(null);
+        return;
+      }
+      setIsCheckingHandle(true);
+      setHandleCheckError(null);
+      try {
+        const isTaken = await publicClient.readContract({
+          address: identityContractAddress as `0x${string}`,
+          abi: identityContractAbi,
+          functionName: 'isHandleTaken',
+          args: [debouncedClaimInput],
+        });
+        setIsHandleAvailable(!isTaken);
+      } catch (error: any) {
+        setHandleCheckError('Gagal cek handle di jaringan Pharos.');
+        setIsHandleAvailable(null);
+      } finally {
+        setIsCheckingHandle(false);
+      }
+    };
+
+    checkHandle();
+  }, [debouncedClaimInput]);
   
   const handleToggleBookmark = (postId: number) => {
     const newBookmarkedPosts = bookmarkedPosts.includes(postId)
@@ -842,38 +896,71 @@ export default function VibesphereApp() {
     setIsPosting(true);
     toast({ title: "Broadcasting your vibe..." });
 
-    // Revert to local state update, as there is no Neon endpoint for posts
-    setTimeout(() => {
-        const newPost = {
-            id: Date.now(),
-            userId: profile.handle,
-            username: profile.username,
-            handle: profile.handle,
-            avatar: profile.avatar,
-            themeColor: profile.themeColor,
-            time: 'now',
-            text: composerText,
-            type: composerTab === 'artikel' ? 'artikel' : (mediaFile ? 'media' : 'tekt'),
-            media: mediaPreview ? { url: mediaPreview, type: mediaType } : null,
-            commentCount: 0,
-            repostCount: 0,
-            likeCount: 0,
-            comments: [],
-        };
+    try {
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
 
-        const updatedFeed = [newPost, ...feed];
-        setFeed(updatedFeed);
+      const [account] = await walletClient.getAddresses();
 
-        if (wallet?.address) {
-            safeLocalStorageSet(GLOBAL_FEED_KEY, JSON.stringify(updatedFeed.slice(0, 20)));
-        }
+      const hash = await walletClient.writeContract({
+        address: postContractAddress as `0x${string}`,
+        abi: postContractAbi,
+        functionName: 'createPost',
+        args: [composerText],
+        account,
+      });
 
-        toast({ title: "Vibe broadcasted locally! ✨" });
+      toast({
+        title: "Vibe broadcasted! Waiting for confirmation...",
+        description: `tx: ${hash.slice(0, 10)}...`,
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      toast({
+        title: "Vibe confirmed on-chain! ✨",
+      });
       
-        setIsComposerOpen(false);
-        resetComposer();
-        setIsPosting(false);
-    }, 1000); // Simulate network delay
+      const newPost = {
+          id: Date.now(),
+          userId: profile.handle,
+          username: profile.username,
+          handle: profile.handle,
+          avatar: profile.avatar,
+          themeColor: profile.themeColor,
+          time: 'now',
+          text: composerText,
+          type: composerTab === 'artikel' ? 'artikel' : (mediaFile ? 'media' : 'tekt'),
+          media: mediaPreview ? { url: mediaPreview, type: mediaType } : null,
+          commentCount: 0,
+          repostCount: 0,
+          likeCount: 0,
+          comments: [],
+      };
+
+      const updatedFeed = [newPost, ...feed];
+      setFeed(updatedFeed);
+
+      if (wallet?.address) {
+          safeLocalStorageSet(GLOBAL_FEED_KEY, JSON.stringify(updatedFeed.slice(0, 20)));
+      }
+      
+      setIsComposerOpen(false);
+      resetComposer();
+
+    } catch (error: any) {
+      console.error("Failed to post vibe", error);
+      toast({
+        variant: "destructive",
+        title: "Vibe failed to broadcast",
+        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
+      });
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const handleClaim = async () => {
@@ -881,15 +968,52 @@ export default function VibesphereApp() {
 
     setIsClaiming(true);
     toast({
-      title: 'Claiming on-chain is not fully implemented.',
-      description: 'Database portion of handle claiming is disabled.',
+      title: 'Registering on Pharos Network...',
+      description: 'Please confirm the transaction in your wallet.',
     });
-    console.warn("handleClaim: Database interaction is disabled. Only on-chain logic (if present) will execute.");
-    
-    // Simulating completion for UI feedback
-    setTimeout(() => {
-        setIsClaiming(false);
-    }, 1500)
+
+    try {
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({
+        chain: pharosTestnet,
+        transport: custom(provider),
+      });
+      const [account] = await walletClient.getAddresses();
+
+      const hash = await walletClient.writeContract({
+        address: identityContractAddress as `0x${string}`,
+        abi: identityContractAbi,
+        functionName: 'mintHandle',
+        args: [claimInput],
+        account,
+      });
+
+      toast({
+        title: 'Transaction sent, awaiting confirmation...',
+        description: `tx: ${hash.slice(0, 10)}...`,
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      toast({
+        title: 'Sovereign Identity Claimed! ✨',
+        description: `Welcome, @${claimInput}.vibes`,
+      });
+      
+      await fetchUserHandle();
+      setClaimInput('');
+      setIsHandleAvailable(null);
+
+    } catch (error: any) {
+      console.error("Failed to claim handle", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to claim handle",
+        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
+      });
+    } finally {
+      setIsClaiming(false);
+    }
   };
   
   const resetComposer = () => {
@@ -3029,3 +3153,6 @@ export default function VibesphereApp() {
 
 
 
+
+
+    
