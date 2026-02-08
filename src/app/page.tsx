@@ -5,13 +5,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network } from 'lucide-react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy, useWallets, useUser } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 import { useToast } from "@/hooks/use-toast";
 import { postContractAddress, postContractAbi, identityContractAddress, identityContractAbi } from '@/constants/contracts';
 import { cn } from '@/lib/utils';
 import { useDebounce } from 'use-debounce';
+import { supabase } from '@/lib/supabaseClient';
+import { formatDistanceToNow } from 'date-fns';
 
 
 // --- PHAROS CHAIN ID ---
@@ -134,7 +136,7 @@ const SidebarLink = ({ icon, label, onClick }: {icon: React.ReactNode, label: st
 // --- MAIN APP COMPONENT ---
 export default function VibesphereApp() {
   // --- CORE SESSION & PROFILE ENGINE (PRIVY) ---
-  const { ready, authenticated, login, logout } = usePrivy();
+  const { ready, authenticated, login, logout, getAccessToken, user: privyUser } = usePrivy();
   const { wallets } = useWallets();
   const wallet = wallets && wallets.length > 0 ? wallets[0] : undefined;
   const isConnected = ready && authenticated && !!wallet;
@@ -224,7 +226,7 @@ export default function VibesphereApp() {
     },
     { id: 4, userId: "user.vibes", username: "Sovereign_User", handle: "user.vibes", avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=chrono.vibes&backgroundColor=f59e0b`, time: "5h", text: "Just aped into the new 'Ethereal Void' NFT collection. The art is pure Year 3000 aesthetic.", type: "tekt", commentCount: 0, repostCount: 3, likeCount: 66, media: null, comments: [] },
   ];
-  const [feed, setFeed] = useState(initialFeedData);
+  const [feed, setFeed] = useState<any[]>(initialFeedData);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
@@ -239,7 +241,7 @@ export default function VibesphereApp() {
   const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
 
   // --- NAVIGATION STATE ---
-  const [viewStack, setViewStack] = useState([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
+  const [viewStack, setViewStack] = useState<any[]>([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
   const currentView = viewStack[viewStack.length - 1];
   const { tab: activeTab, viewingProfile, focusedPost, conversationWith } = currentView;
   const parentView = viewStack.length > 2 ? viewStack[viewStack.length - 2] : null;
@@ -258,20 +260,24 @@ export default function VibesphereApp() {
   };
   
   const fetchUserHandle = useCallback(async () => {
-    if (!wallet?.address) return;
+    if (!wallet?.address || !supabase) return;
     try {
-      const handle = await publicClient.readContract({
-        address: identityContractAddress as `0x${string}`,
-        abi: identityContractAbi,
-        functionName: 'getHandleByAddress',
-        args: [wallet.address as `0x${string}`],
-      }) as string;
-      if (handle) {
-        setUserHandle(handle);
-        setProfile(p => ({ ...p, handle: `${handle}.vibes` }));
-      } else {
-        setUserHandle(null);
-      }
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('handle')
+            .eq('pharos_address', wallet.address)
+            .single();
+
+        if (error && error.code !== 'PGRST116') { // Ignore 'not found' errors
+            throw error;
+        }
+
+        if (user && user.handle) {
+            setUserHandle(user.handle);
+            setProfile(p => ({ ...p, handle: `${user.handle}.vibes` }));
+        } else {
+            setUserHandle(null);
+        }
     } catch (error) {
       console.error("Failed to fetch handle:", error);
       setUserHandle(null); // Fallback
@@ -284,20 +290,23 @@ export default function VibesphereApp() {
 
   useEffect(() => {
     const checkHandle = async () => {
-      if (!debouncedClaimInput) {
+      if (!debouncedClaimInput || !supabase) {
         setIsHandleAvailable(null);
         return;
       }
       setIsCheckingHandle(true);
       setHandleCheckError(null);
       try {
-        const isTaken = await publicClient.readContract({
-          address: identityContractAddress as `0x${string}`,
-          abi: identityContractAbi,
-          functionName: 'isHandleTaken',
-          args: [debouncedClaimInput],
-        });
-        setIsHandleAvailable(!isTaken);
+        const { data, error } = await supabase
+            .from('users')
+            .select('handle')
+            .eq('handle', debouncedClaimInput)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            throw error;
+        }
+        setIsHandleAvailable(!data);
       } catch (error: any) {
         console.error("Failed to check handle:", error);
         setHandleCheckError('Failed to check handle on Pharos network.');
@@ -397,57 +406,14 @@ export default function VibesphereApp() {
                 title: "Local cache full",
                 description: "Clearing older posts to make space.",
             });
-            
-            try {
-                const feedKey = GLOBAL_FEED_KEY;
-                const currentFeedStr = localStorage.getItem(feedKey);
-                if (currentFeedStr) {
-                    const currentFeed = JSON.parse(currentFeedStr);
-                    if(Array.isArray(currentFeed) && currentFeed.length > 1) {
-                        // Keep the newer half
-                        const newStoredFeed = currentFeed.slice(Math.ceil(currentFeed.length / 2));
-                        localStorage.setItem(feedKey, JSON.stringify(newStoredFeed));
-                        localStorage.setItem(key, value); // Retry
-                    } else {
-                       localStorage.removeItem(feedKey);
-                       localStorage.setItem(key, value); // Retry
-                    }
-                }
-            } catch (cleanupError) {
-                // Failsafe
-            }
         }
     }
-  }
-
-  const saveFeedToStorage = (currentFeed: any[]) => {
-      if (!wallet?.address) return;
-      // Keep only the 20 most recent posts
-      const feedToSave = currentFeed.slice(0, 20); 
-      safeLocalStorageSet(GLOBAL_FEED_KEY, JSON.stringify(feedToSave));
   }
 
 
   // --- LOCALSTORAGE & PROFILE/BOOKMARK/LIKE SYNC ---
   useEffect(() => {
     if (wallet?.address) {
-      // Load Profile
-      const savedProfile = localStorage.getItem(`vibesphere_profile_${wallet.address}`);
-      if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        // Don't load handle from here, it will be fetched from chain
-        setProfile({...parsed, handle: parsed.handle || `${wallet.address.slice(0, 6)}.vibes`});
-      } else {
-        const defaultProfile = {
-          username: 'Sovereign_User',
-          handle: `${wallet.address.slice(0, 6)}.vibes`,
-          avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${wallet.address}&backgroundColor=a855f7`,
-          joinDate: 'vibing since now',
-          themeColor: '262 100% 70%',
-        };
-        setProfile(defaultProfile);
-      }
-      
       // Load Bookmarks
       const savedBookmarks = localStorage.getItem(`vibesphere_bookmarks_${wallet.address}`);
       if (savedBookmarks) {
@@ -490,36 +456,56 @@ export default function VibesphereApp() {
   };
 
   // --- REAL-TIME SOVEREIGN FEED ---
-  useEffect(() => {
-    const fetchGlobalFeed = () => {
-      const savedFeed = localStorage.getItem(GLOBAL_FEED_KEY);
-      if (savedFeed) {
-        try {
-          const parsedFeed = JSON.parse(savedFeed);
-          if (Array.isArray(parsedFeed)) {
-            setFeed(parsedFeed);
-          } else {
-            setFeed(initialFeedData);
-          }
-        } catch (e) {
-          setFeed(initialFeedData);
-        }
-      } else {
-        setFeed(initialFeedData);
-      }
-    };
-    
-    fetchGlobalFeed(); // Initial fetch
-    const intervalId = setInterval(fetchGlobalFeed, 3000); // Poll every 3 seconds
-    
-    return () => clearInterval(intervalId);
-  }, []);
+    useEffect(() => {
+        const fetchFeed = async () => {
+            if (!supabase) {
+                setFeed(initialFeedData); // Fallback to mock data if supabase isn't configured
+                return;
+            }
 
-  useEffect(() => {
-    if (wallet?.address && profile.handle !== 'user.vibes') {
-      safeLocalStorageSet(`vibesphere_profile_${wallet.address}`, JSON.stringify(profile));
-    }
-  }, [profile, wallet?.address]);
+            try {
+                const { data, error } = await supabase
+                    .from('posts')
+                    .select('id, content, media_url, media_type, created_at, users(handle, sovereign_layout)')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+                
+                const formattedFeed = data.map((post: any) => {
+                    const userHandle = post.users?.handle || 'anonymous';
+                    const userLayout = post.users?.sovereign_layout;
+                    const avatar = userLayout?.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${userHandle}&backgroundColor=a855f7`;
+                    
+                    return {
+                        id: post.id,
+                        userId: userHandle,
+                        username: userHandle.split('.')[0].replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                        handle: `${userHandle}.vibes`,
+                        avatar: avatar,
+                        themeColor: userLayout?.vibe_color || getPostAuraColor({ avatar }),
+                        time: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
+                        text: post.content,
+                        type: post.media_url ? 'media' : 'tekt',
+                        media: post.media_url ? { url: post.media_url, type: post.media_type } : null,
+                        commentCount: 0, // placeholder
+                        repostCount: 0, // placeholder
+                        likeCount: 0, // placeholder
+                        comments: [], // placeholder
+                    };
+                });
+                setFeed(formattedFeed);
+            } catch (error) {
+                console.error("Error fetching feed:", error);
+                setFeed(initialFeedData); // Fallback to mock data on error
+            }
+        };
+
+        fetchFeed();
+        const intervalId = setInterval(fetchFeed, 5000); // Poll every 5 seconds
+
+        return () => clearInterval(intervalId);
+    }, [supabase]);
 
 
   // --- GLOBAL THEME CONTROLLER ---
@@ -533,6 +519,26 @@ export default function VibesphereApp() {
     }
   }, [profile.themeColor]);
   
+  // Sync Privy auth with Supabase
+    useEffect(() => {
+        const syncSupabaseAuth = async () => {
+            if (authenticated && getAccessToken && supabase) {
+                try {
+                    const accessToken = await getAccessToken();
+                    if (accessToken) {
+                        const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' });
+                        if (error) {
+                            console.error('Supabase auth error:', error);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error getting access token', e)
+                }
+            }
+        };
+
+        syncSupabaseAuth();
+    }, [authenticated, getAccessToken, supabase]);
   
   // --- REAL-TIME BALANCE ---
   useEffect(() => {
@@ -653,6 +659,10 @@ export default function VibesphereApp() {
   };
 
   const handleProfileFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!supabase) {
+        toast({ variant: "destructive", title: "Database connection not available." });
+        return;
+    }
     const file = event.target.files?.[0];
     if (file && wallet?.address) {
       const reader = new FileReader();
@@ -660,28 +670,27 @@ export default function VibesphereApp() {
         const imageUrl = reader.result as string;
         
         getDominantColorFromImage(imageUrl, async (newColorValues) => {
-            const metadata = { vibe_color: newColorValues, avatar: imageUrl };
+            const newLayout = { avatar: imageUrl, vibe_color: newColorValues };
 
-            try {
-                const response = await fetch('/api/layout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pharos_address: wallet.address, metadata }),
-                });
+            // Optimistic UI update
+            setProfile(prev => ({ ...prev, ...newLayout }));
+            
+            // Upsert to Supabase
+            const { data, error } = await supabase
+                .from('users')
+                .upsert({
+                    pharos_address: wallet.address,
+                    handle: userHandle || privyUser?.wallet?.address.slice(0, 6),
+                    sovereign_layout: newLayout,
+                }, { onConflict: 'pharos_address' })
+                .select()
+                .single();
 
-                if (!response.ok) throw new Error('Failed to sync vibe with Neon DB');
-
-                setProfile(prev => ({ 
-                  ...prev, 
-                  avatar: imageUrl,
-                  themeColor: newColorValues,
-                }));
-
-                toast({ title: "vibe updated..." });
-
-            } catch (error) {
-                console.error("Error updating profile in DB:", error);
+            if (error) {
+                console.error('Error updating profile avatar:', error);
                 toast({ variant: "destructive", title: "Failed to sync vibe" });
+            } else {
+                toast({ title: "vibe updated..." });
             }
         });
       };
@@ -744,27 +753,35 @@ export default function VibesphereApp() {
     };
   }, [isConnected, isHomeView]); // Rerun when view changes
   
-    // Fetch layout from Neon DB
+    // Fetch layout from Neon DB (now Supabase)
     useEffect(() => {
         const fetchLayout = async () => {
-            if (wallet?.address) {
+            if (wallet?.address && supabase) {
                 try {
-                    const response = await fetch(`/api/layout?pharos_address=${wallet.address}`);
-                    if (response.ok) {
-                        const data = await response.json();
+                    const { data, error } = await supabase
+                        .from('users')
+                        .select('sovereign_layout, handle')
+                        .eq('pharos_address', wallet.address)
+                        .single();
+
+                    if (error && error.code !== 'PGRST116') throw error;
+                    
+                    if (data) {
                         setProfile(prev => ({
                             ...prev,
-                            avatar: data.avatar || prev.avatar,
-                            themeColor: data.vibe_color || prev.themeColor,
+                            avatar: data.sovereign_layout?.avatar || prev.avatar,
+                            themeColor: data.sovereign_layout?.vibe_color || prev.themeColor,
+                            handle: data.handle ? `${data.handle}.vibes` : prev.handle,
+                            username: data.handle ? data.handle.split('.')[0].replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : prev.username,
                         }));
                     }
                 } catch (error) {
-                    console.error("Could not fetch layout from Neon", error);
+                    console.error("Could not fetch layout from Supabase", error);
                 }
             }
         };
         fetchLayout();
-    }, [wallet?.address]);
+    }, [wallet?.address, supabase]);
 
   // --- RECURSIVE FEED UPDATER ---
   const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
@@ -803,6 +820,7 @@ export default function VibesphereApp() {
         username: profile.username,
         handle: profile.handle,
         avatar: profile.avatar,
+        themeColor: profile.themeColor,
         time: 'now',
         text: commentText.trim(),
         commentCount: 0,
@@ -819,7 +837,7 @@ export default function VibesphereApp() {
 
     if (itemFound) {
         setFeed(updatedFeed);
-        saveFeedToStorage(updatedFeed);
+        // Comments are not saved to DB in this version
         setCommentText("");
         
         if (focusedPost && focusedPost.id === postId) {
@@ -846,7 +864,6 @@ export default function VibesphereApp() {
   const handleToggleLike = async (postId: number) => {
     const isLiked = likedPosts.includes(postId);
     const originalLikedPosts = [...likedPosts];
-    const originalFeed = JSON.parse(JSON.stringify(feed)); // Deep copy for rollback
 
     // Optimistic UI Update
     const newLikedPosts = isLiked ? originalLikedPosts.filter(id => id !== postId) : [...originalLikedPosts, postId];
@@ -859,27 +876,13 @@ export default function VibesphereApp() {
     
     if (itemFound) {
         setFeed(updatedFeed);
-    }
-
-    try {
-        await new Promise(r => setTimeout(r, 300));
         if (wallet?.address) {
-            saveFeedToStorage(updatedFeed);
             safeLocalStorageSet(`vibesphere_likes_${wallet.address}`, JSON.stringify(newLikedPosts));
         }
-    } catch (error) {
-        setLikedPosts(originalLikedPosts);
-        setFeed(originalFeed);
-        console.error("Failed to sync like:", error);
-        toast({
-            variant: "destructive",
-            title: "vibration failed to sync. try again.",
-        });
     }
   };
 
   const handleRepost = async (postId: number) => {
-    const originalFeed = JSON.parse(JSON.stringify(feed));
     let originalPost: any = null;
 
     const findItemRecursive = (items: any[], id: number): any => {
@@ -909,6 +912,7 @@ export default function VibesphereApp() {
         username: profile.username,
         handle: profile.handle,
         avatar: profile.avatar,
+        themeColor: profile.themeColor,
         time: 'now',
         commentCount: 0,
         repostCount: 0,
@@ -927,14 +931,6 @@ export default function VibesphereApp() {
       const newFeed = [newPost, ...feedWithUpdatedCount];
       setFeed(newFeed);
       toast({ title: "vibe re-shared" });
-      try {
-          await new Promise(r => setTimeout(r, 300));
-          saveFeedToStorage(newFeed);
-      } catch (error) {
-          setFeed(originalFeed);
-          console.error("Failed to sync repost:", error);
-          toast({ variant: "destructive", title: "vibration failed to sync. try again." });
-      }
     } else {
       toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
     }
@@ -973,73 +969,39 @@ export default function VibesphereApp() {
   };
 
   const handlePost = async () => {
-    if (!wallet || (!composerText.trim() && !mediaFile)) {
+    if (!wallet || !supabase) {
+      toast({ variant: "destructive", title: "Connection not available." });
       return;
     }
+    if (!composerText.trim() && !mediaFile) {
+      return;
+    }
+
     setIsPosting(true);
-    toast({ title: "Broadcasting your vibe to the chain..." });
+    toast({ title: "Broadcasting your vibe..." });
 
     try {
-      const provider = await wallet.getEthereumProvider();
-      const walletClient = createWalletClient({
-        chain: pharosTestnet,
-        transport: custom(provider),
-      });
-      const [account] = await walletClient.getAddresses();
-      const hash = await walletClient.writeContract({
-        address: postContractAddress as `0x${string}`,
-        abi: postContractAbi,
-        functionName: 'createPost',
-        args: [composerText],
-        account,
-      });
-      toast({
-        title: "Vibe broadcasted! Waiting for confirmation...",
-        description: `tx: ${hash.slice(0, 10)}...`,
-      });
-      await publicClient.waitForTransactionReceipt({ hash });
-
-      toast({
-        title: "Vibe confirmed on-chain! ✨",
-      });
+        const { error } = await supabase.from('posts').insert({
+            user_id: privyUser?.id, // Assumes RLS policy uses auth.uid()
+            content: composerText,
+            media_type: mediaType,
+            // media_url handling would require storage upload, omitted for now
+        });
+        
+        if (error) throw error;
       
-      let newPost: any = {
-        id: Date.now(),
-        userId: profile.handle,
-        username: profile.username,
-        handle: profile.handle,
-        avatar: profile.avatar,
-        time: 'now',
-        commentCount: 0,
-        repostCount: 0,
-        likeCount: 0,
-        text: composerText,
-        media: null,
-        comments: [],
-      };
-
-      if (composerTab === 'media' && mediaPreview) {
-        newPost.type = 'media';
-        newPost.media = { url: mediaPreview, type: mediaType };
-      } else if (composerTab === 'tekt') {
-        newPost.type = 'tekt';
-      } else if (composerTab === 'artikel') {
-        newPost.type = 'artikel';
-      }
-
-      const updatedFeed = [newPost, ...feed];
-      setFeed(updatedFeed);
-      saveFeedToStorage(updatedFeed);
+        toast({ title: "Vibe broadcasted! ✨" });
       
-      setIsComposerOpen(false);
-      resetComposer();
+        // The feed will auto-refresh via polling, so no need to manually add the post
+        setIsComposerOpen(false);
+        resetComposer();
 
     } catch (error: any) {
       console.error("Failed to post vibe", error);
       toast({
         variant: "destructive",
         title: "Vibe failed to broadcast",
-        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
+        description: error.message || "The network might be congested or the database denied the request.",
       });
     } finally {
       setIsPosting(false);
@@ -1047,39 +1009,27 @@ export default function VibesphereApp() {
   };
 
   const handleClaim = async () => {
-    if (!wallet || !claimInput || !isHandleAvailable) return;
+    if (!wallet || !claimInput || !isHandleAvailable || !supabase) return;
 
     setIsClaiming(true);
     toast({
-      title: 'Registering on Pharos Network...',
-      description: 'Please confirm the transaction in your wallet.',
+      title: 'Registering on Supabase...',
+      description: 'Securing your sovereign identity.',
     });
 
     try {
-      const provider = await wallet.getEthereumProvider();
-      const walletClient = createWalletClient({
-        chain: pharosTestnet,
-        transport: custom(provider),
-      });
-      const [account] = await walletClient.getAddresses();
-      const hash = await walletClient.writeContract({
-        address: identityContractAddress as `0x${string}`,
-        abi: identityContractAbi,
-        functionName: 'mintHandle',
-        args: [claimInput],
-        account,
-      });
-      toast({
-        title: 'Transaction sent, awaiting confirmation...',
-        description: `tx: ${hash.slice(0, 10)}...`,
-      });
-      await publicClient.waitForTransactionReceipt({ hash });
+        const { error } = await supabase
+            .from('users')
+            .update({ handle: claimInput })
+            .eq('pharos_address', wallet.address);
 
-      toast({
-        title: 'Sovereign Identity Claimed! ✨',
-        description: `Welcome, @${claimInput}.vibes`,
-      });
-      
+        if (error) throw error;
+
+        toast({
+            title: 'Sovereign Identity Claimed! ✨',
+            description: `Welcome, @${claimInput}.vibes`,
+        });
+
       // Refetch handle to update UI
       await fetchUserHandle();
       setClaimInput('');
@@ -1090,7 +1040,7 @@ export default function VibesphereApp() {
       toast({
         variant: "destructive",
         title: "Failed to claim handle",
-        description: error.shortMessage || "The network might be congested or the transaction was rejected.",
+        description: error.message || "The database might be congested or the transaction was rejected.",
       });
     } finally {
       setIsClaiming(false);
@@ -1124,6 +1074,10 @@ export default function VibesphereApp() {
 
   const getPostAuraColor = (post: any) => {
     if (!post || !post.avatar) return '262 100% 70%';
+    // If the post object itself has a theme color, use it. This happens for posts from the live feed.
+    if (post.themeColor) return post.themeColor;
+    
+    // Fallback for old mock data or when theme color is missing
     if (post.handle === profile.handle) {
       return profile.themeColor;
     }
@@ -1265,7 +1219,7 @@ export default function VibesphereApp() {
       const postOrComment = focusedPost.quotedPost ? focusedPost.quotedPost : focusedPost;
       currentAuraColor = getPostAuraColor(postOrComment);
   } else if (viewingProfile) {
-      currentAuraColor = getPostAuraColor({avatar: viewingProfile.avatar, handle: viewingProfile.handle});
+      currentAuraColor = viewingProfile.themeColor || getPostAuraColor({avatar: viewingProfile.avatar, handle: viewingProfile.handle});
   } else if (activeTab !== 'home' && activeTab !== 'bookmarks') {
       currentAuraColor = profile.themeColor;
   }
@@ -1691,7 +1645,7 @@ export default function VibesphereApp() {
                       style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                   >
                       <div 
-                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar}, focusedPost: null })}}
+                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPost.themeColor}, focusedPost: null })}}
                           className="flex items-center gap-4 mb-4 cursor-pointer group"
                       >
                           <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
@@ -1810,7 +1764,7 @@ export default function VibesphereApp() {
                                 
                                 {/* Vibe Thread */}
                                 {focusedPost.comments && focusedPost.comments.length > 0 ? (
-                                  focusedPost.comments.map(comment => {
+                                  focusedPost.comments.map((comment: any) => {
                                     const commentAuraColor = getPostAuraColor(comment);
                                     const isCommentFocused = focusedCommentId === comment.id;
 
@@ -1823,7 +1777,7 @@ export default function VibesphereApp() {
                                         <div className="flex gap-3 items-start">
                                           <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${commentAuraColor})`}}/>
                                           <div className="flex-1">
-                                              <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar}, focusedPost: null })}} className='flex items-center gap-2 group'>
+                                              <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar, themeColor: comment.themeColor}, focusedPost: null })}} className='flex items-center gap-2 group'>
                                                   <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
                                                   <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
                                               </div>
@@ -1937,7 +1891,7 @@ export default function VibesphereApp() {
                         style={cardStyle}
                       >
                         {item.type === 'revibe' && (
-                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar}, focusedPost: null }); }}>
+                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor }, focusedPost: null }); }}>
                                 <Repeat size={14} />
                                 <span>re-vibed by @{item.handle}</span>
                             </div>
@@ -1948,7 +1902,7 @@ export default function VibesphereApp() {
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
                                     const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                    pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
+                                    pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor}, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
@@ -2267,7 +2221,7 @@ export default function VibesphereApp() {
                             style={cardStyle}
                         >
                             {item.type === 'revibe' && (
-                                <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar}, focusedPost: null }); }}>
+                                <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor}, focusedPost: null }); }}>
                                     <Repeat size={14} />
                                     <span>re-vibed by @{item.handle}</span>
                                 </div>
@@ -2278,7 +2232,7 @@ export default function VibesphereApp() {
                                     onClick={(e) => { 
                                         e.stopPropagation(); 
                                         const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                        pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar}, focusedPost: null });
+                                        pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor}, focusedPost: null });
                                     }}
                                     className="flex items-center gap-3 cursor-pointer group"
                                 >
@@ -2881,7 +2835,7 @@ export default function VibesphereApp() {
                         return (
                             <>
                                 <div 
-                                  onClick={() => pushView({ tab: 'user-profile', viewingProfile: { handle: partnerInfo.handle, username: partnerInfo.username, avatar: partnerInfo.avatar }, focusedPost: null })}
+                                  onClick={() => pushView({ tab: 'user-profile', viewingProfile: { handle: partnerInfo.handle, username: partnerInfo.username, avatar: partnerInfo.avatar, themeColor: partnerInfo.themeColor }, focusedPost: null })}
                                   className="flex items-center gap-3 mb-6 cursor-pointer group"
                                   style={headerAuraStyle}
                                 >
@@ -3224,6 +3178,7 @@ export default function VibesphereApp() {
 }
 
     
+
 
 
 
