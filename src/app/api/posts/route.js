@@ -23,6 +23,6 @@ export async function POST(request) {
     return NextResponse.json({ message: 'Post saved successfully' });
   } catch (error) {
     console.error('Failed to save post to Neon:', error);
-    return NextResponse.json({ error: 'Failed to save post' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save post to Neon', details: error.message }, { status: 500 });
   }
 }

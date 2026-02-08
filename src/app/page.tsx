@@ -982,7 +982,9 @@ export default function VibesphereApp() {
       });
 
       if (!dbResponse.ok) {
-        throw new Error('Failed to sync vibe to the global feed.');
+        const errorData = await dbResponse.json().catch(() => ({}));
+        console.error('Error syncing to Neon:', errorData); // Log detail to client console
+        throw new Error(`Failed to sync vibe to the global feed: ${errorData.details || dbResponse.statusText}`);
       }
       
       await fetchFeed();
