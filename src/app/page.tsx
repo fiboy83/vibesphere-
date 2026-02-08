@@ -254,7 +254,8 @@ export default function VibesphereApp() {
     try {
         const response = await fetch(`/api/posts?pharos_address=${userAddress || ''}`);
         if (!response.ok) {
-            throw new Error('Failed to fetch feed from server');
+            const errorData = await response.json().catch(() => ({ details: `Server responded with ${response.status}` }));
+            throw new Error(errorData.details || 'Failed to fetch feed from server');
         }
         const data = await response.json();
         
@@ -302,12 +303,12 @@ export default function VibesphereApp() {
             };
         });
         setFeed(processedFeed);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Could not fetch feed:", error);
         toast({
             variant: "destructive",
             title: "Could not load vibes",
-            description: "Failed to connect to the sovereign network.",
+            description: error.message || "Failed to connect to the sovereign network.",
         });
     }
   }, [toast, wallet?.address]);
