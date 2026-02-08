@@ -2624,8 +2624,8 @@ export default function VibesphereApp() {
                                           </svg>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-light lowercase">{isSent ? `sent to ${tx.to.slice(0,6)}...` : `received from ${tx.from.slice(0,6)}...`}</p>
-                                            <p className="text-[11px] font-mono text-slate-500">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                                          <p className="text-sm font-light lowercase">{isSent ? `sent to ${tx.to.slice(0,6)}...` : `received from ${tx.from.slice(0,6)}...`}</p>
+                                          <p className="text-[11px] font-mono text-slate-500">{new Date(tx.timestamp).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
