@@ -2279,6 +2279,15 @@ export default function VibesphereApp() {
                           </button>
                         </>
                       )}
+                      {profileToShow.handle !== profile.handle && (
+                           <button 
+                                onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle })}
+                                className="mt-8 flex items-center gap-2 py-2 px-6 bg-primary/80 rounded-full text-xs font-mono lowercase tracking-widest text-primary-foreground hover:bg-primary hover:shadow-glow-md transition-all"
+                            >
+                                <MessageSquare size={14} />
+                                message
+                            </button>
+                      )}
                     </div>
                   </ResonanceCard>
 
