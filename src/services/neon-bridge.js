@@ -12,7 +12,7 @@ if (!pool) {
 }
 
 /**
- * Fetches the layout metadata for a given Pharos address.
+ * Fetches the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
  * @returns {Promise<{vibe_color: string, avatar: string} | null>} The layout metadata or null if not found.
  */
@@ -21,16 +21,16 @@ export async function getLayout(pharos_address) {
 
   try {
     const res = await pool.query(
-      'SELECT layout_metadata FROM users WHERE pharos_address = $1',
+      'SELECT sovereign_layout FROM users WHERE pharos_address = $1',
       [pharos_address]
     );
 
     if (res.rows.length > 0) {
-      const metadata = res.rows[0].layout_metadata;
+      const layout = res.rows[0].sovereign_layout;
       // Ensure we return an object with expected keys, even if they are null
       return {
-        vibe_color: metadata?.vibe_color || null,
-        avatar: metadata?.avatar || null,
+        vibe_color: layout?.vibe_color || null,
+        avatar: layout?.avatar || null,
       };
     }
     return null;
@@ -41,7 +41,7 @@ export async function getLayout(pharos_address) {
 }
 
 /**
- * Updates or inserts the layout metadata for a given Pharos address.
+ * Updates or inserts the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
  * @param {{vibe_color: string, avatar: string}} metadata The layout metadata to save.
  * @returns {Promise<void>}
@@ -54,10 +54,10 @@ export async function updateLayout(pharos_address, metadata) {
     // It attempts to INSERT a new user.
     // If the user (based on pharos_address) already exists, it does an UPDATE instead.
     const query = `
-      INSERT INTO users (pharos_address, layout_metadata)
+      INSERT INTO users (pharos_address, sovereign_layout)
       VALUES ($1, $2)
       ON CONFLICT (pharos_address)
-      DO UPDATE SET layout_metadata = EXCLUDED.layout_metadata;
+      DO UPDATE SET sovereign_layout = EXCLUDED.sovereign_layout;
     `;
     await pool.query(query, [pharos_address, metadata]);
   } catch (error) {
