@@ -20,13 +20,13 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { pharos_address, content, tx_hash, media_url, media_type } = await request.json();
+    const { pharos_address, content, tx_hash, image_url, media_type } = await request.json();
 
-    if (!pharos_address || (!content && !media_url)) {
+    if (!pharos_address || (!content && !image_url)) {
       return NextResponse.json({ error: 'pharos_address and content or media are required' }, { status: 400 });
     }
 
-    await savePost(pharos_address, content, tx_hash, media_url, media_type);
+    await savePost(pharos_address, content, tx_hash, image_url, media_type);
     return NextResponse.json({ message: 'Post saved successfully' });
   } catch (error) {
     console.error('[API /api/posts ERROR]: Failed to save post to Neon.', {

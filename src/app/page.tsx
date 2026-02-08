@@ -1045,7 +1045,7 @@ export default function VibesphereApp() {
               pharos_address: wallet.address,
               content: composerText,
               tx_hash: hash,
-              media_url: mediaFile ? mediaPreview : null,
+              image_url: mediaFile ? mediaPreview : null,
               media_type: mediaFile ? mediaType : null,
           }),
       });

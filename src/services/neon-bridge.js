@@ -80,16 +80,16 @@ export async function updateLayout(pharos_address, metadata) {
  * @param {string} pharos_address The author's Pharos wallet address.
  * @param {string} content The content of the post.
  * @param {string} tx_hash The on-chain transaction hash.
- * @param {string | null} media_url URL of the attached media.
+ * @param {string | null} image_url URL of the attached media.
  * @param {string | null} media_type Type of the attached media ('image' or 'video').
  * @returns {Promise<void>}
  */
-export async function savePost(pharos_address, content, tx_hash, media_url, media_type) {
-  if (!pharos_address || (!content && !media_url)) return;
+export async function savePost(pharos_address, content, tx_hash, image_url, media_type) {
+  if (!pharos_address || (!content && !image_url)) return;
   try {
     const dbPool = getDbPool();
     const query = 'INSERT INTO posts (pharos_address, content, tx_hash, image_url, media_type) VALUES ($1::text, $2::text, $3::text, $4::text, $5::text)';
-    await dbPool.query(query, [pharos_address, content, tx_hash, media_url, media_type]);
+    await dbPool.query(query, [pharos_address, content, tx_hash, image_url, media_type]);
   } catch (error) {
     console.error('[NEON SAVE POST ERROR]', {
         message: error.message,
