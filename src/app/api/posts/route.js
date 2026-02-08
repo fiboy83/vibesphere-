@@ -2,12 +2,15 @@ import { NextResponse } from 'next/server';
 import { getFeed, savePost } from '@/services/neon-bridge';
 
 export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const pharos_address = searchParams.get('pharos_address');
   try {
-    const feed = await getFeed();
+    // Pass address to get user-specific interaction data
+    const feed = await getFeed(pharos_address);
     return NextResponse.json(feed);
   } catch (error) {
     console.error('Failed to fetch feed from Neon:', error);
-    return NextResponse.json({ error: 'Failed to fetch feed' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch feed', details: error.message }, { status: 500 });
   }
 }
 

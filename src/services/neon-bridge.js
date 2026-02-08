@@ -5,13 +5,14 @@ let pool;
 const getDbPool = () => {
     if (!pool) {
         if (!process.env.DATABASE_URL) {
+            console.error('DATABASE_URL is not set in neon-bridge.');
             throw new Error('DATABASE_URL is not set. Cannot connect to Neon.');
         }
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: {
-                rejectUnauthorized: false
-            }
+                rejectUnauthorized: true,
+            },
         });
     }
     return pool;
@@ -88,16 +89,20 @@ export async function savePost(pharos_address, content, tx_hash) {
     const query = 'INSERT INTO posts (pharos_address, content, tx_hash) VALUES ($1, $2, $3)';
     await dbPool.query(query, [pharos_address, content, tx_hash]);
   } catch (error) {
-    console.error('Error saving post to Neon:', error);
+    console.error('Error saving post to Neon:', {
+        message: error.message,
+        stack: error.stack,
+    });
     throw error;
   }
 }
 
 /**
- * Fetches the global feed from the database.
- * @returns {Promise<any[]>} A list of posts with user data.
+ * Fetches the global feed from the database with user-specific interaction data.
+ * @param {string | null} pharos_address The requesting user's Pharos wallet address.
+ * @returns {Promise<any[]>} A list of posts with user data and interaction counts.
  */
-export async function getFeed() {
+export async function getFeed(pharos_address) {
   try {
     const dbPool = getDbPool();
     const query = `
@@ -105,17 +110,67 @@ export async function getFeed() {
         p.id,
         p.content,
         p.created_at,
+        p.tx_hash,
         p.pharos_address,
-        u.sovereign_layout
+        u.sovereign_layout,
+        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count,
+        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count,
+        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND pharos_address = $1) ELSE FALSE END AS user_has_liked,
+        CASE WHEN $1 IS NOT NULL THEN EXISTS(SELECT 1 FROM bookmarks WHERE post_id = p.id AND pharos_address = $1) ELSE FALSE END AS user_has_bookmarked,
+        (
+            SELECT COALESCE(json_agg(c_sub.* ORDER BY c_sub.created_at DESC), '[]'::json)
+            FROM (
+                SELECT
+                    c.id,
+                    c.content,
+                    c.created_at,
+                    c.pharos_address,
+                    cu.sovereign_layout as user_layout
+                FROM comments c
+                LEFT JOIN users cu ON c.pharos_address = cu.pharos_address
+                WHERE c.post_id = p.id
+            ) as c_sub
+        ) as comments
       FROM posts p
       LEFT JOIN users u ON p.pharos_address = u.pharos_address
       ORDER BY p.created_at DESC
       LIMIT 50;
     `;
-    const res = await dbPool.query(query);
+    const res = await dbPool.query(query, [pharos_address || null]);
     return res.rows;
   } catch (error) {
     console.error('Error fetching feed from Neon:', error);
-    return [];
+    throw error;
   }
+}
+
+// --- Interaction Functions ---
+
+export async function addLike(postId, pharos_address) {
+  const dbPool = getDbPool();
+  await dbPool.query('INSERT INTO likes (post_id, pharos_address) VALUES ($1, $2) ON CONFLICT DO NOTHING', [postId, pharos_address]);
+}
+
+export async function removeLike(postId, pharos_address) {
+  const dbPool = getDbPool();
+  await dbPool.query('DELETE FROM likes WHERE post_id = $1 AND pharos_address = $2', [postId, pharos_address]);
+}
+
+export async function addBookmark(postId, pharos_address) {
+  const dbPool = getDbPool();
+  await dbPool.query('INSERT INTO bookmarks (post_id, pharos_address) VALUES ($1, $2) ON CONFLICT DO NOTHING', [postId, pharos_address]);
+}
+
+export async function removeBookmark(postId, pharos_address) {
+  const dbPool = getDbPool();
+  await dbPool.query('DELETE FROM bookmarks WHERE post_id = $1 AND pharos_address = $2', [postId, pharos_address]);
+}
+
+export async function addComment(postId, pharos_address, content) {
+    const dbPool = getDbPool();
+    const res = await dbPool.query(
+        'INSERT INTO comments (post_id, pharos_address, content) VALUES ($1, $2, $3) RETURNING *',
+        [postId, pharos_address, content]
+    );
+    return res.rows[0];
 }

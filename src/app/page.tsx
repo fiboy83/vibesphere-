@@ -250,17 +250,41 @@ export default function VibesphereApp() {
   }, [wallet?.address]);
 
   const fetchFeed = useCallback(async () => {
+    const userAddress = wallet?.address; // Get address for the API call
     try {
-        const response = await fetch('/api/posts');
+        const response = await fetch(`/api/posts?pharos_address=${userAddress || ''}`);
         if (!response.ok) {
             throw new Error('Failed to fetch feed from server');
         }
         const data = await response.json();
         
+        const userLikedPosts = data.filter((p: any) => p.user_has_liked).map((p: any) => p.id);
+        const userBookmarkedPosts = data.filter((p: any) => p.user_has_bookmarked).map((p: any) => p.id);
+        setLikedPosts(userLikedPosts);
+        setBookmarkedPosts(userBookmarkedPosts);
+
         const processedFeed = data.map((post: any) => {
             const layout = post.sovereign_layout || {};
             const handle = layout.handle || `${post.pharos_address.slice(0, 6)}.vibes`;
             
+            const processedComments = (post.comments || []).map((comment: any) => {
+                const commentLayout = comment.user_layout || {};
+                const commentHandle = commentLayout.handle || `${comment.pharos_address.slice(0,6)}.vibes`;
+                return {
+                    id: comment.id,
+                    text: comment.content,
+                    time: formatDistanceToNow(new Date(comment.created_at)),
+                    handle: commentHandle,
+                    username: commentLayout.username || 'Sovereign_User',
+                    avatar: commentLayout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.pharos_address}&backgroundColor=a855f7`,
+                    themeColor: commentLayout.vibe_color || '262 100% 70%',
+                    likeCount: 0, 
+                    commentCount: 0,
+                    repostCount: 0,
+                    comments: [],
+                };
+            });
+
             return {
                 id: post.id,
                 text: post.content,
@@ -269,12 +293,12 @@ export default function VibesphereApp() {
                 username: layout.username || 'Sovereign_User',
                 avatar: layout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${post.pharos_address}&backgroundColor=a855f7`,
                 themeColor: layout.vibe_color || '262 100% 70%',
-                commentCount: 0, 
-                repostCount: 0,
-                likeCount: 0,
-                comments: [],
-                type: 'tekt',
-                media: null,
+                commentCount: parseInt(post.comment_count, 10) || 0, 
+                repostCount: 0, // Not stored in DB yet
+                likeCount: parseInt(post.like_count, 10) || 0,
+                comments: processedComments,
+                type: 'tekt', // Placeholder
+                media: null, // Placeholder
             };
         });
         setFeed(processedFeed);
@@ -286,7 +310,7 @@ export default function VibesphereApp() {
             description: "Failed to connect to the sovereign network.",
         });
     }
-  }, [toast]);
+  }, [toast, wallet?.address]);
 
   useEffect(() => {
     if (isConnected) {
@@ -323,13 +347,31 @@ export default function VibesphereApp() {
     checkHandle();
   }, [debouncedClaimInput]);
   
-  const handleToggleBookmark = (postId: number) => {
-    const newBookmarkedPosts = bookmarkedPosts.includes(postId)
+  const handleToggleBookmark = async (postId: number) => {
+    if (!wallet?.address) return;
+    const isBookmarked = bookmarkedPosts.includes(postId);
+
+    // Optimistic UI Update
+    const newBookmarkedPosts = isBookmarked
       ? bookmarkedPosts.filter(id => id !== postId)
       : [...bookmarkedPosts, postId];
     setBookmarkedPosts(newBookmarkedPosts);
-    if (wallet?.address) {
-      safeLocalStorageSet(`vibesphere_bookmarks_${wallet.address}`, JSON.stringify(newBookmarkedPosts));
+
+    try {
+        const response = await fetch('/api/interactions/bookmark', {
+            method: isBookmarked ? 'DELETE' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId, pharos_address: wallet.address }),
+        });
+        if (!response.ok) throw new Error('Failed to sync bookmark');
+    } catch (error) {
+        console.error(error);
+        setBookmarkedPosts(bookmarkedPosts); // Rollback
+        toast({
+            variant: "destructive",
+            title: "Vibe sync failed",
+            description: "Could not update bookmark status.",
+        });
     }
   };
   
@@ -408,39 +450,11 @@ export default function VibesphereApp() {
     }
   };
 
-  
-  // --- STORAGE HELPERS ---
-  const safeLocalStorageSet = (key: string, value: string) => {
-    try {
-        localStorage.setItem(key, value);
-    } catch (e: any) {
-        if (e.name === 'QuotaExceededError') {
-            toast({
-                variant: "destructive",
-                title: "Local cache full",
-                description: "Clearing older posts to make space.",
-            });
-        }
-    }
-  }
-
 
   // --- LOCALSTORAGE & PROFILE/BOOKMARK/LIKE SYNC ---
   useEffect(() => {
     if (wallet?.address) {
-      // Load Bookmarks
-      const savedBookmarks = localStorage.getItem(`vibesphere_bookmarks_${wallet.address}`);
-      if (savedBookmarks) {
-        setBookmarkedPosts(JSON.parse(savedBookmarks));
-      }
-
-      // Load Likes
-      const savedLikes = localStorage.getItem(`vibesphere_likes_${wallet.address}`);
-      if (savedLikes) {
-        setLikedPosts(JSON.parse(savedLikes));
-      }
-
-      // Load Transactions
+      // Load Transactions from local storage
       const savedTransactions = localStorage.getItem(`vibesphere_transactions_${wallet.address}`);
       if (savedTransactions) {
         setTransactions(JSON.parse(savedTransactions));
@@ -580,7 +594,7 @@ export default function VibesphereApp() {
       };
       const updatedTransactions = [newTx, ...transactions];
       setTransactions(updatedTransactions);
-      safeLocalStorageSet(`vibesphere_transactions_${walletAddress}`, JSON.stringify(updatedTransactions));
+      localStorage.setItem(`vibesphere_transactions_${walletAddress}`, JSON.stringify(updatedTransactions));
 
       toast({ title: "transaction sent", description: `view on explorer: ${txHash.slice(0,10)}...`});
   
@@ -773,74 +787,82 @@ export default function VibesphereApp() {
   };
 
   // --- SOCIAL ACTIONS ---
-  const handleSendComment = (postId: number) => {
-    if (commentText.trim() === "") return;
+  const handleSendComment = async (postId: number) => {
+    if (commentText.trim() === "" || !wallet?.address) return;
 
-    const newComment = {
-        id: Date.now(),
-        userId: profile.handle,
-        username: profile.username,
-        handle: profile.handle,
-        avatar: profile.avatar,
-        themeColor: profile.themeColor,
-        time: 'now',
-        text: commentText.trim(),
-        commentCount: 0,
-        repostCount: 0,
-        likeCount: 0,
-        comments: [],
-    };
+    try {
+        const response = await fetch('/api/interactions/comment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                postId, 
+                pharos_address: wallet.address, 
+                content: commentText.trim() 
+            }),
+        });
 
-    const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => ({
-        ...item,
-        comments: [newComment, ...(item.comments || [])],
-        commentCount: (item.commentCount || 0) + 1,
-    }));
-
-    if (itemFound) {
-        setFeed(updatedFeed);
-        // Comments are not saved to DB in this version
-        setCommentText("");
-        
-        if (focusedPost && focusedPost.id === postId) {
-            const newFocusedPost = {
-                ...focusedPost,
-                comments: [newComment, ...(focusedPost.comments || [])],
-                commentCount: (focusedPost.commentCount || 0) + 1,
-            };
-            setViewStack(prev => {
-                const newStack = [...prev];
-                newStack[newStack.length - 1] = { ...newStack[newStack.length - 1], focusedPost: newFocusedPost };
-                return newStack;
-            });
+        if (!response.ok) {
+            throw new Error('Failed to save comment');
         }
-    } else {
+        
+        setCommentText("");
+        toast({ title: "Reply sent" });
+        await fetchFeed(); // Refresh the feed to show the new comment
+    } catch (error) {
+        console.error('Error sending comment:', error);
         toast({
             variant: "destructive",
-            title: "vibration failed to sync. try again.",
+            title: "vibration failed to sync.",
+            description: "Could not save your reply.",
         });
     }
   };
 
 
   const handleToggleLike = async (postId: number) => {
+    if (!wallet?.address) return;
+
     const isLiked = likedPosts.includes(postId);
     const originalLikedPosts = [...likedPosts];
 
     // Optimistic UI Update
-    const newLikedPosts = isLiked ? originalLikedPosts.filter(id => id !== postId) : [...originalLikedPosts, postId];
+    const newLikedPosts = isLiked
+      ? likedPosts.filter(id => id !== postId)
+      : [...likedPosts, postId];
     setLikedPosts(newLikedPosts);
 
     const [updatedFeed, itemFound] = updateItemInFeed(feed, postId, (item) => ({
-        ...item,
-        likeCount: isLiked ? item.likeCount - 1 : item.likeCount + 1,
+      ...item,
+      likeCount: isLiked ? item.likeCount - 1 : item.likeCount + 1,
     }));
     
     if (itemFound) {
-        setFeed(updatedFeed);
-        if (wallet?.address) {
-            safeLocalStorageSet(`vibesphere_likes_${wallet.address}`, JSON.stringify(newLikedPosts));
+      setFeed(updatedFeed);
+    }
+    
+    try {
+        const response = await fetch('/api/interactions/like', {
+            method: isLiked ? 'DELETE' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId: postId, pharos_address: wallet.address }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to sync like with Neon DB');
         }
+    } catch (error) {
+        console.error(error);
+        // Rollback
+        setLikedPosts(originalLikedPosts);
+        const [rolledBackFeed] = updateItemInFeed(feed, postId, (item) => ({
+            ...item,
+            likeCount: isLiked ? item.likeCount + 1 : item.likeCount - 1,
+        }));
+        setFeed(rolledBackFeed);
+        toast({
+            variant: "destructive",
+            title: "Vibe sync failed",
+            description: "Could not update like status.",
+        });
     }
   };
 
@@ -1182,20 +1204,22 @@ export default function VibesphereApp() {
   }
 
   const bookmarkedFeed: any[] = [];
-  const findBookmarkedRecursive = (items: any[]) => {
-      for (const item of items) {
-          if (bookmarkedPosts.includes(item.id)) {
-              bookmarkedFeed.push(item);
-          }
-          if (item.comments && item.comments.length > 0) {
-              findBookmarkedRecursive(item.comments);
-          }
-          if (item.quotedPost) {
-            findBookmarkedRecursive([item.quotedPost]);
-          }
-      }
-  };
-  findBookmarkedRecursive(feed);
+  if (activeTab === 'bookmarks') {
+      const findBookmarkedRecursive = (items: any[]) => {
+        for (const item of items) {
+            if (bookmarkedPosts.includes(item.id)) {
+                bookmarkedFeed.push(item);
+            }
+            if (item.comments && item.comments.length > 0) {
+                findBookmarkedRecursive(item.comments);
+            }
+            if (item.quotedPost) {
+                findBookmarkedRecursive([item.quotedPost]);
+            }
+        }
+      };
+      findBookmarkedRecursive(feed);
+  }
 
 
   const displayedFeed = searchQuery.trim()
