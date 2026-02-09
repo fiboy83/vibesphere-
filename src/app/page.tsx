@@ -470,7 +470,7 @@ export default function VibesphereApp() {
     
     // When switching to ANY OTHER main tab, ADD to the stack
     if (isNewTab && ['bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market', 'inbox'].includes(newView.tab!)) {
-        setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: null, focusedPost: null, conversationWith: null }]);
+        setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: null, focusedPost: null, conversationWith: newView.conversationWith || null }]);
     } else {
         // This handles drilling down (e.g. focusing a post, or a user profile which is not a main tab)
         const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null } : currentView;
@@ -1046,7 +1046,6 @@ export default function VibesphereApp() {
               content: composerText,
               tx_hash: hash,
               image_url: mediaFile ? mediaPreview : null,
-              media_type: mediaFile ? mediaType : null,
           }),
       });
 
@@ -3274,7 +3273,7 @@ export default function VibesphereApp() {
               </button>
 
               {/* inbok - familiar mail icon */}
-              <button onClick={() => pushView({ tab: 'inbox', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+              <button onClick={() => pushView({ tab: 'inbox', viewingProfile: null, focusedPost: null, conversationWith: null })} className={`p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 7L12 13L21 7M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <defs>
