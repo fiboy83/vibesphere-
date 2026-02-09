@@ -27,12 +27,19 @@ export const decryptMessage = (ciphertext: string, selfAddress: string, partnerA
         const sharedSecret = getSharedSecret(selfAddress, partnerAddress);
         const bytes = CryptoJS.AES.decrypt(ciphertext, sharedSecret);
         const originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+        // If originalText is empty, decryption likely failed (e.g., wrong key).
+        // This can also happen if the message was not encrypted.
+        // Return the raw ciphertext to handle this gracefully.
         if (!originalText) {
-            return 'Failed to decrypt vibe...';
+            return ciphertext;
         }
+
         return originalText;
     } catch (error) {
-        console.error("Decryption failed:", error);
-        return 'Failed to decrypt vibe...';
+        // This catches errors like "Malformed UTF-8 data" which occur if the key is wrong.
+        // It indicates failed decryption, so we return the raw ciphertext.
+        console.warn("Decryption failed, message may be unencrypted. Returning raw content.");
+        return ciphertext;
     }
 };
