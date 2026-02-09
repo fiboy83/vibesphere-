@@ -14,6 +14,7 @@ import { useDebounce } from 'use-debounce';
 import { formatDistanceToNow } from 'date-fns';
 import { encryptMessage, decryptMessage } from '@/lib/crypto';
 import { Skeleton } from '@/components/ui/skeleton';
+import { VibeAction } from '@/components/app/VibeAction';
 
 export const dynamic = 'force-dynamic';
 
@@ -232,6 +233,7 @@ export default function VibesphereApp() {
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
+  const [vibedProfiles, setVibedProfiles] = useState<string[]>([]);
 
 
   // --- SOCIAL ACTION STATE ---
@@ -252,6 +254,16 @@ export default function VibesphereApp() {
   const isCommentView = focusedPost && parentView?.focusedPost;
   const parentPostForCommentView = isCommentView ? parentView.focusedPost : null;
   const isHomeView = activeTab === 'home' && !focusedPost && !viewingProfile;
+
+  const handleVibe = (handle: string) => {
+    setVibedProfiles(prev => [...prev, handle]);
+    toast({ title: `now vibing with @${handle}` });
+  };
+
+  const handleUnvibe = (handle: string) => {
+      setVibedProfiles(prev => prev.filter(h => h !== handle));
+      toast({ title: `stopped vibing with @${handle}` });
+  };
 
   const fetchUserHandle = useCallback(async () => {
     if (!wallet?.address) return;
@@ -2360,7 +2372,7 @@ export default function VibesphereApp() {
                       <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})` }}>{profileToShow.username}</h2>
                       <p className="text-sm font-mono text-slate-400">@{profileToShow.handle}</p>
                       
-                      {profileToShow.handle === profile.handle && (
+                      {profileToShow.handle === profile.handle ? (
                         <>
                           {!userHandle && (
                             <div className="w-full max-w-sm mt-8 p-6 bg-white/[0.02] border border-primary/20 rounded-3xl">
@@ -2410,15 +2422,21 @@ export default function VibesphereApp() {
                               edit profile
                           </button>
                         </>
-                      )}
-                      {profileToShow.handle !== profile.handle && (
-                           <div className="mt-8 w-48">
-                               <ResonanceCard onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}>
-                                   <div className="flex items-center justify-center gap-3 py-1">
-                                       <MessageSquare size={16} className="text-primary" />
-                                       <span className="text-sm font-mono lowercase tracking-widest text-primary">message</span>
-                                   </div>
-                               </ResonanceCard>
+                      ) : (
+                           <div className="mt-8 flex items-center justify-center gap-4">
+                               <div className="w-40">
+                                   <ResonanceCard onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}>
+                                       <div className="flex items-center justify-center gap-3 py-1">
+                                           <MessageSquare size={16} className="text-primary" />
+                                           <span className="text-sm font-mono lowercase tracking-widest text-primary">message</span>
+                                       </div>
+                                   </ResonanceCard>
+                               </div>
+                               <VibeAction
+                                  isVibing={vibedProfiles.includes(profileToShow.handle)}
+                                  onVibe={() => handleVibe(profileToShow.handle)}
+                                  onUnvibe={() => handleUnvibe(profileToShow.handle)}
+                               />
                            </div>
                       )}
                     </div>
