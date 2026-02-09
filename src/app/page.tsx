@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, X, Share2, MessageSquare, Repeat, Heart, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network } from 'lucide-react';
+import { Menu, Search, X, Share2, MessageSquare, Repeat, Sparkles, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -217,7 +218,7 @@ export default function VibesphereApp() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profileTab, setProfileTab] = useState<'vibe' | 'revibe' | 'like'>('vibe');
+  const [profileTab, setProfileTab] = useState<'vibe' | 'revibe' | 'vibes'>('vibe');
 
   // --- INBOX & CHAT STATE ---
   const [conversations, setConversations] = useState<any[]>([]);
@@ -1335,7 +1336,7 @@ export default function VibesphereApp() {
           case 'revibe':
               feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type === 'revibe');
               break;
-          case 'like':
+          case 'vibes':
               if (profileToShow.handle === profile.handle) {
                   // This should find all items, even nested ones. A simple filter is not enough.
                   const likedFeed: any[] = [];
@@ -1447,7 +1448,7 @@ export default function VibesphereApp() {
                                             className="flex items-center gap-1.5 text-xs hover:brightness-125"
                                             style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {color: 'hsl(var(--primary))'}}
                                         >
-                                            <Heart size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
+                                            <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
                                             <span>{comment.likeCount}</span>
                                         </motion.button>
                                         <motion.button
@@ -1977,7 +1978,7 @@ export default function VibesphereApp() {
                                     filter: `drop-shadow(0 0 6px hsl(${currentAuraColor.replace(/ /g, ', ')}))`
                                 } : {}}
                               >
-                                <Heart 
+                                <Sparkles 
                                     size={20} 
                                     strokeWidth={1.5}
                                     fill={isFocusedPostLiked ? 'currentColor' : 'none'} 
@@ -2252,7 +2253,7 @@ export default function VibesphereApp() {
                                     filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
                                 } : {}}
                             >
-                                <Heart 
+                                <Sparkles 
                                     size={18} 
                                     strokeWidth={1.5}
                                     fill={isLiked ? 'currentColor' : 'none'}
@@ -2302,7 +2303,7 @@ export default function VibesphereApp() {
                                                             className="flex items-center gap-1.5 text-xs text-slate-400 hover:brightness-125"
                                                             style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
                                                         >
-                                                            <Heart size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
+                                                            <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
                                                             <span>{comment.likeCount}</span>
                                                         </motion.button>
                                                         <motion.button
@@ -2440,11 +2441,11 @@ export default function VibesphereApp() {
                             revibe
                         </button>
                         <button
-                            onClick={() => setProfileTab('like')}
-                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'like' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
-                            style={profileTab === 'like' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
+                            onClick={() => setProfileTab('vibes')}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'vibes' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            style={profileTab === 'vibes' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
                         >
-                            like
+                            vibes
                         </button>
                     </div>
                   </div>
@@ -2592,7 +2593,7 @@ export default function VibesphereApp() {
                                         filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
                                     } : {}}
                                 >
-                                    <Heart 
+                                    <Sparkles 
                                         size={18} 
                                         strokeWidth={1.5}
                                         fill={isLiked ? 'currentColor' : 'none'}
@@ -2642,7 +2643,7 @@ export default function VibesphereApp() {
                                                             className="flex items-center gap-1.5 text-xs text-slate-400 hover:brightness-125"
                                                             style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
                                                         >
-                                                            <Heart size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
+                                                            <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
                                                             <span>{comment.likeCount}</span>
                                                         </motion.button>
                                                         <motion.button
@@ -2674,13 +2675,13 @@ export default function VibesphereApp() {
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifications</h2>
                     
                     <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <Heart size={16} className="text-red-400" />
+                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Sparkles size={16} className="text-primary" />
                         </div>
                         <div>
                             <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=ql.vibes&backgroundColor=06b6d4`} alt="Quantum_Leaper avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
                             <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold" style={{color: 'white'}}>Quantum_Leaper</span> and 2 others liked your vibe.
+                                <span className="font-bold" style={{color: 'white'}}>Quantum_Leaper</span> and 2 others vibed with your post.
                             </p>
                             <p className="text-xs text-slate-500 font-mono mt-1">2 hours ago</p>
                         </div>
@@ -2939,13 +2940,13 @@ export default function VibesphereApp() {
                           animate={{ opacity: 1 }} 
                           exit={{ opacity: 0 }}
                           onClick={() => setShowReceiveModal(false)}
-                          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+                          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl"
                         >
                           <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 flex flex-col items-center shadow-2xl"
+                            className="w-full max-w-sm bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col items-center shadow-2xl"
                           >
                             <h3 className="text-sm font-bold lowercase tracking-widest mb-8 text-primary">receive PHRS</h3>
                             
@@ -2985,13 +2986,13 @@ export default function VibesphereApp() {
                           animate={{ opacity: 1 }} 
                           exit={{ opacity: 0 }}
                           onClick={() => setShowSendModal(false)}
-                          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+                          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl"
                         >
                           <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
+                            className="w-full max-w-sm bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8"
                           >
                             <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-primary">send PHRS</h3>
                             <input 
@@ -3202,14 +3203,14 @@ export default function VibesphereApp() {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
               onClick={() => setIsComposerOpen(false)}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl"
             >
               <motion.div 
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 flex flex-col shadow-2xl"
+                className="w-full max-w-2xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
@@ -3288,14 +3289,14 @@ export default function VibesphereApp() {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
               onClick={() => setIsProfileModalOpen(false)}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl"
             >
               <motion.div 
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8"
+                className="w-full max-w-sm bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8"
               >
                 <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">edit profile</h3>
                 <div className='flex flex-col gap-4'>
@@ -3352,7 +3353,7 @@ export default function VibesphereApp() {
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full bg-black rounded-t-3xl border-t-2"
+                        className="w-full bg-black/80 backdrop-blur-xl rounded-t-3xl border-t-2"
                         style={{ borderColor: `hsl(var(--primary))`}}
                     >
                         <div className="p-8 flex flex-col gap-6">
@@ -3442,3 +3443,5 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
