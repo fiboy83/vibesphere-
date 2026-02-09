@@ -22,11 +22,7 @@ const AUTH_KEY = 'vibe_auth';
 // --- VIEM PUBLIC CLIENT ---
 const publicClient = createPublicClient({
   chain: pharosTestnet,
-  transport: fallback([
-    http('https://rpc.evm.pharos.testnet.cosmostation.io'),
-    http('https://atlantic.dplabs-internal.com'),
-    http('https://sp-pharos-atlantic-rpc.dplabs-internal.com'),
-  ]),
+  transport: http(process.env.NEXT_PUBLIC_RPC_URL || 'https://atlantic.dplabs-internal.com'),
 });
 
 
@@ -2392,7 +2388,7 @@ export default function VibesphereApp() {
                       )}
                       {profileToShow.handle !== profile.handle && (
                            <div className="mt-8 w-48">
-                               <ResonanceCard onClick={() => pushView({ tab: 'inbox', viewingProfile: profileToShow, conversationWith: profileToShow.handle })}>
+                               <ResonanceCard onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}>
                                    <div className="flex items-center justify-center gap-3 py-1">
                                        <MessageSquare size={16} className="text-primary" />
                                        <span className="text-sm font-mono lowercase tracking-widest text-primary">message</span>
