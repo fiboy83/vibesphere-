@@ -3,12 +3,12 @@ import { Pool } from 'pg';
 let pool;
 
 const getDbPool = () => {
+    if (!process.env.DATABASE_URL) {
+        console.warn('DATABASE_URL is not set, returning null pool. This is expected during the build process.');
+        return null;
+    }
     if (!pool) {
         console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-        if (!process.env.DATABASE_URL) {
-            console.error('DATABASE_URL is not set in neon-bridge.');
-            throw new Error('DATABASE_URL is not set. Cannot connect to Neon.');
-        }
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: {
@@ -25,10 +25,10 @@ const getDbPool = () => {
  * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string} | null>} The layout metadata or null if not found.
  */
 export async function getLayout(pharos_address) {
-  if (!pharos_address) return null;
+  const dbPool = getDbPool();
+  if (!pharos_address || !dbPool) return null;
 
   try {
-    const dbPool = getDbPool();
     const res = await dbPool.query(
       'SELECT sovereign_layout FROM users WHERE pharos_address = $1::text',
       [pharos_address]
@@ -58,10 +58,10 @@ export async function getLayout(pharos_address) {
  * @returns {Promise<void>}
  */
 export async function updateLayout(pharos_address, metadata) {
-  if (!pharos_address || !metadata) return;
+  const dbPool = getDbPool();
+  if (!pharos_address || !metadata || !dbPool) return;
 
   try {
-    const dbPool = getDbPool();
     const query = `
       INSERT INTO users (pharos_address, sovereign_layout)
       VALUES ($1::text, $2)
@@ -85,9 +85,9 @@ export async function updateLayout(pharos_address, metadata) {
  * @returns {Promise<void>}
  */
 export async function savePost(pharos_address, content, tx_hash, image_url) {
-  if (!pharos_address || (!content && !image_url)) return;
+  const dbPool = getDbPool();
+  if (!pharos_address || (!content && !image_url) || !dbPool) return;
   try {
-    const dbPool = getDbPool();
     const query = 'INSERT INTO posts (pharos_address, content, tx_hash, image_url) VALUES ($1::text, $2::text, $3::text, $4::text)';
     await dbPool.query(query, [pharos_address, content, tx_hash, image_url]);
   } catch (error) {
@@ -106,8 +106,10 @@ export async function savePost(pharos_address, content, tx_hash, image_url) {
  * @returns {Promise<any[]>} A list of posts with user data and interaction counts.
  */
 export async function getFeed(pharos_address) {
+  const dbPool = getDbPool();
+  if (!dbPool) return [];
+
   try {
-    const dbPool = getDbPool();
     const query = `
       SELECT
         p.id,
@@ -158,26 +160,31 @@ export async function getFeed(pharos_address) {
 
 export async function addLike(postId, pharos_address) {
   const dbPool = getDbPool();
+  if (!dbPool) return;
   await dbPool.query('INSERT INTO likes (post_id_onchain, pharos_address) VALUES ($1::text, $2::text) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
 }
 
 export async function removeLike(postId, pharos_address) {
   const dbPool = getDbPool();
+  if (!dbPool) return;
   await dbPool.query('DELETE FROM likes WHERE post_id_onchain = $1::text AND pharos_address = $2::text', [postId, pharos_address]);
 }
 
 export async function addBookmark(postId, pharos_address) {
   const dbPool = getDbPool();
+  if (!dbPool) return;
   await dbPool.query('INSERT INTO bookmarks (post_id_onchain, pharos_address) VALUES ($1::text, $2::text) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
 }
 
 export async function removeBookmark(postId, pharos_address) {
   const dbPool = getDbPool();
+  if (!dbPool) return;
   await dbPool.query('DELETE FROM bookmarks WHERE post_id_onchain = $1::text AND pharos_address = $2::text', [postId, pharos_address]);
 }
 
 export async function addComment(postId, pharos_address, content, parentId = null) {
     const dbPool = getDbPool();
+    if (!dbPool) return null;
     const res = await dbPool.query(
         'INSERT INTO comments (post_id_onchain, pharos_address, content, parent_id) VALUES ($1::text, $2::text, $3::text, $4::integer) RETURNING *',
         [postId, pharos_address, content, parentId]
@@ -194,9 +201,9 @@ export async function addComment(postId, pharos_address, content, parentId = nul
  * @returns {Promise<any>} The newly saved message.
  */
 export async function saveMessage(sender_address, receiver_address, content) {
-  if (!sender_address || !receiver_address || !content) return null;
+  const dbPool = getDbPool();
+  if (!sender_address || !receiver_address || !content || !dbPool) return null;
   try {
-    const dbPool = getDbPool();
     const query = 'INSERT INTO messages (sender_address, receiver_address, content) VALUES ($1::text, $2::text, $3::text) RETURNING *';
     const res = await dbPool.query(query, [sender_address, receiver_address, content]);
     return res.rows[0];
@@ -217,9 +224,9 @@ export async function saveMessage(sender_address, receiver_address, content) {
  * @returns {Promise<any[]>} A list of messages.
  */
 export async function getMessages(address1, address2) {
-    if (!address1 || !address2) return [];
+    const dbPool = getDbPool();
+    if (!address1 || !address2 || !dbPool) return [];
     try {
-        const dbPool = getDbPool();
         const query = `
             SELECT
                 m.id,
@@ -251,9 +258,9 @@ export async function getMessages(address1, address2) {
  * @returns {Promise<any[]>} A list of the most recent message from each conversation.
  */
 export async function getConversations(pharos_address) {
-  if (!pharos_address) return [];
+  const dbPool = getDbPool();
+  if (!pharos_address || !dbPool) return [];
   try {
-    const dbPool = getDbPool();
     const query = `
       WITH RankedMessages AS (
           SELECT

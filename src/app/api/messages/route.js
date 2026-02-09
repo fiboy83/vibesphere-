@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getMessages, saveMessage } from '@/services/neon-bridge';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const address1 = searchParams.get('address1');

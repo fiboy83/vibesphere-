@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, formatEther } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const address = searchParams.get('address') as `0x${string}` | undefined;

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getConversations } from '@/services/neon-bridge';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const pharos_address = searchParams.get('pharos_address');
