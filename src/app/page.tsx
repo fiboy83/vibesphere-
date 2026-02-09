@@ -13,6 +13,7 @@ import { useDebounce } from 'use-debounce';
 import { formatDistanceToNow } from 'date-fns';
 import { encryptMessage, decryptMessage } from '@/lib/crypto';
 
+export const dynamic = 'force-dynamic';
 
 // --- PHAROS CHAIN ID ---
 const PHAROS_CHAIN_ID = 688689;
@@ -421,6 +422,16 @@ export default function VibesphereApp() {
           setCommentText("");
       }
   }, [replyingTo]);
+
+  useEffect(() => {
+    // When the focused post changes, reset all local comment-related state
+    // to prevent stale data from bleeding into the new view.
+    if (focusedPost) {
+      setCommentText("");
+      setReplyingTo(null);
+      setFocusedCommentId(null);
+    }
+  }, [focusedPost]);
 
 
   useEffect(() => {
