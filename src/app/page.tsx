@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -470,7 +471,7 @@ export default function VibesphereApp() {
     
     // When switching to ANY OTHER main tab, ADD to the stack
     if (isNewTab && ['bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market', 'inbox'].includes(newView.tab!)) {
-        setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: null, focusedPost: null, conversationWith: newView.conversationWith || null }]);
+        setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: newView.viewingProfile || null, focusedPost: null, conversationWith: newView.conversationWith || null }]);
     } else {
         // This handles drilling down (e.g. focusing a post, or a user profile which is not a main tab)
         const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null } : currentView;
@@ -2280,7 +2281,7 @@ export default function VibesphereApp() {
                       )}
                       {profileToShow.handle !== profile.handle && (
                            <div className="mt-8 w-48">
-                               <ResonanceCard onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle })}>
+                               <ResonanceCard onClick={() => pushView({ tab: 'inbox', viewingProfile: profileToShow, conversationWith: profileToShow.handle })}>
                                    <div className="flex items-center justify-center gap-3 py-1">
                                        <MessageSquare size={16} className="text-primary" />
                                        <span className="text-sm font-mono lowercase tracking-widest text-primary">message</span>
@@ -2955,7 +2956,7 @@ export default function VibesphereApp() {
                         const partnerInfo = conversationPartners.find(p => p.handle === conversationWith) || inboxMessages.find(m => m.from === conversationWith) || viewingProfile;
                         if (!partnerInfo) return <div>User not found.</div>;
                         
-                        const threadMessages = inboxMessages.filter(msg => (msg.from === conversationWith && !msg.self) || (msg.self && msg.to === conversationWith));
+                        const threadMessages = inboxMessages.filter(msg => (msg.from === conversationWith && !msg.self) || (msg.self && (msg as any).to === conversationWith));
                         
                         const partnerAuraColor = partnerInfo.themeColor || getPostAuraColor({ avatar: partnerInfo.avatar });
                         const headerAuraStyle = { '--primary': partnerAuraColor, '--primary-glow': partnerAuraColor.replace(/ /g, ', ') } as React.CSSProperties;
