@@ -183,3 +183,111 @@ export async function addComment(postId, pharos_address, content, parentId = nul
     );
     return res.rows[0];
 }
+
+
+/**
+ * Saves a new message to the database.
+ * @param {string} sender_address The sender's Pharos wallet address.
+ * @param {string} receiver_address The receiver's Pharos wallet address.
+ * @param {string} content The content of the message.
+ * @returns {Promise<any>} The newly saved message.
+ */
+export async function saveMessage(sender_address, receiver_address, content) {
+  if (!sender_address || !receiver_address || !content) return null;
+  try {
+    const dbPool = getDbPool();
+    const query = 'INSERT INTO messages (sender_address, receiver_address, content) VALUES ($1::text, $2::text, $3::text) RETURNING *';
+    const res = await dbPool.query(query, [sender_address, receiver_address, content]);
+    return res.rows[0];
+  } catch (error) {
+    console.error('[NEON SAVE MESSAGE ERROR]', {
+        message: error.message,
+        stack: error.stack,
+        detail: error.detail,
+    });
+    throw error;
+  }
+}
+
+/**
+ * Fetches messages between two users.
+ * @param {string} address1 One user's Pharos address.
+ * @param {string} address2 The other user's Pharos address.
+ * @returns {Promise<any[]>} A list of messages.
+ */
+export async function getMessages(address1, address2) {
+    if (!address1 || !address2) return [];
+    try {
+        const dbPool = getDbPool();
+        const query = `
+            SELECT
+                m.id,
+                m.content,
+                m.created_at,
+                m.sender_address,
+                m.receiver_address,
+                sender_user.sovereign_layout as sender_layout
+            FROM messages m
+            LEFT JOIN users sender_user ON m.sender_address = sender_user.pharos_address
+            WHERE
+                (m.sender_address = $1::text AND m.receiver_address = $2::text)
+                OR
+                (m.sender_address = $2::text AND m.receiver_address = $1::text)
+            ORDER BY m.created_at ASC;
+        `;
+        const res = await dbPool.query(query, [address1, address2]);
+        return res.rows;
+    } catch (error) {
+        console.error('Error fetching messages from Neon:', error);
+        throw error;
+    }
+}
+
+
+/**
+ * Fetches a list of conversations for a given user.
+ * @param {string} pharos_address The user's Pharos wallet address.
+ * @returns {Promise<any[]>} A list of the most recent message from each conversation.
+ */
+export async function getConversations(pharos_address) {
+  if (!pharos_address) return [];
+  try {
+    const dbPool = getDbPool();
+    const query = `
+      WITH RankedMessages AS (
+          SELECT
+              m.*,
+              CASE
+                  WHEN m.sender_address = $1::text THEN m.receiver_address
+                  ELSE m.sender_address
+              END AS partner_address,
+              ROW_NUMBER() OVER(PARTITION BY
+                  CASE
+                      WHEN m.sender_address = $1::text THEN m.receiver_address
+                      ELSE m.sender_address
+                  END
+                  ORDER BY m.created_at DESC
+              ) as rn
+          FROM messages m
+          WHERE m.sender_address = $1::text OR m.receiver_address = $1::text
+      )
+      SELECT
+          rm.id,
+          rm.content,
+          rm.created_at,
+          rm.sender_address,
+          rm.receiver_address,
+          rm.partner_address,
+          u.sovereign_layout as partner_layout
+      FROM RankedMessages rm
+      LEFT JOIN users u ON rm.partner_address = u.pharos_address
+      WHERE rm.rn = 1
+      ORDER BY rm.created_at DESC;
+    `;
+    const res = await dbPool.query(query, [pharos_address]);
+    return res.rows;
+  } catch (error) {
+    console.error('Error fetching conversations from Neon:', error);
+    throw error;
+  }
+}

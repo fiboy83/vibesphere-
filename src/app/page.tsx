@@ -222,13 +222,9 @@ export default function VibesphereApp() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileTab, setProfileTab] = useState<'vibe' | 'revibe' | 'like'>('vibe');
 
-  // --- INBOX STATE ---
-  const [inboxMessages, setInboxMessages] = useState([
-    { id: 1, from: 'nova.vibes', text: 'GM! Just saw your post on PIP-8, great points.', time: '1h', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.vibes&backgroundColor=a855f7`, self: false },
-    { id: 2, from: 'user.vibes', text: 'Thanks! Appreciate the feedback.', time: '58m', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`, self: true },
-    { id: 3, from: 'gov.vibes', text: 'Your vote on PIP-8 has been confirmed.', time: '30m', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.vibes&backgroundColor=ef4444`, self: false },
-    { id: 4, from: 'ql.vibes', text: 'The new DApp is live, check it out on Pharos.', time: '15m', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.vibes&backgroundColor=06b6d4`, self: false },
-  ]);
+  // --- INBOX & CHAT STATE ---
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [activeConversationMessages, setActiveConversationMessages] = useState<any[]>([]);
   const [inboxInput, setInboxInput] = useState('');
 
 
@@ -315,7 +311,8 @@ export default function VibesphereApp() {
                     repostCount: 0,
                     comments: [],
                     parent_id: comment.parent_id,
-                    post_id_onchain: post.id
+                    post_id_onchain: post.id,
+                    pharos_address: comment.pharos_address,
                 };
             });
 
@@ -336,6 +333,7 @@ export default function VibesphereApp() {
                 comments: nestedComments,
                 type: media ? 'media' : 'tekt',
                 media: media,
+                pharos_address: post.pharos_address,
             };
         });
         setFeed(processedFeed);
@@ -349,12 +347,73 @@ export default function VibesphereApp() {
     }
   }, [toast, wallet?.address]);
 
+  const fetchConversations = useCallback(async () => {
+    if (!wallet?.address) return;
+    try {
+      const response = await fetch(`/api/conversations?pharos_address=${wallet.address}`);
+      if (!response.ok) throw new Error("Failed to fetch conversations");
+      const data = await response.json();
+      setConversations(data);
+    } catch (error) {
+      console.error("Failed to fetch conversations:", error);
+    }
+  }, [wallet?.address]);
+
+
+  const fetchMessages = useCallback(async (partnerAddress: string) => {
+    if (!wallet?.address || !partnerAddress) return;
+    try {
+        const response = await fetch(`/api/messages?address1=${wallet.address}&address2=${partnerAddress}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch messages');
+        }
+        const data = await response.json();
+        
+        const processedMessages = data.map((msg: any) => {
+            const isSelf = msg.sender_address.toLowerCase() === wallet.address.toLowerCase();
+            const senderLayout = msg.sender_layout || {};
+            const senderHandle = senderLayout.handle || `${msg.sender_address.slice(0, 6)}.vibes`;
+            
+            return {
+                id: msg.id,
+                from: senderHandle,
+                text: msg.content,
+                time: formatDistanceToNow(new Date(msg.created_at), { addSuffix: true }),
+                avatar: senderLayout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${msg.sender_address}&backgroundColor=a855f7`,
+                self: isSelf,
+                themeColor: senderLayout.vibe_color || '262 100% 70%',
+            };
+        });
+
+        setActiveConversationMessages(processedMessages);
+    } catch (error) {
+        console.error("Failed to fetch messages:", error);
+        toast({ variant: "destructive", title: "Could not load conversation." });
+    }
+  }, [wallet?.address, toast]);
+
   useEffect(() => {
     if (isConnected) {
         fetchFeed();
         fetchUserHandle();
+        fetchConversations();
     }
-  }, [isConnected, fetchFeed, fetchUserHandle]);
+  }, [isConnected, fetchFeed, fetchUserHandle, fetchConversations]);
+
+  useEffect(() => {
+    if (conversationWith) {
+        const partner = viewingProfile;
+        if (partner?.pharos_address) {
+            fetchMessages(partner.pharos_address);
+        } else {
+          // If address is not in viewingProfile, try to find it from conversations list
+          const conversation = conversations.find(c => (c.partner_layout?.handle || `${c.partner_address.slice(0,6)}.vibes`) === conversationWith);
+          if (conversation?.partner_address) {
+            fetchMessages(conversation.partner_address);
+          }
+        }
+    }
+  }, [conversationWith, viewingProfile, conversations, fetchMessages]);
 
   useEffect(() => {
       // Clear comment text when the reply target changes to avoid stale text
@@ -460,31 +519,35 @@ export default function VibesphereApp() {
 
 
   const pushView = (newView: Partial<typeof currentView>) => {
-    // If navigating to home tab, reset the stack
     if (newView.tab === 'home' && !newView.focusedPost && !newView.viewingProfile) {
-        setViewStack([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
-        setIsSidebarOpen(false);
-        return;
+      setViewStack([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
+      setIsSidebarOpen(false);
+      return;
     }
-
+  
     const isNewTab = newView.tab && newView.tab !== currentView.tab;
-    
-    // When switching to ANY OTHER main tab, ADD to the stack
-    if (isNewTab && ['bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market', 'inbox'].includes(newView.tab!)) {
-        setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: newView.viewingProfile || null, focusedPost: null, conversationWith: newView.conversationWith || null }]);
+  
+    if (isNewTab && ['bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market'].includes(newView.tab!)) {
+      setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: newView.viewingProfile || null, focusedPost: null, conversationWith: null }]);
+    } else if (newView.tab === 'inbox') {
+      setViewStack(prev => [...prev, { 
+        tab: 'inbox', 
+        viewingProfile: newView.viewingProfile || currentView.viewingProfile, // Persist viewingProfile
+        focusedPost: null, 
+        conversationWith: newView.conversationWith || null 
+      }]);
     } else {
-        // This handles drilling down (e.g. focusing a post, or a user profile which is not a main tab)
-        const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null } : currentView;
-        setViewStack(prev => [...prev, { ...baseView, ...newView }]);
+      const baseView = isNewTab ? { tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null } : currentView;
+      setViewStack(prev => [...prev, { ...baseView, ...newView }]);
     }
-
+  
     if (newView.tab === 'profile' || newView.tab === 'user-profile') {
-        setProfileTab('vibe');
+      setProfileTab('vibe');
     }
-
-    setIsSidebarOpen(false); // Always close sidebar on navigation
+  
+    setIsSidebarOpen(false);
     if (newView.focusedPost) {
-        setIsCommentSectionVisible(true); // Auto-expand comments in detail view
+      setIsCommentSectionVisible(true);
     }
   };
 
@@ -1168,44 +1231,80 @@ export default function VibesphereApp() {
   };
 
   const conversationPartners = React.useMemo(() => {
-    const partners = new Map();
-    // Create a list of unique conversation partners from the inbox messages
-    inboxMessages.forEach(msg => {
-      if (!msg.self) {
-        const partnerHandle = msg.from;
-        const username = partnerHandle.split('.')[0].replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        
-        const existing = partners.get(partnerHandle);
-        if (!existing || msg.id > existing.lastMessageId) {
-            partners.set(partnerHandle, {
-                handle: partnerHandle,
-                username: username,
-                avatar: msg.avatar,
-                lastMessage: msg.text,
-                time: msg.time,
-                lastMessageId: msg.id,
-            });
-        }
-      }
+    return conversations.map(convo => {
+        const partnerLayout = convo.partner_layout || {};
+        const partnerHandle = partnerLayout.handle || `${convo.partner_address.slice(0, 6)}.vibes`;
+        return {
+            handle: partnerHandle,
+            pharos_address: convo.partner_address,
+            username: partnerLayout.username || 'Sovereign_User',
+            avatar: partnerLayout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${convo.partner_address}&backgroundColor=a855f7`,
+            themeColor: partnerLayout.vibe_color || '262 100% 70%',
+            lastMessage: convo.content,
+            time: formatDistanceToNow(new Date(convo.created_at), { addSuffix: true }),
+        };
     });
-
-    // Sort conversations by the most recent message
-    return Array.from(partners.values()).sort((a, b) => b.lastMessageId - a.lastMessageId);
-  }, [inboxMessages]);
+  }, [conversations]);
 
 
-  const handleSendInboxMessage = () => {
-    if (!inboxInput.trim()) return;
-    const newMessage = {
+  const handleSendInboxMessage = async () => {
+    if (!inboxInput.trim() || !wallet?.address || !conversationWith) return;
+  
+    let partner = viewingProfile;
+    if (!partner?.pharos_address) {
+      const conversation = conversations.find(c => (c.partner_layout?.handle || `${c.partner_address.slice(0,6)}.vibes`) === conversationWith);
+      if (conversation?.partner_address) {
+        partner = { pharos_address: conversation.partner_address };
+      }
+    }
+  
+    if (!partner?.pharos_address) {
+      toast({ variant: "destructive", title: "Cannot send message", description: "Recipient address not found." });
+      return;
+    }
+    const receiverAddress = partner.pharos_address;
+  
+    // Optimistic update
+    const optimisticMessage = {
       id: Date.now(),
       from: profile.handle,
       text: inboxInput.trim(),
       time: 'now',
       avatar: profile.avatar,
       self: true,
+      themeColor: profile.themeColor
     };
-    setInboxMessages(prev => [...prev, newMessage]);
+    setActiveConversationMessages(prev => [...prev, optimisticMessage]);
+    const currentInput = inboxInput;
     setInboxInput('');
+  
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_address: wallet.address,
+          receiver_address: receiverAddress,
+          content: currentInput.trim(),
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to send message to server');
+      }
+  
+      // Refresh messages from server to get the real one
+      await fetchMessages(receiverAddress);
+      // Refresh conversation list to show new last message
+      await fetchConversations();
+  
+    } catch (error: any) {
+      console.error("Failed to send message:", error);
+      toast({ variant: "destructive", title: "Message failed to send.", description: error.message });
+      // Rollback optimistic update
+      setActiveConversationMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+      setInboxInput(currentInput);
+    }
   };
 
 
@@ -1317,7 +1416,7 @@ export default function VibesphereApp() {
                     <div className="flex gap-3 items-start">
                         <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${commentAuraColor})`}}/>
                         <div className="flex-1">
-                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar, themeColor: comment.themeColor}, focusedPost: null })}} className='flex items-center gap-2 group'>
+                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar, themeColor: comment.themeColor, pharos_address: comment.pharos_address}, focusedPost: null })}} className='flex items-center gap-2 group'>
                                 <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
                                 <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
                             </div>
@@ -1807,7 +1906,7 @@ export default function VibesphereApp() {
                       style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                   >
                       <div 
-                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPost.themeColor}, focusedPost: null })}}
+                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPost.themeColor, pharos_address: focusedPost.pharos_address}, focusedPost: null })}}
                           className="flex items-center gap-4 mb-4 cursor-pointer group"
                       >
                           <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
@@ -2010,7 +2109,7 @@ export default function VibesphereApp() {
                         style={cardStyle}
                       >
                         {item.type === 'revibe' && (
-                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor }, focusedPost: null }); }}>
+                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address }, focusedPost: null }); }}>
                                 <Repeat size={14} />
                                 <span>re-vibed by @{item.handle}</span>
                             </div>
@@ -2021,7 +2120,7 @@ export default function VibesphereApp() {
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
                                     const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                    pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor}, focusedPost: null });
+                                    pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor, pharos_address: userToView.pharos_address}, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
@@ -2350,7 +2449,7 @@ export default function VibesphereApp() {
                             style={cardStyle}
                         >
                             {item.type === 'revibe' && (
-                                <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor}, focusedPost: null }); }}>
+                                <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address}, focusedPost: null }); }}>
                                     <Repeat size={14} />
                                     <span>re-vibed by @{item.handle}</span>
                                 </div>
@@ -2361,7 +2460,7 @@ export default function VibesphereApp() {
                                     onClick={(e) => { 
                                         e.stopPropagation(); 
                                         const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                        pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor}, focusedPost: null });
+                                        pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor, pharos_address: userToView.pharos_address}, focusedPost: null });
                                     }}
                                     className="flex items-center gap-3 cursor-pointer group"
                                 >
@@ -2927,7 +3026,7 @@ export default function VibesphereApp() {
                                     } as React.CSSProperties;
 
                                     return (
-                                        <ResonanceCard key={partner.handle} style={cardStyle} onClick={() => pushView({ tab: 'inbox', conversationWith: partner.handle })}>
+                                        <ResonanceCard key={partner.handle} style={cardStyle} onClick={() => pushView({ tab: 'inbox', conversationWith: partner.handle, viewingProfile: partner })}>
                                             <div className="flex items-start gap-4">
                                                 <img 
                                                     src={partner.avatar} 
@@ -2936,7 +3035,7 @@ export default function VibesphereApp() {
                                                     style={{ borderColor: `hsl(${partnerAuraColor})` }}
                                                 />
                                                 <div className="flex-1 overflow-hidden">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center justify-between">
                                                         <span className="font-bold text-sm" style={{ color: `hsl(${partnerAuraColor})` }}>
                                                             {partner.username}
                                                         </span>
@@ -2953,10 +3052,16 @@ export default function VibesphereApp() {
                     </>
                     ) : (
                     (() => {
-                        const partnerInfo = conversationPartners.find(p => p.handle === conversationWith) || inboxMessages.find(m => m.from === conversationWith) || viewingProfile;
+                        let partnerInfo = viewingProfile;
+                        if (!partnerInfo) {
+                           const partnerFromConvo = conversationPartners.find(p => p.handle === conversationWith);
+                           if (partnerFromConvo) {
+                               partnerInfo = partnerFromConvo;
+                           }
+                        }
                         if (!partnerInfo) return <div>User not found.</div>;
                         
-                        const threadMessages = inboxMessages.filter(msg => (msg.from === conversationWith && !msg.self) || (msg.self && (msg as any).to === conversationWith));
+                        const threadMessages = activeConversationMessages;
                         
                         const partnerAuraColor = partnerInfo.themeColor || getPostAuraColor({ avatar: partnerInfo.avatar });
                         const headerAuraStyle = { '--primary': partnerAuraColor, '--primary-glow': partnerAuraColor.replace(/ /g, ', ') } as React.CSSProperties;
@@ -2964,7 +3069,7 @@ export default function VibesphereApp() {
                         return (
                             <>
                                 <div 
-                                  onClick={() => pushView({ tab: 'user-profile', viewingProfile: { handle: partnerInfo.handle, username: partnerInfo.username || partnerInfo.handle, avatar: partnerInfo.avatar, themeColor: partnerAuraColor }, focusedPost: null })}
+                                  onClick={() => pushView({ tab: 'user-profile', viewingProfile: partnerInfo, focusedPost: null })}
                                   className="flex items-center gap-3 mb-6 cursor-pointer group"
                                   style={headerAuraStyle}
                                 >
