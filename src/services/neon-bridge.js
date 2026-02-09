@@ -3,18 +3,21 @@ import { Pool } from 'pg';
 let pool;
 
 const getDbPool = () => {
+    console.log('Attempting to get DB pool...');
     if (!process.env.DATABASE_URL) {
-        console.warn('DATABASE_URL is not set, returning null pool. This is expected during the build process.');
+        console.warn('CRITICAL: DATABASE_URL environment variable is NOT set. Database connection will fail.');
         return null;
     }
     if (!pool) {
-        console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+        console.log('DATABASE_URL is set. Creating new connection pool.');
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: {
                 rejectUnauthorized: true,
             },
         });
+    } else {
+        console.log('Using existing connection pool.');
     }
     return pool;
 }
@@ -106,8 +109,12 @@ export async function savePost(pharos_address, content, tx_hash, image_url) {
  * @returns {Promise<any[]>} A list of posts with user data and interaction counts.
  */
 export async function getFeed(pharos_address) {
+  console.log(`[NEON GET_FEED]: Fetching feed for address: ${pharos_address || 'guest'}`);
   const dbPool = getDbPool();
-  if (!dbPool) return [];
+  if (!dbPool) {
+    console.error('[NEON GET_FEED]: DB Pool not available. Returning empty feed.');
+    return [];
+  }
 
   try {
     const query = `
@@ -149,9 +156,10 @@ export async function getFeed(pharos_address) {
       LIMIT 50;
     `;
     const res = await dbPool.query(query, [pharos_address || null]);
+    console.log(`[NEON GET_FEED]: Query successful, found ${res.rows.length} rows.`);
     return res.rows;
   } catch (error) {
-    console.error('Error fetching feed from Neon:', error);
+    console.error('[NEON GET_FEED ERROR]: Error fetching feed from Neon:', error);
     throw error;
   }
 }

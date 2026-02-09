@@ -4,11 +4,13 @@ import { getFeed, savePost } from '@/services/neon-bridge';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
+  console.log('[API /api/posts GET]: Received request.');
   const { searchParams } = new URL(request.url);
   const pharos_address = searchParams.get('pharos_address');
   try {
     // Pass address to get user-specific interaction data
     const feed = await getFeed(pharos_address);
+    console.log(`[API /api/posts GET]: Found ${feed.length} posts.`);
     return NextResponse.json(feed);
   } catch (error) {
     console.error('[API /api/posts GET ERROR]: Failed to fetch feed from Neon.', {
