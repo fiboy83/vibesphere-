@@ -4,6 +4,7 @@ let pool;
 
 const getDbPool = () => {
     if (!pool) {
+        console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
         if (!process.env.DATABASE_URL) {
             console.error('DATABASE_URL is not set in neon-bridge.');
             throw new Error('DATABASE_URL is not set. Cannot connect to Neon.');

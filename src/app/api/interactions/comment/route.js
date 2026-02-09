@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { addComment } from '@/services/neon-bridge';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const { postId, pharos_address, content, parentId } = await request.json();
