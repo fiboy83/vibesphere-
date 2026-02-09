@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useDebounce } from 'use-debounce';
 import { formatDistanceToNow } from 'date-fns';
 import { encryptMessage, decryptMessage } from '@/lib/crypto';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -226,6 +227,7 @@ export default function VibesphereApp() {
 
   // --- FEED & BOOKMARK STATE ---
   const [feed, setFeed] = useState<any[]>([]);
+  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
@@ -340,6 +342,8 @@ export default function VibesphereApp() {
             title: "Could not load vibes",
             description: error.message || "Failed to connect to the sovereign network.",
         });
+    } finally {
+        setIsLoadingFeed(false);
     }
   }, [toast, wallet?.address]);
 
@@ -2068,7 +2072,27 @@ export default function VibesphereApp() {
                   variants={{ show: { transition: { staggerChildren: 0.1 } } }}
                   className="flex flex-col items-center gap-4"
                 >
-                  {displayedFeed.length === 0 && (
+                  {isLoadingFeed ? (
+                     <div className="w-full space-y-4">
+                        {[...Array(3)].map((_, i) => (
+                            <ResonanceCard key={i}>
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <Skeleton className="w-9 h-9 rounded-full" />
+                                        <div className="flex flex-col gap-1.5">
+                                            <Skeleton className="h-4 w-24" />
+                                            <Skeleton className="h-3 w-32" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="min-h-[40px] pl-12 space-y-2">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-4/5" />
+                                </div>
+                            </ResonanceCard>
+                        ))}
+                     </div>
+                  ) : displayedFeed.length === 0 && (
                       <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
                           {activeTab === 'bookmarks' ? (
                             <>
@@ -2093,7 +2117,7 @@ export default function VibesphereApp() {
                           )}
                       </motion.div>
                   )}
-                  {displayedFeed.map((item, index) => {
+                  {!isLoadingFeed && displayedFeed.map((item, index) => {
                     const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
                     const cardStyle = { 
                         '--primary': postAuraColor,
