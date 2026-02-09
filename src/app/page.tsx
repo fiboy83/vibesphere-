@@ -2280,13 +2280,14 @@ export default function VibesphereApp() {
                         </>
                       )}
                       {profileToShow.handle !== profile.handle && (
-                           <button 
-                                onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle })}
-                                className="mt-8 flex items-center gap-2 py-2 px-6 bg-primary/80 rounded-full text-xs font-mono lowercase tracking-widest text-primary-foreground hover:bg-primary hover:shadow-glow-md transition-all"
-                            >
-                                <MessageSquare size={14} />
-                                message
-                            </button>
+                           <div className="mt-8 w-48">
+                               <ResonanceCard onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle })}>
+                                   <div className="flex items-center justify-center gap-3 py-1">
+                                       <MessageSquare size={16} className="text-primary" />
+                                       <span className="text-sm font-mono lowercase tracking-widest text-primary">message</span>
+                                   </div>
+                               </ResonanceCard>
+                           </div>
                       )}
                     </div>
                   </ResonanceCard>
@@ -2919,7 +2920,7 @@ export default function VibesphereApp() {
                                 variants={{ show: { transition: { staggerChildren: 0.1 } } }}
                             >
                                 {conversationPartners.map((partner) => {
-                                    const partnerAuraColor = getPostAuraColor({ avatar: partner.avatar });
+                                    const partnerAuraColor = partner.themeColor || getPostAuraColor({ avatar: partner.avatar });
                                     const cardStyle = {
                                         '--primary': partnerAuraColor,
                                         '--primary-glow': partnerAuraColor.replace(/ /g, ', '),
@@ -2952,24 +2953,24 @@ export default function VibesphereApp() {
                     </>
                     ) : (
                     (() => {
-                        const partnerInfo = conversationPartners.find(p => p.handle === conversationWith) || inboxMessages.find(m => m.from === conversationWith);
+                        const partnerInfo = conversationPartners.find(p => p.handle === conversationWith) || inboxMessages.find(m => m.from === conversationWith) || viewingProfile;
                         if (!partnerInfo) return <div>User not found.</div>;
                         
-                        const threadMessages = inboxMessages.filter(msg => msg.from === conversationWith || msg.self);
+                        const threadMessages = inboxMessages.filter(msg => (msg.from === conversationWith && !msg.self) || (msg.self && msg.to === conversationWith));
                         
-                        const partnerAuraColor = getPostAuraColor({ avatar: partnerInfo.avatar });
+                        const partnerAuraColor = partnerInfo.themeColor || getPostAuraColor({ avatar: partnerInfo.avatar });
                         const headerAuraStyle = { '--primary': partnerAuraColor, '--primary-glow': partnerAuraColor.replace(/ /g, ', ') } as React.CSSProperties;
 
                         return (
                             <>
                                 <div 
-                                  onClick={() => pushView({ tab: 'user-profile', viewingProfile: { handle: partnerInfo.handle, username: partnerInfo.username, avatar: partnerInfo.avatar, themeColor: partnerInfo.themeColor }, focusedPost: null })}
+                                  onClick={() => pushView({ tab: 'user-profile', viewingProfile: { handle: partnerInfo.handle, username: partnerInfo.username || partnerInfo.handle, avatar: partnerInfo.avatar, themeColor: partnerAuraColor }, focusedPost: null })}
                                   className="flex items-center gap-3 mb-6 cursor-pointer group"
                                   style={headerAuraStyle}
                                 >
                                     <img src={partnerInfo.avatar} alt="avatar" className="w-10 h-10 rounded-full border-2 border-primary object-cover group-hover:scale-105 transition-transform" />
                                     <div>
-                                        <h3 className="font-bold text-primary text-lg group-hover:brightness-125 transition-all">{partnerInfo.username}</h3>
+                                        <h3 className="font-bold text-primary text-lg group-hover:brightness-125 transition-all">{partnerInfo.username || partnerInfo.handle}</h3>
                                         <p className="text-sm font-mono text-slate-400">@{partnerInfo.handle}</p>
                                     </div>
                                 </div>
@@ -2981,7 +2982,7 @@ export default function VibesphereApp() {
                                         variants={{ show: { transition: { staggerChildren: 0.1 } } }}
                                     >
                                         {threadMessages.map((msg) => {
-                                            const msgAuraColor = msg.self ? profile.themeColor : getPostAuraColor(msg);
+                                            const msgAuraColor = msg.self ? profile.themeColor : partnerAuraColor;
                                             const cardStyle = {
                                                 '--primary': msgAuraColor,
                                                 '--primary-glow': msgAuraColor.replace(/ /g, ', '),
