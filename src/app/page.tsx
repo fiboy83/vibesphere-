@@ -13,6 +13,7 @@ import { postContractAddress, postContractAbi, identityContractAddress, identity
 import { cn } from '@/lib/utils';
 import { useDebounce } from 'use-debounce';
 import { formatDistanceToNow } from 'date-fns';
+import { encryptMessage, decryptMessage } from '@/lib/crypto';
 
 
 // --- PHAROS CHAIN ID ---
@@ -373,11 +374,12 @@ export default function VibesphereApp() {
             const isSelf = msg.sender_address.toLowerCase() === wallet.address.toLowerCase();
             const senderLayout = msg.sender_layout || {};
             const senderHandle = senderLayout.handle || `${msg.sender_address.slice(0, 6)}.vibes`;
+            const decryptedContent = decryptMessage(msg.content, wallet.address, partnerAddress);
             
             return {
                 id: msg.id,
                 from: senderHandle,
-                text: msg.content,
+                text: decryptedContent,
                 time: formatDistanceToNow(new Date(msg.created_at), { addSuffix: true }),
                 avatar: senderLayout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${msg.sender_address}&backgroundColor=a855f7`,
                 self: isSelf,
@@ -1279,13 +1281,14 @@ export default function VibesphereApp() {
     setInboxInput('');
   
     try {
+      const encryptedContent = encryptMessage(currentInput.trim(), wallet.address, receiverAddress);
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sender_address: wallet.address,
           receiver_address: receiverAddress,
-          content: currentInput.trim(),
+          content: encryptedContent,
         }),
       });
   
