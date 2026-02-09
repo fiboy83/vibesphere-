@@ -1,19 +1,61 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+generator client {
+  provider = "prisma-client-js"
+}
+
 model Post {
-  id        String   @id @default(cuid())
-  content   String
-  symbol    String   @default("PHRS")
-  author    String
-  createdAt DateTime @default(now()) @map("created_at")
+  id             Int      @id @default(autoincrement())
+  pharos_address String
+  content        String?
+  tx_hash        String?
+  image_url      String?
+  created_at     DateTime @default(now()) @map("created_at")
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  pharos_address   String   @unique
+  sovereign_layout Json?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+}
+
+model Like {
+  id              Int      @id @default(autoincrement())
+  post_id_onchain String
+  pharos_address  String
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([post_id_onchain, pharos_address])
+}
+
+model Bookmark {
+  id              Int      @id @default(autoincrement())
+  post_id_onchain String
+  pharos_address  String
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([post_id_onchain, pharos_address])
+}
+
+model Comment {
+  id              Int      @id @default(autoincrement())
+  post_id_onchain String
+  pharos_address  String
+  content         String
+  parent_id       Int?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+}
+
+model Message {
+    id Int @id @default(autoincrement())
+    sender_address String
+    receiver_address String
+    content String
+    created_at DateTime @default(now())
 }
