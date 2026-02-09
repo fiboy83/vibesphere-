@@ -1,61 +1,76 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model Post {
-  id             Int      @id @default(autoincrement())
-  pharos_address String
-  content        String?
-  tx_hash        String?
-  image_url      String?
-  created_at     DateTime @default(now()) @map("created_at")
+  id        String   @id @default(cuid())
+  content   String?
+  symbol    String   @default("PHRS")
+  author    String
+  createdAt DateTime @default(now())
+  tx_hash   String?  @unique
+  image_url String?
+
+  comments Comment[]
+  likes    Like[]
+  bookmarks Bookmark[]
 }
 
 model User {
-  id               Int      @id @default(autoincrement())
+  id               String   @id @default(cuid())
   pharos_address   String   @unique
   sovereign_layout Json?
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Like {
-  id              Int      @id @default(autoincrement())
+  id             String   @id @default(cuid())
+  pharos_address String
   post_id_onchain String
-  pharos_address  String
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt      DateTime @default(now())
+  
+  post           Post     @relation(fields: [post_id_onchain], references: [id])
 
-  @@unique([post_id_onchain, pharos_address])
+  @@unique([pharos_address, post_id_onchain])
 }
 
 model Bookmark {
-  id              Int      @id @default(autoincrement())
-  post_id_onchain String
+  id              String   @id @default(cuid())
   pharos_address  String
-  createdAt       DateTime @default(now()) @map("created_at")
+  post_id_onchain String
+  createdAt       DateTime @default(now())
 
-  @@unique([post_id_onchain, pharos_address])
+  post            Post     @relation(fields: [post_id_onchain], references: [id])
+
+  @@unique([pharos_address, post_id_onchain])
 }
 
 model Comment {
-  id              Int      @id @default(autoincrement())
-  post_id_onchain String
-  pharos_address  String
+  id              String   @id @default(cuid())
   content         String
-  parent_id       Int?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  pharos_address  String
+  post_id_onchain String
+  createdAt       DateTime @default(now())
+  
+  parent_id       String?
+  parent          Comment?  @relation("replies", fields: [parent_id], references: [id])
+  replies         Comment[] @relation("replies")
+  post            Post      @relation(fields: [post_id_onchain], references: [id])
 }
 
 model Message {
-    id Int @id @default(autoincrement())
-    sender_address String
-    receiver_address String
-    content String
-    created_at DateTime @default(now())
+  id               String   @id @default(cuid())
+  sender_address   String
+  receiver_address String
+  content          String // Encrypted
+  createdAt        DateTime @default(now())
 }
