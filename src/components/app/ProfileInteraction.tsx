@@ -10,7 +10,7 @@ interface ProfileInteractionProps {
   isVibing: boolean;
   onVibe: () => void;
   onUnvibe: () => void;
-  onDm: () => void;
+  onMessage: () => void;
   themeColor: string;
 }
 
@@ -18,7 +18,7 @@ export const ProfileInteraction: React.FC<ProfileInteractionProps> = ({
   isVibing,
   onVibe,
   onUnvibe,
-  onDm,
+  onMessage,
   themeColor,
 }) => {
   const cardBaseStyle = "relative backdrop-blur-xl rounded-3xl transition-all duration-300 bg-white/[0.03] border border-white/10 p-1";
@@ -37,12 +37,12 @@ export const ProfileInteraction: React.FC<ProfileInteractionProps> = ({
       />
       <div className={cn(cardBaseStyle)}>
         <motion.button
-          onClick={onDm}
+          onClick={onMessage}
           className={cn(buttonBaseStyle, "text-[hsl(var(--profile-color))] bg-[hsla(var(--profile-color),0.1)] hover:bg-[hsla(var(--profile-color),0.2)] hover:shadow-[0_0_15px_0px_hsla(var(--profile-color),0.4)]")}
           whileTap={{ scale: 0.95 }}
         >
           <MessageSquare size={14} />
-          <span className="w-12 text-center">dm</span>
+          <span className="w-16 text-center">message</span>
         </motion.button>
       </div>
     </div>

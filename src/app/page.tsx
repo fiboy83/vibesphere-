@@ -2428,7 +2428,7 @@ export default function VibesphereApp() {
                                 isVibing={vibedProfiles.includes(profileToShow.handle)}
                                 onVibe={() => handleVibe(profileToShow.handle)}
                                 onUnvibe={() => handleUnvibe(profileToShow.handle)}
-                                onDm={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
+                                onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
                                 themeColor={profileToShow.themeColor}
                            />
                       )}
