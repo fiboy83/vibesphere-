@@ -2377,71 +2377,70 @@ export default function VibesphereApp() {
                     initial="hidden" animate="show"
                     variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                 >
-                    <div 
-                        className="relative w-full aspect-[3/2] md:aspect-[2/1] max-h-[500px] rounded-3xl overflow-hidden shadow-lg shadow-black/30"
-                        style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
-                    >
-                        <img 
-                            src={profileToShow.avatar} 
-                            alt="User avatar" 
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-
-                        <div className="absolute top-4 right-4 z-20">
-                            <div
-                                onClick={handleAvatarClick}
-                                className={cn(
-                                    "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center cursor-pointer"
-                                )}
-                            >
-                                <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
-                                <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
-                            </div>
-                        </div>
-                        
-                        {profileToShow.handle === profile.handle && userHandle && (
-                            <>
-                                <div className="absolute bottom-4 left-4 z-20">
-                                    <button 
-                                        onClick={openProfileModal}
-                                        className="group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
-                                    >
-                                        <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
-                                            <Edit2 size={14} />
-                                            edit
-                                        </div>
-                                    </button>
-                                </div>
-                                <div className="absolute bottom-4 right-4 z-30">
-                                    <button
-                                        onClick={handleAvatarClick}
-                                        className="group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
-                                    >
-                                        <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
-                                            <FileUp size={14} />
-                                        </div>
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                    
-                    {profileToShow.bio && (
-                        <motion.div 
-                            variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                            className="my-4 w-full"
+                  <div 
+                      className="relative w-full aspect-[3/2] md:aspect-[2/1] max-h-[500px] rounded-3xl overflow-hidden shadow-lg shadow-black/30"
+                      style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                  >
+                      <img 
+                          src={profileToShow.avatar} 
+                          alt="User avatar" 
+                          className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                      
+                      <div className="absolute inset-0 z-20 flex items-center justify-center">
+                        <div
+                            onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
+                            className={cn(
+                                "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center",
+                                profileToShow.handle === profile.handle && 'cursor-pointer'
+                            )}
                         >
-                            <ResonanceCard 
-                                className="backdrop-blur-2xl overflow-hidden"
-                                style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                            <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                            <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
+                        </div>
+                      </div>
+                      
+                      {profileToShow.handle === profile.handle && userHandle && (
+                          <div className="absolute bottom-4 left-4 z-20">
+                              <button 
+                                  onClick={openProfileModal}
+                                  className="group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
+                              >
+                                  <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
+                                      <Edit2 size={14} />
+                                      edit
+                                  </div>
+                              </button>
+                          </div>
+                      )}
+
+                      {profileToShow.handle === profile.handle && (
+                        <div className="absolute bottom-4 right-4 z-30">
+                            <button
+                                onClick={handleAvatarClick}
+                                className="group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
                             >
-                                <div className="flex flex-col text-left gap-2 p-4">
-                                    <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose" />
+                                <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
+                                    <FileUp size={14} />
                                 </div>
-                            </ResonanceCard>
-                        </motion.div>
-                    )}
+                            </button>
+                        </div>
+                      )}
+                  </div>
+                  
+                  {profileToShow.bio && (
+                      <div className="my-4 w-full">
+                          <ResonanceCard 
+                              className="backdrop-blur-2xl overflow-hidden"
+                              style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                          >
+                              <div className="flex flex-col text-left gap-2 p-4 pt-2">
+                                  <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose" />
+                              </div>
+                          </ResonanceCard>
+                      </div>
+                  )}
 
 
                   <div className="w-full border-b" style={{ borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2)`}}>
@@ -2470,13 +2469,7 @@ export default function VibesphereApp() {
                     </div>
                   </div>
                   
-                  {displayedFeed.length === 0 ? (
-                    <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
-                        <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
-                          no vibrations found here.
-                        </h2>
-                    </motion.div>
-                   ) : (
+                  {displayedFeed.length > 0 ? (
                     displayedFeed.map((item, index) => {
                         const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
                         const cardStyle = { 
@@ -2685,7 +2678,14 @@ export default function VibesphereApp() {
 
                         </ResonanceCard>
                         );
-                    }))}
+                    })
+                  ) : (
+                    <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                        <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
+                          no vibrations found here.
+                        </h2>
+                    </motion.div>
+                  )}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
@@ -2754,7 +2754,7 @@ export default function VibesphereApp() {
                             defi hub
                         </h2>
 
-                        <ResonanceCard style={{ '--primary': currentAColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                        <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                             <div className="text-center">
                                 <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
                                 <p className="text-5xl font-black mt-2 tracking-tighter italic">
@@ -3464,3 +3464,5 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
