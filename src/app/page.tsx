@@ -214,11 +214,11 @@ export default function VibesphereApp() {
     username: 'Sovereign_User',
     handle: 'user.vibes',
     avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`,
-    joinDate: 'vibing since now',
+    bio: 'sovereign identity vibing on the decentralized web.',
     themeColor: '262 100% 70%',
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
+  const [tempProfile, setTempProfile] = useState({ username: '', bio: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileTab, setProfileTab] = useState<'echo' | 'r-echo' | 'vibes'>('echo');
 
@@ -758,6 +758,7 @@ export default function VibesphereApp() {
                 handle: profile.handle,
                 avatar: imageUrl,
                 vibe_color: newColorValues,
+                bio: profile.bio,
             };
 
             // Optimistic UI update
@@ -791,12 +792,12 @@ export default function VibesphereApp() {
   };
 
   const openProfileModal = () => {
-    setTempProfile({ username: profile.username, joinDate: profile.joinDate });
+    setTempProfile({ username: profile.username, bio: profile.bio });
     setIsProfileModalOpen(true);
   };
 
   const handleProfileSave = async () => {
-    setProfile(prev => ({ ...prev, username: tempProfile.username, joinDate: tempProfile.joinDate }));
+    setProfile(prev => ({ ...prev, username: tempProfile.username, bio: tempProfile.bio }));
     setIsProfileModalOpen(false);
 
     if (wallet?.address) {
@@ -806,11 +807,11 @@ export default function VibesphereApp() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     pharos_address: wallet.address,
-                    metadata: { username: tempProfile.username },
+                    metadata: { username: tempProfile.username, bio: tempProfile.bio },
                 })
             });
         } catch (error) {
-            console.error("Failed to save username:", error);
+            console.error("Failed to save profile:", error);
         }
     }
   };
@@ -872,13 +873,14 @@ export default function VibesphereApp() {
                     }
                     const data = await response.json();
                     
-                    if (data && (data.avatar || data.vibe_color || data.username || data.handle)) {
+                    if (data && (data.avatar || data.vibe_color || data.username || data.handle || data.bio)) {
                         setProfile(prev => ({
                             ...prev,
                             username: data.username || prev.username,
                             handle: data.handle || prev.handle,
                             avatar: data.avatar || prev.avatar,
                             themeColor: data.vibe_color || prev.themeColor,
+                            bio: data.bio || prev.bio,
                         }));
                     }
                 } catch (error) {
@@ -1335,9 +1337,9 @@ export default function VibesphereApp() {
 
 
   const profileToShow = (activeTab === 'profile' && !viewingProfile) 
-      ? profile 
+      ? { ...profile, bio: profile.bio || 'sovereign identity vibing on the decentralized web.' }
       : (activeTab === 'user-profile' && viewingProfile) 
-      ? viewingProfile 
+      ? { ...viewingProfile, bio: viewingProfile.bio || `a sovereign identity on pharos network.` }
       : null;
 
   let feedForProfileTab: any[] = [];
@@ -2347,7 +2349,7 @@ export default function VibesphereApp() {
                     variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                 >
                     <div 
-                        className="relative w-full aspect-[4/3] max-h-[500px] rounded-3xl overflow-hidden shadow-lg shadow-black/30"
+                        className="relative w-full aspect-[3/2] md:aspect-[2/1] max-h-[500px] rounded-3xl overflow-hidden shadow-lg shadow-black/30"
                         style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                     >
                         <img 
@@ -2355,13 +2357,23 @@ export default function VibesphereApp() {
                             alt="User avatar" 
                             className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                        <div className="absolute inset-0 flex flex-col justify-end p-6 text-center text-white">
-                            <div className="bg-black/40 backdrop-blur-lg rounded-2xl py-4 px-6 mb-6">
+                        <div className="absolute inset-0 flex flex-col justify-end p-4 md:p-6">
+                            <div className="bg-black/40 backdrop-blur-lg rounded-2xl py-3 px-5 mb-4">
                                 <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
                                 <p className="text-sm font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
                             </div>
+                            
+                            {profileToShow.bio && (
+                                <div className="mb-4">
+                                    <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                                        <div className="backdrop-blur-lg p-3 rounded-2xl">
+                                            <p className="text-sm font-mono text-slate-300 text-center">{profileToShow.bio}</p>
+                                        </div>
+                                    </ResonanceCard>
+                                </div>
+                            )}
 
                             {profileToShow.handle === profile.handle ? (
                                 <div className="flex flex-col items-center">
@@ -2404,8 +2416,7 @@ export default function VibesphereApp() {
                                             </button>
                                         </div>
                                     )}
-                                    <p className="text-xs font-mono text-slate-400">{profileToShow.joinDate}</p>
-                                    <div className='flex items-center gap-2 mt-4'>
+                                    <div className='flex items-center justify-center gap-2 mt-2'>
                                         <button 
                                             onClick={openProfileModal}
                                             className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
@@ -2422,7 +2433,7 @@ export default function VibesphereApp() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex justify-center">
+                                <div className="flex justify-center mt-2">
                                     <ProfileInteraction
                                         isVibing={vibedProfiles.includes(profileToShow.handle)}
                                         onVibe={() => handleVibe(profileToShow.handle)}
@@ -3320,11 +3331,12 @@ export default function VibesphereApp() {
                     />
                   </div>
                   <div>
-                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>join date</label>
-                    <input 
-                      value={tempProfile.joinDate}
-                      onChange={(e) => setTempProfile(p => ({...p, joinDate: e.target.value}))}
-                      className="w-full mt-1 p-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-purple-500"
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>bio</label>
+                    <textarea 
+                      value={tempProfile.bio}
+                      onChange={(e) => setTempProfile(p => ({...p, bio: e.target.value}))}
+                      className="w-full mt-1 p-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-purple-500 resize-none"
+                      rows={3}
                     />
                   </div>
                 </div>
@@ -3338,7 +3350,7 @@ export default function VibesphereApp() {
                     </button>
                     <button 
                         onClick={handleProfileSave} 
-                        disabled={tempProfile.username === profile.username && tempProfile.joinDate === profile.joinDate}
+                        disabled={tempProfile.username === profile.username && tempProfile.bio === profile.bio}
                         className="flex-1 py-3 rounded-2xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(var(--primary-glow),0.4)] transition-all disabled:opacity-50"
                     >
                         save

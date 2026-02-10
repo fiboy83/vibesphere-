@@ -25,7 +25,7 @@ const getDbPool = () => {
 /**
  * Fetches the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
- * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string} | null>} The layout metadata or null if not found.
+ * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string, bio: string} | null>} The layout metadata or null if not found.
  */
 export async function getLayout(pharos_address) {
   const dbPool = getDbPool();
@@ -45,6 +45,7 @@ export async function getLayout(pharos_address) {
         avatar: layout?.avatar || null,
         username: layout?.username || null,
         handle: layout?.handle || null,
+        bio: layout?.bio || null,
       };
     }
     return null;
