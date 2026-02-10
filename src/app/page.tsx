@@ -2388,7 +2388,7 @@ export default function VibesphereApp() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                       
-                      <div className="absolute inset-0 z-20 flex items-center justify-center">
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
                         <div
                             onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                             className={cn(
@@ -2399,10 +2399,20 @@ export default function VibesphereApp() {
                             <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
                             <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
                         </div>
+                        
+                        {profileToShow.handle !== profile.handle && (
+                            <ProfileInteraction
+                                isVibing={vibedProfiles.includes(profileToShow.handle)}
+                                onVibe={() => handleVibe(profileToShow.handle)}
+                                onUnvibe={() => handleUnvibe(profileToShow.handle)}
+                                onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
+                                themeColor={currentAuraColor}
+                            />
+                        )}
                       </div>
                       
-                      {profileToShow.handle === profile.handle && userHandle && (
-                          <div className="absolute bottom-4 left-4 z-20">
+                      {profileToShow.handle === profile.handle && (
+                          <div className="absolute bottom-4 left-4 z-30">
                               <button 
                                   onClick={openProfileModal}
                                   className="group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
@@ -2442,6 +2452,45 @@ export default function VibesphereApp() {
                       </div>
                   )}
 
+                  {profileToShow.handle === profile.handle && !userHandle && (
+                    <div className="w-full max-w-sm my-4 p-6 bg-white/[0.02] border border-primary/20 rounded-3xl">
+                      <h3 className="text-center text-sm font-bold tracking-widest lowercase mb-4" style={{color: `hsl(${currentAuraColor})`}}>claim your .vibes identity</h3>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="ketik handle yang kamu mau"
+                          value={claimInput}
+                          onChange={(e) => setClaimInput(e.target.value.toLowerCase())}
+                          className={cn(
+                            "w-full bg-white/5 border rounded-full py-3 pl-4 pr-24 text-sm font-mono lowercase focus:outline-none transition-all",
+                            isHandleAvailable === true ? "border-green-500/50 focus:border-green-500" :
+                            isHandleAvailable === false ? "border-red-500/50 focus:border-red-500" :
+                            "border-primary/30 focus:border-primary"
+                          )}
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-mono">
+                          <span className="text-slate-500">.vibes</span>
+                        </div>
+                      </div>
+                      <div className="text-center text-xs font-mono h-4 mt-2">
+                        {isCheckingHandle && <p className="text-slate-500 animate-pulse">checking...</p>}
+                        {!isCheckingHandle && isHandleAvailable === true && <p className="text-green-400">Handle tersedia! Klaim kedaulatanmu sekarang.</p>}
+                        {!isCheckingHandle && isHandleAvailable === false && <p className="text-red-400">Yah, handle ini sudah ada yang punya, Broo!</p>}
+                        {!isCheckingHandle && handleCheckError && <p className="text-red-400">{handleCheckError}</p>}
+                      </div>
+                      <button
+                        onClick={handleClaim}
+                        disabled={!isHandleAvailable || isClaiming || isCheckingHandle || !claimInput}
+                        className={cn(
+                          "w-full mt-4 py-3 rounded-full text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                            isClaiming ? "bg-primary/50 animate-pulse" : "bg-primary hover:shadow-glow-md",
+                            "text-primary-foreground"
+                        )}
+                      >
+                        {isClaiming ? "registering on pharos..." : "claim"}
+                      </button>
+                    </div>
+                  )}
 
                   <div className="w-full border-b" style={{ borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2)`}}>
                     <div className="flex justify-around max-w-sm mx-auto">
@@ -2469,217 +2518,241 @@ export default function VibesphereApp() {
                     </div>
                   </div>
                   
-                  {displayedFeed.length > 0 ? (
-                    displayedFeed.map((item, index) => {
-                        const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
-                        const cardStyle = { 
-                            '--primary': postAuraColor,
-                            '--primary-glow': postAuraColor.replace(/ /g, ', '),
-                        } as React.CSSProperties;
-                        const isBookmarked = bookmarkedPosts.includes(item.id);
-                        const isLiked = likedPosts.includes(item.id);
-                        const isExpanded = expandedPosts.includes(item.id);
-
-
-                        const handleCardClick = () => {
-                        if (item.type === 'revibe' && item.quotedPost) {
-                            pushView({ focusedPost: item.quotedPost });
-                        } else {
-                            pushView({ focusedPost: item });
-                        }
-                        };
-
-                        return (
-                        <ResonanceCard 
-                           key={`${item.id}-${index}`} 
-                            style={cardStyle}
-                        >
-                            {item.type === 'revibe' && (
-                                <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address}, focusedPost: null }); }}>
-                                    <Repeat size={14} />
-                                    <span>r'echoed by @{item.handle}</span>
-                                </div>
-                            )}
-                            <div onClick={handleCardClick} className="cursor-pointer">
+                  {isLoadingFeed && (
+                    <div className="w-full space-y-4 mt-4">
+                        {[...Array(2)].map((_, i) => (
+                            <ResonanceCard key={i}>
                                 <div className="flex justify-between items-start mb-3">
-                                <div 
-                                    onClick={(e) => { 
-                                        e.stopPropagation(); 
-                                        const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                        pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor, pharos_address: userToView.pharos_address}, focusedPost: null });
-                                    }}
-                                    className="flex items-center gap-3 cursor-pointer group"
-                                >
-                                    <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                      <img src={(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                    <div className="flex items-center gap-3">
+                                        <Skeleton className="w-9 h-9 rounded-full" />
+                                        <div className="flex flex-col gap-1.5">
+                                            <Skeleton className="h-4 w-24" />
+                                            <Skeleton className="h-3 w-32" />
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                          {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).username}
-                                        </span>
-                                        <div 
-                                            className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
-                                        ></div>
-                                      </div>
-                                      <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).handle} • {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).time}</span>
-                                    </div>
+                                </div>
+                                <div className="min-h-[40px] pl-12 space-y-2">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-4/5" />
+                                </div>
+                            </ResonanceCard>
+                        ))}
+                     </div>
+                  )}
+
+                  {!isLoadingFeed && displayedFeed.length > 0 && (
+                    displayedFeed.map((item, index) => {
+                      const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
+                      const cardStyle = { 
+                          '--primary': postAuraColor,
+                          '--primary-glow': postAuraColor.replace(/ /g, ', '),
+                      } as React.CSSProperties;
+                      const isBookmarked = bookmarkedPosts.includes(item.id);
+                      const isLiked = likedPosts.includes(item.id);
+                      const isExpanded = expandedPosts.includes(item.id);
+
+
+                      const handleCardClick = () => {
+                      if (item.type === 'revibe' && item.quotedPost) {
+                          pushView({ focusedPost: item.quotedPost });
+                      } else {
+                          pushView({ focusedPost: item });
+                      }
+                      };
+
+                      return (
+                      <ResonanceCard 
+                         key={`${item.id}-${index}`} 
+                          style={cardStyle}
+                      >
+                          {item.type === 'revibe' && (
+                              <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address}, focusedPost: null }); }}>
+                                  <Repeat size={14} />
+                                  <span>r'echoed by @{item.handle}</span>
+                              </div>
+                          )}
+                          <div onClick={handleCardClick} className="cursor-pointer">
+                              <div className="flex justify-between items-start mb-3">
+                              <div 
+                                  onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
+                                      pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor, pharos_address: userToView.pharos_address}, focusedPost: null });
+                                  }}
+                                  className="flex items-center gap-3 cursor-pointer group"
+                              >
+                                  <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
+                                    <img src={(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                   </div>
-                                  <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 -mt-1">
-                                    <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
-                                  </button>
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
+                                        {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).username}
+                                      </span>
+                                      <div 
+                                          className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
+                                      ></div>
+                                    </div>
+                                    <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).handle} • {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).time}</span>
+                                  </div>
                                 </div>
-                                
-                                <div className="min-h-[40px] pl-12">
-                                    {item.type === 'revibe' && item.quotedPost ? (
-                                        <div 
-                                            className="mt-2 p-3 rounded-2xl border" 
-                                            style={{ 
-                                                borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)`,
-                                                '--primary': getPostAuraColor(item.quotedPost)
-                                            } as React.CSSProperties}
-                                        >
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <img src={item.quotedPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
-                                                <div>
-                                                    <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{item.quotedPost.username}</span>
-                                                    <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
-                                                </div>
-                                            </div>
-                                            {item.quotedPost.media && (
-                                                <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
-                                                    {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                                                    {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                                                </div>
-                                            )}
-                                            <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                          {item.media && (
-                                             <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
-                                               {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
-                                               {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
-                                             </div>
+                                <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 -mt-1">
+                                  <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
+                                </button>
+                              </div>
+                              
+                              <div className="min-h-[40px] pl-12">
+                                  {item.type === 'revibe' && item.quotedPost ? (
+                                      <div 
+                                          className="mt-2 p-3 rounded-2xl border" 
+                                          style={{ 
+                                              borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)`,
+                                              '--primary': getPostAuraColor(item.quotedPost)
+                                          } as React.CSSProperties}
+                                      >
+                                          <div className="flex items-center gap-3 mb-2">
+                                              <img src={item.quotedPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
+                                              <div>
+                                                  <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{item.quotedPost.username}</span>
+                                                  <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                                              </div>
+                                          </div>
+                                          {item.quotedPost.media && (
+                                              <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
+                                                  {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                                  {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                              </div>
                                           )}
-                                            <div className="text-slate-200 text-base leading-relaxed font-light mb-2 whitespace-pre-wrap">
-                                                <p className={!isExpanded ? 'line-clamp-3' : ''}>{item.text}</p>
-                                                {item.text.length > 150 && !isExpanded && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setExpandedPosts(prev => [...prev, item.id]);
-                                                        }}
-                                                        className="text-primary/80 hover:text-primary text-xs font-mono lowercase transition-colors"
-                                                    >
-                                                        ... see more
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                          <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
+                                      </div>
+                                  ) : (
+                                    <div className="text-slate-200 text-base leading-relaxed font-light mb-2 whitespace-pre-wrap">
+                                      {item.media && (
+                                          <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
+                                          {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
+                                          {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                          </div>
+                                      )}
+                                      <div>
+                                          <p className={!isExpanded ? 'line-clamp-3' : ''}>{item.text}</p>
+                                          {item.text.length > 150 && !isExpanded && (
+                                              <button
+                                                  onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setExpandedPosts(prev => [...prev, item.id]);
+                                                  }}
+                                                  className="text-primary/80 hover:text-primary text-xs font-mono lowercase transition-colors"
+                                              >
+                                                  ... see more
+                                              </button>
+                                          )}
+                                      </div>
+                                    </div>
+                                  )}
+                              </div>
+                          </div>
 
-                            <div className="flex justify-between items-center mt-3 pt-3 border-t pl-10" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.2)`}}>
-                                <motion.button 
-                                    whileTap={{ scale: 1.2 }}
-                                    transition={{ duration: 0.1 }}
-                                    onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
-                                    <MessageSquare size={18} strokeWidth={1.5} />
-                                    <span className="text-sm font-mono">{item.commentCount}</span>
-                                </motion.button>
-                                <motion.button 
-                                    whileTap={{ scale: 1.2 }}
-                                    transition={{ duration: 0.1 }}
-                                    onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
-                                    <Repeat size={20} strokeWidth={1.5} />
-                                    <span className="text-sm font-mono">{item.repostCount}</span>
-                                </motion.button>
-                                <motion.button 
-                                    whileTap={{ scale: 1.2 }}
-                                    transition={{ duration: 0.1 }}
-                                    onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
-                                    className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
-                                    style={isLiked ? {
-                                        color: `hsl(${postAuraColor})`,
-                                        filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
-                                    } : {}}
-                                >
-                                    <Sparkles 
-                                        size={18} 
-                                        strokeWidth={1.5}
-                                        fill={isLiked ? 'currentColor' : 'none'}
-                                    />
-                                    <span className="text-sm font-mono">{item.likeCount}</span>
-                                </motion.button>
-                                <motion.button
-                                    whileTap={{ scale: 1.2 }}
-                                    transition={{ duration: 0.1 }}
-                                    onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
-                                    <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
-                                </motion.button>
-                            </div>
+                          <div className="flex justify-between items-center mt-3 pt-3 border-t pl-10" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.2)`}}>
+                              <motion.button 
+                                  whileTap={{ scale: 1.2 }}
+                                  transition={{ duration: 0.1 }}
+                                  onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  <MessageSquare size={18} strokeWidth={1.5} />
+                                  <span className="text-sm font-mono">{item.commentCount}</span>
+                              </motion.button>
+                              <motion.button 
+                                  whileTap={{ scale: 1.2 }}
+                                  transition={{ duration: 0.1 }}
+                                  onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  <Repeat size={20} strokeWidth={1.5} />
+                                  <span className="text-sm font-mono">{item.repostCount}</span>
+                              </motion.button>
+                              <motion.button 
+                                  whileTap={{ scale: 1.2 }}
+                                  transition={{ duration: 0.1 }}
+                                  onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
+                                  className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                  style={isLiked ? {
+                                      color: `hsl(${postAuraColor})`,
+                                      filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
+                                  } : {}}
+                              >
+                                  <Sparkles 
+                                      size={18} 
+                                      strokeWidth={1.5}
+                                      fill={isLiked ? 'currentColor' : 'none'}
+                                  />
+                                  <span className="text-sm font-mono">{item.likeCount}</span>
+                              </motion.button>
+                              <motion.button
+                                  whileTap={{ scale: 1.2 }}
+                                  transition={{ duration: 0.1 }}
+                                  onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
+                              </motion.button>
+                          </div>
 
-                             {item.comments && item.comments.length > 0 && (
-                            <div className="mt-3 pt-3 border-t pl-12" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.1)`}}>
-                                {item.comments.slice(0, 2).map((comment: any) => {
-                                    const commentAuraColor = getPostAuraColor(comment);
-                                    const isCommentFocused = focusedCommentId === comment.id;
+                           {item.comments && item.comments.length > 0 && (
+                          <div className="mt-3 pt-3 border-t pl-12" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.1)`}}>
+                              {item.comments.slice(0, 2).map((comment: any) => {
+                                  const commentAuraColor = getPostAuraColor(comment);
+                                  const isCommentFocused = focusedCommentId === comment.id;
 
-                                    return (
-                                        <div 
-                                            key={comment.id}
-                                            className="mt-2 first:mt-0 cursor-pointer"
-                                            onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
-                                        >
-                                            <div className="flex items-start gap-2">
-                                                <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border" style={{borderColor: `hsl(${commentAuraColor})`}}/>
-                                                <div className="flex-1 text-sm">
-                                                    <p className="font-light text-slate-300">
-                                                        <span className="font-bold mr-2" style={{color: `hsl(${commentAuraColor})`}}>{comment.handle}</span>
-                                                        {comment.text}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <AnimatePresence>
-                                                {isCommentFocused && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                                                        animate={{ opacity: 1, height: 'auto', marginTop: '8px' }}
-                                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                                        className="pl-8 flex items-center gap-4"
-                                                    >
-                                                        <motion.button
-                                                            whileTap={{ scale: 1.2 }}
-                                                            onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
-                                                            className="flex items-center gap-1.5 text-xs text-slate-400 hover:brightness-125"
-                                                            style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
-                                                        >
-                                                            <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
-                                                            <span>{comment.likeCount}</span>
-                                                        </motion.button>
-                                                        <motion.button
-                                                            whileTap={{ scale: 1.2 }}
-                                                            onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
-                                                            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary"
-                                                        >
-                                                            <MessageSquare size={14}/>
-                                                            <span>Reply</span>
-                                                        </motion.button>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
+                                  return (
+                                      <div 
+                                          key={comment.id}
+                                          className="mt-2 first:mt-0 cursor-pointer"
+                                          onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
+                                      >
+                                          <div className="flex items-start gap-2">
+                                              <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border" style={{borderColor: `hsl(${commentAuraColor})`}}/>
+                                              <div className="flex-1 text-sm">
+                                                  <p className="font-light text-slate-300">
+                                                      <span className="font-bold mr-2" style={{color: `hsl(${commentAuraColor})`}}>@{comment.handle}</span>
+                                                      {comment.text}
+                                                  </p>
+                                              </div>
+                                          </div>
+                                          <AnimatePresence>
+                                              {isCommentFocused && (
+                                                  <motion.div
+                                                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                      animate={{ opacity: 1, height: 'auto', marginTop: '8px' }}
+                                                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                      className="pl-8 flex items-center gap-4"
+                                                  >
+                                                      <motion.button
+                                                          whileTap={{ scale: 1.2 }}
+                                                          onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
+                                                          className="flex items-center gap-1.5 text-xs text-slate-400 hover:brightness-125"
+                                                          style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
+                                                      >
+                                                          <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
+                                                          <span>{comment.likeCount}</span>
+                                                      </motion.button>
+                                                      <motion.button
+                                                          whileTap={{ scale: 1.2 }}
+                                                          onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
+                                                          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary"
+                                                      >
+                                                          <MessageSquare size={14}/>
+                                                          <span>Reply</span>
+                                                      </motion.button>
+                                                  </motion.div>
+                                              )}
+                                          </AnimatePresence>
+                                      </div>
+                                  )
+                              })}
+                          </div>
+                      )}
 
-                        </ResonanceCard>
-                        );
+                      </ResonanceCard>
+                      );
                     })
-                  ) : (
+                  )}
+                  
+                  {!isLoadingFeed && displayedFeed.length === 0 && (
                     <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
                         <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
                           no vibrations found here.
