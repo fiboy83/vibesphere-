@@ -215,6 +215,8 @@ export default function VibesphereApp() {
     handle: 'user.vibes',
     avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`,
     bio: 'sovereign identity vibing on the decentralized web.',
+    extendedBio: '',
+    websiteString: '',
     themeColor: '262 100% 70%',
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -339,6 +341,8 @@ export default function VibesphereApp() {
                     username: commentLayout.username || 'Sovereign_User',
                     avatar: commentLayout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.pharos_address}&backgroundColor=a855f7`,
                     themeColor: commentLayout.vibe_color || '262 100% 70%',
+                    extendedBio: commentLayout.extendedBio || '',
+                    websiteString: commentLayout.websiteString || '',
                     likeCount: 0, 
                     commentCount: 0,
                     repostCount: 0,
@@ -360,6 +364,8 @@ export default function VibesphereApp() {
                 username: layout.username || 'Sovereign_User',
                 avatar: layout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${post.pharos_address}&backgroundColor=a855f7`,
                 themeColor: layout.vibe_color || '262 100% 70%',
+                extendedBio: layout.extendedBio || '',
+                websiteString: layout.websiteString || '',
                 commentCount: parseInt(post.comment_count, 10) || 0, 
                 repostCount: 0, // Not stored in DB yet
                 likeCount: parseInt(post.like_count, 10) || 0,
@@ -894,7 +900,7 @@ export default function VibesphereApp() {
                     }
                     const data = await response.json();
                     
-                    if (data && (data.avatar || data.vibe_color || data.username || data.handle || data.bio)) {
+                    if (data) {
                         setProfile(prev => ({
                             ...prev,
                             username: data.username || prev.username,
@@ -902,6 +908,8 @@ export default function VibesphereApp() {
                             avatar: data.avatar || prev.avatar,
                             themeColor: data.vibe_color || prev.themeColor,
                             bio: data.bio || prev.bio,
+                            extendedBio: data.extendedBio || '',
+                            websiteString: data.websiteString || '',
                         }));
                     }
                 } catch (error) {
@@ -1358,9 +1366,9 @@ export default function VibesphereApp() {
 
 
   const profileToShow = (activeTab === 'profile' && !viewingProfile) 
-      ? { ...profile, bio: profile.bio || 'sovereign identity vibing on the decentralized web.' }
+      ? profile
       : (activeTab === 'user-profile' && viewingProfile) 
-      ? { ...viewingProfile, bio: viewingProfile.bio || `a sovereign identity on pharos network.` }
+      ? viewingProfile
       : null;
 
   let feedForProfileTab: any[] = [];
@@ -2485,14 +2493,14 @@ export default function VibesphereApp() {
                       )}
                   </div>
                   
-                  {profileToShow.bio && (
+                  {(profileToShow?.extendedBio || profileToShow?.websiteString) && (
                       <div className="my-4 w-full">
                           <ResonanceCard 
                               className="backdrop-blur-2xl overflow-hidden"
                               style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                           >
                             <div className="flex flex-col text-left gap-2 p-4 pt-2">
-                                <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose" />
+                                <Linkify text={`${profileToShow.extendedBio || ''} ${profileToShow.websiteString || ''}`.trim()} className="text-base font-light text-slate-300 max-w-prose" />
                             </div>
                           </ResonanceCard>
                       </div>
@@ -2866,7 +2874,7 @@ export default function VibesphereApp() {
                             defi hub
                         </h2>
 
-                        <ResonanceCard style={{ '--primary': currentAColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                        <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                             <div className="text-center">
                                 <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
                                 <p className="text-5xl font-black mt-2 tracking-tighter italic">

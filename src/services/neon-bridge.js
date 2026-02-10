@@ -1,3 +1,4 @@
+
 import { Pool } from 'pg';
 
 let pool;
@@ -25,7 +26,7 @@ const getDbPool = () => {
 /**
  * Fetches the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
- * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string, bio: string} | null>} The layout metadata or null if not found.
+ * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string, bio: string, extendedBio: string, websiteString: string} | null>} The layout metadata or null if not found.
  */
 export async function getLayout(pharos_address) {
   const dbPool = getDbPool();
@@ -33,12 +34,13 @@ export async function getLayout(pharos_address) {
 
   try {
     const res = await dbPool.query(
-      'SELECT sovereign_layout FROM users WHERE pharos_address = $1::text',
+      'SELECT sovereign_layout, extended_bio, website_string FROM users WHERE pharos_address = $1::text',
       [pharos_address]
     );
 
     if (res.rows.length > 0) {
-      const layout = res.rows[0].sovereign_layout;
+      const row = res.rows[0];
+      const layout = row.sovereign_layout || {};
       // Ensure we return an object with expected keys, even if they are null
       return {
         vibe_color: layout?.vibe_color || null,
@@ -46,6 +48,8 @@ export async function getLayout(pharos_address) {
         username: layout?.username || null,
         handle: layout?.handle || null,
         bio: layout?.bio || null,
+        extendedBio: row.extended_bio || null,
+        websiteString: row.website_string || null,
       };
     }
     return null;
@@ -131,7 +135,10 @@ export async function getFeed(pharos_address) {
             WHEN p.image_url IS NOT NULL AND p.image_url != '' THEN 'image'
             ELSE NULL
         END AS media_type,
-        u.sovereign_layout,
+        (
+          COALESCE(u.sovereign_layout, '{}'::jsonb) || 
+          jsonb_build_object('extendedBio', u.extended_bio, 'websiteString', u.website_string)
+        ) as sovereign_layout,
         (SELECT COUNT(*) FROM likes WHERE post_id_onchain = p.id::text) AS like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id_onchain = p.id::text) AS comment_count,
         CASE WHEN $1::text IS NOT NULL THEN EXISTS(SELECT 1 FROM likes WHERE post_id_onchain = p.id::text AND pharos_address = $1::text) ELSE FALSE END AS user_has_liked,
@@ -145,7 +152,10 @@ export async function getFeed(pharos_address) {
                     c.created_at,
                     c.pharos_address,
                     c.parent_id,
-                    cu.sovereign_layout as user_layout
+                    (
+                      COALESCE(cu.sovereign_layout, '{}'::jsonb) || 
+                      jsonb_build_object('extendedBio', cu.extended_bio, 'websiteString', cu.website_string)
+                    ) as user_layout
                 FROM comments c
                 LEFT JOIN users cu ON c.pharos_address = cu.pharos_address
                 WHERE c.post_id_onchain = p.id::text
