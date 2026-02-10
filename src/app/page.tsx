@@ -1353,7 +1353,7 @@ export default function VibesphereApp() {
               break;
           case 'vibes':
               if (profileToShow.handle === profile.handle) {
-                  // This should find all items, even nested ones. A simple filter is not enough.
+                  // This should find all items, even nested ones. A simple filter is not enough. A simple filter is not enough.
                   const likedFeed: any[] = [];
                   const findLikedRecursive = (items: any[]) => {
                       for (const item of items) {
@@ -2267,7 +2267,6 @@ export default function VibesphereApp() {
                                                 </button>
                                             )}
                                         </div>
-                                    </div>
                                     )}
                             </div>
                         </div>
@@ -2390,67 +2389,14 @@ export default function VibesphereApp() {
 
                         <div className="absolute top-4 right-4 z-20">
                             <div
+                                onClick={handleAvatarClick}
                                 className={cn(
-                                    "group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center"
+                                    "group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center cursor-pointer"
                                 )}
                             >
                                 <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
                                 <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
                             </div>
-                        </div>
-                        
-                        <div className="absolute inset-0 flex flex-col justify-center items-center p-4">
-                            {profileToShow.handle === profile.handle ? (
-                                <>
-                                    {!userHandle && (
-                                        <div className="w-full max-w-sm p-6 bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl">
-                                            <h3 className="text-center text-sm font-bold tracking-widest lowercase mb-4" style={{color: `hsl(${currentAuraColor})`}}>Claim Your .vibes Identity</h3>
-                                            <div className="relative">
-                                                <input
-                                                type="text"
-                                                placeholder="type your desired handle"
-                                                value={claimInput}
-                                                onChange={(e) => setClaimInput(e.target.value.toLowerCase())}
-                                                className={cn(
-                                                    "w-full bg-white/5 border rounded-full py-3 pl-4 pr-24 text-sm font-mono lowercase focus:outline-none transition-all",
-                                                    isHandleAvailable === true ? "border-green-500/50 focus:border-green-500" :
-                                                    isHandleAvailable === false ? "border-red-500/50 focus:border-red-500" :
-                                                    "border-primary/30 focus:border-primary"
-                                                )}
-                                                />
-                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-mono">
-                                                <span className="text-slate-500">.vibes</span>
-                                                </div>
-                                            </div>
-                                            <div className="text-center text-xs font-mono h-4 mt-2">
-                                                {isCheckingHandle && <p className="text-slate-500 animate-pulse">checking...</p>}
-                                                {!isCheckingHandle && isHandleAvailable === true && <p className="text-green-400">Handle available! Claim now.</p>}
-                                                {!isCheckingHandle && isHandleAvailable === false && <p className="text-red-400">Oops, this handle is already taken.</p>}
-                                                {!isCheckingHandle && handleCheckError && <p className="text-red-400">{handleCheckError}</p>}
-                                            </div>
-                                            <button
-                                                onClick={handleClaim}
-                                                disabled={!isHandleAvailable || isClaiming || isCheckingHandle || !claimInput}
-                                                className={cn(
-                                                "w-full mt-4 py-3 rounded-full text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-                                                isClaiming ? "bg-primary/50 animate-pulse" : "bg-primary hover:shadow-glow-md",
-                                                "text-primary-foreground"
-                                                )}
-                                            >
-                                                {isClaiming ? "Registering on Pharos..." : "Claim Handle"}
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <ProfileInteraction
-                                    isVibing={vibedProfiles.includes(profileToShow.handle)}
-                                    onVibe={() => handleVibe(profileToShow.handle)}
-                                    onUnvibe={() => handleUnvibe(profileToShow.handle)}
-                                    onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
-                                    themeColor={profileToShow.themeColor}
-                                />
-                            )}
                         </div>
                         
                         {profileToShow.handle === profile.handle && userHandle && (
@@ -2466,14 +2412,13 @@ export default function VibesphereApp() {
                                         </div>
                                     </button>
                                 </div>
-                                <div className="absolute bottom-4 right-4 z-20">
+                                <div className="absolute bottom-4 right-4 z-30">
                                     <button
                                         onClick={handleAvatarClick}
                                         className="group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
                                     >
                                         <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
                                             <FileUp size={14} />
-                                            change
                                         </div>
                                     </button>
                                 </div>
@@ -2490,8 +2435,8 @@ export default function VibesphereApp() {
                                 className="backdrop-blur-2xl overflow-hidden"
                                 style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                             >
-                                <div className="flex flex-col items-center text-center gap-4 p-4">
-                                    <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose" />
+                                <div className="flex flex-col text-left gap-2 p-4">
+                                    <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose whitespace-normal break-all" />
                                 </div>
                             </ResonanceCard>
                         </motion.div>
@@ -2744,7 +2689,7 @@ export default function VibesphereApp() {
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
-                    className="w-full max-w-md mx-auto flex flex-col gap-6"
+                    className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifications</h2>
                     
@@ -2809,7 +2754,7 @@ export default function VibesphereApp() {
                             defi hub
                         </h2>
 
-                        <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                        <ResonanceCard style={{ '--primary': currentAColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                             <div className="text-center">
                                 <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
                                 <p className="text-5xl font-black mt-2 tracking-tighter italic">
@@ -3522,3 +3467,6 @@ export default function VibesphereApp() {
 
 
 
+
+
+    
