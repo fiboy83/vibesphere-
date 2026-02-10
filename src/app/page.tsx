@@ -246,6 +246,16 @@ export default function VibesphereApp() {
   const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
 
+  // --- NOTIFICATION STATE ---
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(true);
+  const [notifications, setNotifications] = useState([
+    { id: 1, type: 'like', from: { username: 'Quantum_Leaper', handle: 'ql.vibes', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=ql.vibes&backgroundColor=06b6d4` }, content: 'vibed with your post.', time: '2 hours ago', unread: true },
+    { id: 2, type: 'bookmark', from: { username: 'DAO_Steward', handle: 'gov.vibes', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=gov.vibes&backgroundColor=ef4444` }, content: 'saved your article: "New governance proposal PIP-8..."', time: '5 hours ago', unread: true },
+    { id: 3, type: 'message', from: { username: 'Nova_Architect', handle: 'nova.vibes', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=nova.vibes&backgroundColor=a855f7` }, content: 'sent you a message.', time: '1 day ago', unread: false },
+    { id: 4, type: 'revibe', from: { username: 'alpha_vibes.vibes', handle: 'alpha_vibes.vibes', avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=alpha_vibes.vibes&backgroundColor=10b981`}, content: 'r\'echoed your vibe.', time: '2 days ago', unread: false },
+  ]);
+
 
   // --- NAVIGATION STATE ---
   const [viewStack, setViewStack] = useState<any[]>([{ tab: 'home', viewingProfile: null, focusedPost: null, conversationWith: null }]);
@@ -264,6 +274,17 @@ export default function VibesphereApp() {
   const handleUnvibe = (handle: string) => {
       setVibedProfiles(prev => prev.filter(h => h !== handle));
       toast({ title: `stopped vibing with @${handle}` });
+  };
+
+  const handleNotificationClick = () => {
+    pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null });
+    setHasUnreadNotifications(false);
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+  };
+  
+  const handleInboxClick = () => {
+    pushView({ tab: 'inbox', viewingProfile: null, focusedPost: null, conversationWith: null });
+    setHasUnreadMessages(false);
   };
 
   const fetchUserHandle = useCallback(async () => {
@@ -1824,9 +1845,32 @@ export default function VibesphereApp() {
                             <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'bookmarks' ? 'text-shadow-glow' : ''}`}>bookmark</span>
                         </div>
                     </button>
+
+                    <button
+                        onClick={handleInboxClick}
+                        className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
+                        ${activeTab === 'inbox'
+                            ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
+                            : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
+                        }`}
+                        >
+                        <div
+                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'inbox' ? 'opacity-100' : ''}`}
+                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'inbox' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                        />
+                        <div className="relative flex items-center gap-4">
+                            <div className="relative">
+                                <MessageSquare size={20} strokeWidth={1.5} className={`${activeTab === 'inbox' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                                {hasUnreadMessages && (
+                                     <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#050505] shadow-[0_0_8px_1px_#ef4444]" />
+                                )}
+                            </div>
+                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'inbox' ? 'text-shadow-glow' : ''}`}>inbox</span>
+                        </div>
+                    </button>
                     
                     <button
-                        onClick={() => pushView({ tab: 'notifications', viewingProfile: null, focusedPost: null })}
+                        onClick={handleNotificationClick}
                         className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
                         ${activeTab === 'notifications'
                             ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
@@ -1840,7 +1884,9 @@ export default function VibesphereApp() {
                         <div className="relative flex items-center gap-4">
                             <div className="relative">
                                 <Bell size={20} strokeWidth={1.5} className={`${activeTab === 'notifications' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
-                                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
+                                {hasUnreadNotifications && (
+                                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-[#050505] shadow-[0_0_8px_1px_hsl(var(--primary))] transition-all duration-500" />
+                                )}
                             </div>
                             <span className={`text-lg font-bold tracking-widest lowercase ${activeTab === 'notifications' ? 'text-shadow-glow' : ''}`}>notifications</span>
                         </div>
@@ -2388,7 +2434,7 @@ export default function VibesphereApp() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                       
-                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
+                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2">
                         <div
                             onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                             className={cn(
@@ -2445,9 +2491,9 @@ export default function VibesphereApp() {
                               className="backdrop-blur-2xl overflow-hidden"
                               style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                           >
-                              <div className="flex flex-col text-left gap-2 p-4 pt-2">
-                                  <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose" />
-                              </div>
+                            <div className="flex flex-col text-left gap-2 p-4 pt-2">
+                                <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose" />
+                            </div>
                           </ResonanceCard>
                       </div>
                   )}
@@ -2540,8 +2586,14 @@ export default function VibesphereApp() {
                      </div>
                   )}
 
-                  {!isLoadingFeed && displayedFeed.length > 0 && (
-                    displayedFeed.map((item, index) => {
+                  {!isLoadingFeed && displayedFeed.length === 0 && (
+                    <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                        <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
+                          no vibrations found here.
+                        </h2>
+                    </motion.div>
+                  )}
+                  {!isLoadingFeed && displayedFeed.length > 0 && displayedFeed.map((item, index) => {
                       const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
                       const cardStyle = { 
                           '--primary': postAuraColor,
@@ -2749,61 +2801,48 @@ export default function VibesphereApp() {
 
                       </ResonanceCard>
                       );
-                    })
-                  )}
-                  
-                  {!isLoadingFeed && displayedFeed.length === 0 && (
-                    <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
-                        <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
-                          no vibrations found here.
-                        </h2>
-                    </motion.div>
-                  )}
+                    })}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
                     className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
-                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg mb-4">Notifications</h2>
-                    
-                    <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
-                            <Sparkles size={16} className="text-primary" />
-                        </div>
-                        <div>
-                            <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=ql.vibes&backgroundColor=06b6d4`} alt="Quantum_Leaper avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
-                            <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold" style={{color: 'white'}}>Quantum_Leaper</span> and 2 others vibed with your post.
-                            </p>
-                            <p className="text-xs text-slate-500 font-mono mt-1">2 hours ago</p>
-                        </div>
-                    </div>
+                    <h2 className="text-center text-slate-300 font-light tracking-[0.3em] uppercase text-2xl mb-4"
+                        style={{ color: `hsl(${profile.themeColor})`, textShadow: `0 0 10px hsla(${profile.themeColor.replace(/ /g, ',')}, 0.5)` }}>
+                        Notifications
+                    </h2>
+                    {notifications.length > 0 ? (
+                        notifications.map((notif) => {
+                            const notifAuraColor = getPostAuraColor({ avatar: notif.from.avatar });
+                            const Icon = 
+                                notif.type === 'like' ? Sparkles :
+                                notif.type === 'bookmark' ? Bookmark :
+                                notif.type === 'message' ? MessageSquare :
+                                notif.type === 'revibe' ? Repeat : Bell;
 
-                    <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-primary/20 flex items-center justify-center transition-colors duration-500">
-                            <Bookmark size={16} className="text-primary transition-colors duration-500" />
+                            return (
+                                <ResonanceCard key={notif.id} style={{ '--primary': notifAuraColor, '--primary-glow': notifAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                                    <div className="flex items-start gap-4 p-1">
+                                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                                            <Icon size={16} className="text-primary" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <img src={notif.from.avatar} alt={`${notif.from.username} avatar`} className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
+                                            <p className="inline text-sm text-slate-300 font-light">
+                                                <span className="font-bold" style={{color: 'white'}}>{notif.from.username}</span> {notif.content}
+                                            </p>
+                                            <p className="text-xs text-slate-500 font-mono mt-1">{notif.time}</p>
+                                        </div>
+                                        {notif.unread && <div className="w-2 h-2 rounded-full bg-primary mt-1 shadow-[0_0_8px_1px_hsl(var(--primary))]"></div>}
+                                    </div>
+                                </ResonanceCard>
+                            )
+                        })
+                    ) : (
+                        <div className="text-center py-20">
+                            <p className="text-sm text-slate-500 font-mono">no new vibrations.</p>
                         </div>
-                        <div>
-                            <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=gov.vibes&backgroundColor=ef4444`} alt="DAO_Steward avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
-                            <p className="inline text-sm text-slate-300 font-light">
-                                <span className="font-bold" style={{color: 'white'}}>DAO_Steward</span> saved your article: "New governance proposal PIP-8..."
-                            </p>
-                            <p className="text-xs text-slate-500 font-mono mt-1">5 hours ago</p>
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                            <MessageSquare size={16} className="text-cyan-400" />
-                        </div>
-                        <div>
-                            <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=nova.vibes&backgroundColor=a855f7`} alt="Nova_Architect avatar" className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
-                            <p className="inline text-sm text-slate-300 font-light">
-                                New post from <span className="font-bold" style={{color: 'white'}}>Nova_Architect</span>.
-                            </p>
-                            <p className="text-xs text-slate-500 font-mono mt-1">1 day ago</p>
-                        </div>
-                    </div>
+                    )}
                 </motion.div>
               ) : activeTab === 'defi' ? (
                 <motion.div
@@ -2827,7 +2866,7 @@ export default function VibesphereApp() {
                             defi hub
                         </h2>
 
-                        <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                        <ResonanceCard style={{ '--primary': currentAColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                             <div className="text-center">
                                 <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
                                 <p className="text-5xl font-black mt-2 tracking-tighter italic">
@@ -3037,6 +3076,7 @@ export default function VibesphereApp() {
                           <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col items-center shadow-2xl"
                           >
@@ -3083,6 +3123,7 @@ export default function VibesphereApp() {
                           <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-sm bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8"
                           >
@@ -3506,7 +3547,7 @@ export default function VibesphereApp() {
               </button>
 
               {/* inbok - familiar mail icon */}
-              <button onClick={() => pushView({ tab: 'inbox', viewingProfile: null, focusedPost: null, conversationWith: null })} className={`p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+              <button onClick={handleInboxClick} className={`relative p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 7L12 13L21 7M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <defs>
@@ -3516,6 +3557,9 @@ export default function VibesphereApp() {
                     </linearGradient>
                   </defs>
                 </svg>
+                {hasUnreadMessages && (
+                    <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-black" />
+                )}
               </button>
 
               {/* wallet - familiar card/wallet icon */}
@@ -3537,5 +3581,6 @@ export default function VibesphereApp() {
     </div>
   );
 }
+    
 
     
