@@ -1424,6 +1424,35 @@ export default function VibesphereApp() {
   const isFocusedPostBookmarked = focusedPost ? bookmarkedPosts.includes(focusedPost.id) : false;
   const isFocusedPostLiked = focusedPost ? likedPosts.includes(focusedPost.id) : false;
 
+  const Linkify: React.FC<{ text: string; className?: string; linkClassName?: string }> = ({ text, className, linkClassName }) => {
+    if (!text) return null;
+  
+    const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    const parts = text.split(urlRegex);
+  
+    return (
+      <p className={cn("whitespace-pre-wrap", className)}>
+        {parts.map((part, i) => {
+          if (part && part.match(urlRegex)) {
+            return (
+              <a
+                key={i}
+                href={part}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn("text-primary hover:underline", linkClassName)}
+                style={{ textShadow: '0 0 8px rgba(var(--primary-glow), 0.8)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {part}
+              </a>
+            );
+          }
+          return <React.Fragment key={i}>{part}</React.Fragment>;
+        })}
+      </p>
+    );
+  };
 
   const CommentItem: React.FC<{
       comment: any;
@@ -2359,7 +2388,7 @@ export default function VibesphereApp() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                        <div className="absolute inset-0 flex flex-col justify-center items-center p-4 gap-4">
+                        <div className="absolute top-4 right-4">
                             <button
                                 onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                                 disabled={profileToShow.handle !== profile.handle}
@@ -2368,20 +2397,17 @@ export default function VibesphereApp() {
                                     profileToShow.handle === profile.handle && "hover:border-primary/40 cursor-pointer"
                                 )}
                             >
-                                <h2 className="text-2xl md:text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                                <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
                                 <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
                                 {profileToShow.handle === profile.handle && (
-                                    <>
-                                        <div className="absolute -inset-px rounded-3xl border-2 border-transparent group-hover:border-primary/30 transition-colors pointer-events-none" />
-                                        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono lowercase text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                                            tap to change background
-                                        </span>
-                                    </>
+                                    <div className="absolute -inset-px rounded-3xl border-2 border-transparent group-hover:border-primary/30 transition-colors pointer-events-none" />
                                 )}
                             </button>
-                            
+                        </div>
+                        
+                        <div className="absolute inset-0 flex flex-col justify-center items-center p-4">
                             {profileToShow.handle === profile.handle ? (
-                                <div className="flex flex-col items-center gap-4">
+                                <>
                                     {!userHandle && (
                                         <div className="w-full max-w-sm p-6 bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl">
                                             <h3 className="text-center text-sm font-bold tracking-widest lowercase mb-4" style={{color: `hsl(${currentAuraColor})`}}>Claim Your .vibes Identity</h3>
@@ -2421,16 +2447,7 @@ export default function VibesphereApp() {
                                             </button>
                                         </div>
                                     )}
-                                    <button 
-                                        onClick={openProfileModal}
-                                        className="group relative w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
-                                    >
-                                        <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
-                                            <Edit2 size={14} />
-                                            edit profile
-                                        </div>
-                                    </button>
-                                </div>
+                                </>
                             ) : (
                                 <ProfileInteraction
                                     isVibing={vibedProfiles.includes(profileToShow.handle)}
@@ -2441,9 +2458,22 @@ export default function VibesphereApp() {
                                 />
                             )}
                         </div>
+                        
+                        {profileToShow.handle === profile.handle && userHandle && (
+                            <div className="absolute bottom-4 left-4">
+                                <button 
+                                    onClick={openProfileModal}
+                                    className="group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
+                                >
+                                    <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
+                                        <Edit2 size={14} />
+                                        edit
+                                    </div>
+                                </button>
+                            </div>
+                        )}
                     </div>
                     
-                    {/* Bio Bridge Card */}
                     {profileToShow.bio && (
                         <motion.div 
                             variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
@@ -2454,14 +2484,7 @@ export default function VibesphereApp() {
                                 style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                             >
                                 <div className="flex flex-col items-center text-center gap-4 p-4">
-                                    <p className="text-base font-light text-slate-300 max-w-prose">{profileToShow.bio}</p>
-                                    
-                                    <div className="flex items-center gap-6 text-primary/80 mt-2">
-                                        <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
-                                            <Globe size={16} />
-                                            <span className="text-sm font-mono">sovereign.one</span>
-                                        </a>
-                                    </div>
+                                    <Linkify text={profileToShow.bio} className="text-base font-light text-slate-300 max-w-prose" />
                                 </div>
                             </ResonanceCard>
                         </motion.div>
@@ -3489,4 +3512,5 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
 
