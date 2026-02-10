@@ -2359,24 +2359,37 @@ export default function VibesphereApp() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                        <div className="absolute inset-0 flex flex-col justify-end p-4 md:p-6">
-                            <div className="bg-black/40 backdrop-blur-lg rounded-2xl py-2 md:py-3 px-4 md:px-5 mb-2 md:mb-4">
-                                <h2 className="text-2xl md:text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                        <div className="absolute inset-0 flex flex-col justify-center items-center p-4 gap-4">
+                            <button
+                                onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
+                                disabled={profileToShow.handle !== profile.handle}
+                                className={cn(
+                                    "relative group bg-black/40 backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-5 text-center transition-colors",
+                                    profileToShow.handle === profile.handle && "hover:border-primary/40 cursor-pointer"
+                                )}
+                            >
+                                <h2 className="text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
                                 <p className="text-sm font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
-                            </div>
+                                {profileToShow.handle === profile.handle && (
+                                    <>
+                                        <div className="absolute -inset-px rounded-3xl border-2 border-transparent group-hover:border-primary/30 transition-colors pointer-events-none" />
+                                        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono lowercase text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                                            tap to change background
+                                        </span>
+                                    </>
+                                )}
+                            </button>
                             
                             {profileToShow.bio && (
-                                <div className="mb-2 md:mb-4">
-                                    <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
-                                        <p className="text-sm font-mono text-slate-300 text-center">{profileToShow.bio}</p>
-                                    </ResonanceCard>
-                                </div>
+                                <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
+                                    <p className="text-sm font-mono text-slate-300 text-center">{profileToShow.bio}</p>
+                                </ResonanceCard>
                             )}
 
                             {profileToShow.handle === profile.handle ? (
-                                <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center gap-4">
                                     {!userHandle && (
-                                        <div className="w-full max-w-sm mx-auto mb-4 p-6 bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl">
+                                        <div className="w-full max-w-sm p-6 bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl">
                                             <h3 className="text-center text-sm font-bold tracking-widest lowercase mb-4" style={{color: `hsl(${currentAuraColor})`}}>Claim Your .vibes Identity</h3>
                                             <div className="relative">
                                                 <input
@@ -2414,32 +2427,22 @@ export default function VibesphereApp() {
                                             </button>
                                         </div>
                                     )}
-                                    <div className='flex items-center justify-center gap-1 md:gap-2 mt-2 md:mt-4'>
-                                        <button 
-                                            onClick={openProfileModal}
-                                            className="flex items-center gap-1 md:gap-2 py-2 px-4 md:px-5 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-[11px] md:text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
-                                        >
-                                            <Edit2 size={14} />
-                                            edit profile
-                                        </button>
-                                        <button 
-                                            onClick={handleAvatarClick}
-                                            className="flex items-center gap-1 md:gap-2 py-2 px-4 md:px-5 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-[11px] md:text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
-                                        >
-                                            change background
-                                        </button>
-                                    </div>
+                                    <button 
+                                        onClick={openProfileModal}
+                                        className="group relative flex items-center gap-2 py-2 px-5 bg-black/40 backdrop-blur-2xl border border-primary/20 hover:border-primary/40 rounded-full text-[11px] font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors"
+                                    >
+                                        <Edit2 size={14} />
+                                        edit profile
+                                    </button>
                                 </div>
                             ) : (
-                                <div className="flex justify-center mt-2 md:mt-4">
-                                    <ProfileInteraction
-                                        isVibing={vibedProfiles.includes(profileToShow.handle)}
-                                        onVibe={() => handleVibe(profileToShow.handle)}
-                                        onUnvibe={() => handleUnvibe(profileToShow.handle)}
-                                        onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
-                                        themeColor={profileToShow.themeColor}
-                                    />
-                                </div>
+                                <ProfileInteraction
+                                    isVibing={vibedProfiles.includes(profileToShow.handle)}
+                                    onVibe={() => handleVibe(profileToShow.handle)}
+                                    onUnvibe={() => handleUnvibe(profileToShow.handle)}
+                                    onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
+                                    themeColor={profileToShow.themeColor}
+                                />
                             )}
                         </div>
                     </div>
