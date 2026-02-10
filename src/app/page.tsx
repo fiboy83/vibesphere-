@@ -1431,7 +1431,7 @@ export default function VibesphereApp() {
     const parts = text.split(urlRegex);
   
     return (
-      <p className={cn("whitespace-pre-wrap", className)}>
+      <p className={cn("whitespace-normal break-words", className)}>
         {parts.map((part, i) => {
           if (part && part.match(urlRegex)) {
             return (
@@ -2388,21 +2388,15 @@ export default function VibesphereApp() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                        <div className="absolute top-4 right-4">
-                            <button
-                                onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
-                                disabled={profileToShow.handle !== profile.handle}
+                        <div className="absolute top-4 right-4 z-20">
+                            <div
                                 className={cn(
-                                    "relative group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-5 text-center transition-colors",
-                                    profileToShow.handle === profile.handle && "hover:border-primary/40 cursor-pointer"
+                                    "group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center"
                                 )}
                             >
                                 <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
                                 <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
-                                {profileToShow.handle === profile.handle && (
-                                    <div className="absolute -inset-px rounded-3xl border-2 border-transparent group-hover:border-primary/30 transition-colors pointer-events-none" />
-                                )}
-                            </button>
+                            </div>
                         </div>
                         
                         <div className="absolute inset-0 flex flex-col justify-center items-center p-4">
@@ -2460,17 +2454,30 @@ export default function VibesphereApp() {
                         </div>
                         
                         {profileToShow.handle === profile.handle && userHandle && (
-                            <div className="absolute bottom-4 left-4">
-                                <button 
-                                    onClick={openProfileModal}
-                                    className="group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
-                                >
-                                    <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
-                                        <Edit2 size={14} />
-                                        edit
-                                    </div>
-                                </button>
-                            </div>
+                            <>
+                                <div className="absolute bottom-4 left-4 z-20">
+                                    <button 
+                                        onClick={openProfileModal}
+                                        className="group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
+                                    >
+                                        <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
+                                            <Edit2 size={14} />
+                                            edit
+                                        </div>
+                                    </button>
+                                </div>
+                                <div className="absolute bottom-4 right-4 z-20">
+                                    <button
+                                        onClick={handleAvatarClick}
+                                        className="group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
+                                    >
+                                        <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
+                                            <FileUp size={14} />
+                                            change
+                                        </div>
+                                    </button>
+                                </div>
+                            </>
                         )}
                     </div>
                     
@@ -2480,7 +2487,7 @@ export default function VibesphereApp() {
                             className="my-6 w-full"
                         >
                             <ResonanceCard 
-                                className="backdrop-blur-2xl"
+                                className="backdrop-blur-2xl overflow-hidden"
                                 style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                             >
                                 <div className="flex flex-col items-center text-center gap-4 p-4">
@@ -3512,5 +3519,6 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
 
 
