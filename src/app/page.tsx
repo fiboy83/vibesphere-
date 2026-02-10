@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, X, Share2, MessageSquare, Repeat, Sparkles, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network } from 'lucide-react';
+import { Menu, Search, X, Share2, MessageSquare, Repeat, Sparkles, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network, Globe } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
@@ -126,12 +126,12 @@ const nestComments = (commentList: any[]): any[] => {
 
 
 // --- COMPONENT: RESONANCE CARD ---
-const ResonanceCard = ({ children, style, onClick }: { children: React.ReactNode, style?: React.CSSProperties, onClick?: () => void }) => {
+const ResonanceCard = ({ children, style, onClick, className }: { children: React.ReactNode, style?: React.CSSProperties, onClick?: () => void, className?: string }) => {
     const cardContent = (
       <motion.div 
         variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
         whileHover={onClick ? { y: -2 } : {}}
-        className="relative px-3 py-2 md:px-4 md:py-3 rounded-3xl bg-white/[0.02] border border-primary/20 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md w-full"
+        className={cn("relative px-3 py-2 md:px-4 md:py-3 rounded-3xl bg-white/[0.02] border border-primary/20 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md w-full", className)}
         style={style}
       >
         <div 
@@ -1050,7 +1050,7 @@ export default function VibesphereApp() {
     if (itemFound) {
       const newFeed = [newPost, ...feedWithUpdatedCount];
       setFeed(newFeed);
-      toast({ title: "vibe re-shared" });
+      toast({ title: "vibe r'echoed" });
     } else {
       toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
     }
@@ -2364,12 +2364,12 @@ export default function VibesphereApp() {
                                 onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                                 disabled={profileToShow.handle !== profile.handle}
                                 className={cn(
-                                    "relative group bg-black/40 backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-5 text-center transition-colors",
+                                    "relative group w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-5 text-center transition-colors",
                                     profileToShow.handle === profile.handle && "hover:border-primary/40 cursor-pointer"
                                 )}
                             >
-                                <h2 className="text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
-                                <p className="text-sm font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
+                                <h2 className="text-2xl md:text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                                <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
                                 {profileToShow.handle === profile.handle && (
                                     <>
                                         <div className="absolute -inset-px rounded-3xl border-2 border-transparent group-hover:border-primary/30 transition-colors pointer-events-none" />
@@ -2380,12 +2380,6 @@ export default function VibesphereApp() {
                                 )}
                             </button>
                             
-                            {profileToShow.bio && (
-                                <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
-                                    <p className="text-sm font-mono text-slate-300 text-center">{profileToShow.bio}</p>
-                                </ResonanceCard>
-                            )}
-
                             {profileToShow.handle === profile.handle ? (
                                 <div className="flex flex-col items-center gap-4">
                                     {!userHandle && (
@@ -2429,10 +2423,12 @@ export default function VibesphereApp() {
                                     )}
                                     <button 
                                         onClick={openProfileModal}
-                                        className="group relative flex items-center gap-2 py-2 px-5 bg-black/40 backdrop-blur-2xl border border-primary/20 hover:border-primary/40 rounded-full text-[11px] font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors"
+                                        className="group relative w-fit backdrop-blur-2xl border border-primary/20 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
                                     >
-                                        <Edit2 size={14} />
-                                        edit profile
+                                        <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
+                                            <Edit2 size={14} />
+                                            edit profile
+                                        </div>
                                     </button>
                                 </div>
                             ) : (
@@ -2446,6 +2442,31 @@ export default function VibesphereApp() {
                             )}
                         </div>
                     </div>
+                    
+                    {/* Bio Bridge Card */}
+                    {profileToShow.bio && (
+                        <motion.div 
+                            variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                            className="my-6 w-full"
+                        >
+                            <ResonanceCard 
+                                className="backdrop-blur-2xl"
+                                style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                            >
+                                <div className="flex flex-col items-center text-center gap-4 p-4">
+                                    <p className="text-base font-light text-slate-300 max-w-prose">{profileToShow.bio}</p>
+                                    
+                                    <div className="flex items-center gap-6 text-primary/80 mt-2">
+                                        <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
+                                            <Globe size={16} />
+                                            <span className="text-sm font-mono">sovereign.one</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </ResonanceCard>
+                        </motion.div>
+                    )}
+
 
                   <div className="w-full border-b" style={{ borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2)`}}>
                     <div className="flex justify-around max-w-sm mx-auto">
@@ -3468,3 +3489,4 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
