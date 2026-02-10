@@ -131,7 +131,7 @@ const ResonanceCard = ({ children, style, onClick }: { children: React.ReactNode
       <motion.div 
         variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
         whileHover={onClick ? { y: -2 } : {}}
-        className="relative px-4 py-3 rounded-3xl bg-white/[0.02] border border-primary/20 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md w-full"
+        className="relative px-3 py-2 md:px-4 md:py-3 rounded-3xl bg-white/[0.02] border border-primary/20 backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.04] shadow-lg shadow-primary/10 hover:shadow-glow-md w-full"
         style={style}
       >
         <div 
@@ -2360,13 +2360,13 @@ export default function VibesphereApp() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
                         <div className="absolute inset-0 flex flex-col justify-end p-4 md:p-6">
-                            <div className="bg-black/40 backdrop-blur-lg rounded-2xl py-3 px-5 mb-4">
-                                <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                            <div className="bg-black/40 backdrop-blur-lg rounded-2xl py-2 md:py-3 px-4 md:px-5 mb-2 md:mb-4">
+                                <h2 className="text-2xl md:text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
                                 <p className="text-sm font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
                             </div>
                             
                             {profileToShow.bio && (
-                                <div className="mb-4">
+                                <div className="mb-2 md:mb-4">
                                     <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                                         <p className="text-sm font-mono text-slate-300 text-center">{profileToShow.bio}</p>
                                     </ResonanceCard>
@@ -2414,24 +2414,24 @@ export default function VibesphereApp() {
                                             </button>
                                         </div>
                                     )}
-                                    <div className='flex items-center justify-center gap-2 mt-2'>
+                                    <div className='flex items-center justify-center gap-1 md:gap-2 mt-2 md:mt-4'>
                                         <button 
                                             onClick={openProfileModal}
-                                            className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                                            className="flex items-center gap-1 md:gap-2 py-2 px-4 md:px-5 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-[11px] md:text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
                                         >
                                             <Edit2 size={14} />
                                             edit profile
                                         </button>
                                         <button 
                                             onClick={handleAvatarClick}
-                                            className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                                            className="flex items-center gap-1 md:gap-2 py-2 px-4 md:px-5 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-[11px] md:text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
                                         >
                                             change background
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex justify-center mt-2">
+                                <div className="flex justify-center mt-2 md:mt-4">
                                     <ProfileInteraction
                                         isVibing={vibedProfiles.includes(profileToShow.handle)}
                                         onVibe={() => handleVibe(profileToShow.handle)}
@@ -3316,16 +3316,17 @@ export default function VibesphereApp() {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-sm bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8"
+                style={{'--primary': profile.themeColor, '--primary-glow': profile.themeColor.replace(/ /g, ', ') } as React.CSSProperties}
+                className="w-full max-w-sm bg-[#0a0a0a]/80 backdrop-blur-2xl border border-primary/20 rounded-[2.5rem] p-8 shadow-2xl"
               >
-                <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-purple-400">edit profile</h3>
+                <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-primary">edit profile</h3>
                 <div className='flex flex-col gap-4'>
                   <div>
                     <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>username</label>
                     <input 
                       value={tempProfile.username}
                       onChange={(e) => setTempProfile(p => ({...p, username: e.target.value}))}
-                      className="w-full mt-1 p-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-purple-500"
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary"
                     />
                   </div>
                   <div>
@@ -3333,7 +3334,7 @@ export default function VibesphereApp() {
                     <textarea 
                       value={tempProfile.bio}
                       onChange={(e) => setTempProfile(p => ({...p, bio: e.target.value}))}
-                      className="w-full mt-1 p-3 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-purple-500 resize-none"
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary resize-none"
                       rows={3}
                     />
                   </div>
