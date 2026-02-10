@@ -229,6 +229,7 @@ export default function VibesphereApp() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationMessages, setActiveConversationMessages] = useState<any[]>([]);
   const [inboxInput, setInboxInput] = useState('');
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
 
   // --- FEED & BOOKMARK STATE ---
@@ -404,6 +405,7 @@ export default function VibesphereApp() {
 
   const fetchMessages = useCallback(async (partnerAddress: string) => {
     if (!wallet?.address || !partnerAddress) return;
+    setIsLoadingMessages(true);
     try {
         const response = await fetch(`/api/messages?address1=${wallet.address}&address2=${partnerAddress}`);
         if (!response.ok) {
@@ -432,6 +434,8 @@ export default function VibesphereApp() {
     } catch (error) {
         console.error("Failed to fetch messages:", error);
         toast({ variant: "destructive", title: "Could not load conversation." });
+    } finally {
+        setIsLoadingMessages(false);
     }
   }, [wallet?.address, toast]);
 
@@ -445,6 +449,7 @@ export default function VibesphereApp() {
 
   useEffect(() => {
     if (conversationWith) {
+        setActiveConversationMessages([]); // Clear previous messages
         const partner = viewingProfile;
         if (partner?.pharos_address) {
             fetchMessages(partner.pharos_address);
@@ -1598,6 +1603,23 @@ export default function VibesphereApp() {
         );
     };
 
+    const MessageSkeleton = () => (
+        <div className="flex flex-col gap-4 p-4">
+            <div className="flex items-start gap-3 justify-start animate-pulse">
+                <Skeleton className="w-8 h-8 rounded-full" />
+                <Skeleton className="w-48 h-12 rounded-3xl rounded-bl-lg" />
+            </div>
+            <div className="flex items-start gap-3 justify-end animate-pulse">
+                <Skeleton className="w-64 h-16 rounded-3xl rounded-br-lg" />
+                <Skeleton className="w-8 h-8 rounded-full" />
+            </div>
+            <div className="flex items-start gap-3 justify-start animate-pulse">
+                <Skeleton className="w-8 h-8 rounded-full" />
+                <Skeleton className="w-32 h-10 rounded-3xl rounded-bl-lg" />
+            </div>
+        </div>
+    );
+
   const headerStyle = focusedPost ? { borderBottom: `1px solid hsla(${currentAuraColor.replace(/ /g, ',')}, 0.4)` } : {};
 
   if (!isAuthorized) {
@@ -1877,29 +1899,6 @@ export default function VibesphereApp() {
                         </div>
                     </button>
 
-                    <button
-                        onClick={handleInboxClick}
-                        className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
-                        ${activeTab === 'inbox'
-                            ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
-                            : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
-                        }`}
-                        >
-                        <div
-                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'inbox' ? 'opacity-100' : ''}`}
-                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'inbox' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
-                        />
-                        <div className="relative flex items-center gap-4">
-                            <div className="relative">
-                                <MessageSquare size={20} strokeWidth={1.5} className={`${activeTab === 'inbox' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
-                                {hasUnreadMessages && (
-                                     <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#050505] shadow-[0_0_8px_1px_#ef4444]" />
-                                )}
-                            </div>
-                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'inbox' ? 'text-shadow-glow' : ''}`}>inbox</span>
-                        </div>
-                    </button>
-                    
                     <button
                         onClick={handleNotificationClick}
                         className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
@@ -2465,25 +2464,25 @@ export default function VibesphereApp() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                       
-                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
-                        <div
-                            className={cn(
-                                "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center"
-                            )}
-                        >
-                            <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
-                            <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
-                        </div>
-                        
-                        {profileToShow.handle !== profile.handle && (
-                            <ProfileInteraction
-                                isVibing={vibedProfiles.includes(profileToShow.handle)}
-                                onVibe={() => handleVibe(profileToShow.handle)}
-                                onUnvibe={() => handleUnvibe(profileToShow.handle)}
-                                onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
-                                themeColor={currentAuraColor}
-                            />
-                        )}
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
+                          <div
+                              className={cn(
+                                  "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center"
+                              )}
+                          >
+                              <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                              <p className="text-sm md:text-base font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
+                          </div>
+                          
+                          {profileToShow.handle !== profile.handle && (
+                              <ProfileInteraction
+                                  isVibing={vibedProfiles.includes(profileToShow.handle)}
+                                  onVibe={() => handleVibe(profileToShow.handle)}
+                                  onUnvibe={() => handleUnvibe(profileToShow.handle)}
+                                  onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
+                                  themeColor={currentAuraColor}
+                              />
+                          )}
                       </div>
                       
                       {profileToShow.handle === profile.handle && (
@@ -3276,13 +3275,16 @@ export default function VibesphereApp() {
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar -mr-4 pr-4">
+                                {isLoadingMessages ? (
+                                    <MessageSkeleton />
+                                ) : (
                                     <motion.div 
                                         className="flex flex-col gap-4"
                                         initial="hidden"
                                         animate="show"
-                                        variants={{ show: { transition: { staggerChildren: 0.1 } } }}
+                                        variants={{ show: { transition: { staggerChildren: 0.05 } } }}
                                     >
-                                        {threadMessages.map((msg) => {
+                                        {threadMessages.length > 0 ? threadMessages.map((msg) => {
                                             const msgAuraColor = msg.self ? profile.themeColor : partnerAuraColor;
                                             const cardStyle = {
                                                 '--primary': msgAuraColor,
@@ -3308,8 +3310,13 @@ export default function VibesphereApp() {
                                                     {msg.self && <img src={msg.avatar} alt="avatar" className="w-8 h-8 rounded-full border-2" style={{borderColor: `hsl(${msgAuraColor})`}} />}
                                                 </motion.div>
                                             );
-                                        })}
+                                        }) : (
+                                            <div className="text-center py-20 text-slate-500 font-mono text-sm">
+                                                no messages yet.
+                                            </div>
+                                        )}
                                     </motion.div>
+                                )}
                                 </div>
                                 <div className="mt-auto pt-6">
                                     <div className="relative flex items-center">
@@ -3639,3 +3646,4 @@ export default function VibesphereApp() {
     
 
     
+
