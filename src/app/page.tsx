@@ -220,7 +220,7 @@ export default function VibesphereApp() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ username: '', joinDate: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profileTab, setProfileTab] = useState<'vibe' | 'revibe' | 'vibes'>('vibe');
+  const [profileTab, setProfileTab] = useState<'echo' | 'r-echo' | 'vibes'>('echo');
 
   // --- INBOX & CHAT STATE ---
   const [conversations, setConversations] = useState<any[]>([]);
@@ -567,7 +567,7 @@ export default function VibesphereApp() {
     }
   
     if (newView.tab === 'profile' || newView.tab === 'user-profile') {
-      setProfileTab('vibe');
+      setProfileTab('echo');
     }
   
     setIsSidebarOpen(false);
@@ -1343,10 +1343,10 @@ export default function VibesphereApp() {
   let feedForProfileTab: any[] = [];
   if (profileToShow) {
       switch (profileTab) {
-          case 'vibe':
+          case 'echo':
               feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type !== 'revibe');
               break;
-          case 'revibe':
+          case 'r-echo':
               feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type === 'revibe');
               break;
           case 'vibes':
@@ -2157,7 +2157,7 @@ export default function VibesphereApp() {
                         {item.type === 'revibe' && (
                             <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address }, focusedPost: null }); }}>
                                 <Repeat size={14} />
-                                <span>re-vibed by @{item.handle}</span>
+                                <span>r'echoed by @{item.handle}</span>
                             </div>
                         )}
                         <div onClick={handleCardClick} className="cursor-pointer">
@@ -2346,110 +2346,108 @@ export default function VibesphereApp() {
                     initial="hidden" animate="show"
                     variants={{ show: { transition: { staggerChildren: 0.15 } } }}
                 >
-                   <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
-                    <div className="flex flex-col items-center text-center">
-                        {profileToShow.handle === profile.handle ? (
-                            <div 
-                                className="relative group mb-6 cursor-pointer"
-                                onClick={handleAvatarClick}
-                            >
-                                <img 
-                                src={profileToShow.avatar} 
-                                alt="User avatar" 
-                                className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg transition-all duration-500 group-hover:border-primary/50 group-hover:scale-105"
+                    <div 
+                        className="relative w-full aspect-[4/3] max-h-[500px] rounded-3xl overflow-hidden shadow-lg shadow-black/30"
+                        style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
+                    >
+                        <img 
+                            src={profileToShow.avatar} 
+                            alt="User avatar" 
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+
+                        <div className="absolute inset-0 flex flex-col justify-end p-8 text-center text-white">
+                            <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                            <p className="text-sm font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
+
+                            {profileToShow.handle === profile.handle ? (
+                                <>
+                                    {!userHandle && (
+                                        <div className="w-full max-w-sm mx-auto mt-6 p-6 bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl">
+                                            <h3 className="text-center text-sm font-bold tracking-widest lowercase mb-4" style={{color: `hsl(${currentAuraColor})`}}>Claim Your .vibes Identity</h3>
+                                            <div className="relative">
+                                                <input
+                                                type="text"
+                                                placeholder="type your desired handle"
+                                                value={claimInput}
+                                                onChange={(e) => setClaimInput(e.target.value.toLowerCase())}
+                                                className={cn(
+                                                    "w-full bg-white/5 border rounded-full py-3 pl-4 pr-24 text-sm font-mono lowercase focus:outline-none transition-all",
+                                                    isHandleAvailable === true ? "border-green-500/50 focus:border-green-500" :
+                                                    isHandleAvailable === false ? "border-red-500/50 focus:border-red-500" :
+                                                    "border-primary/30 focus:border-primary"
+                                                )}
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-mono">
+                                                <span className="text-slate-500">.vibes</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-center text-xs font-mono h-4 mt-2">
+                                                {isCheckingHandle && <p className="text-slate-500 animate-pulse">checking...</p>}
+                                                {!isCheckingHandle && isHandleAvailable === true && <p className="text-green-400">Handle available! Claim now.</p>}
+                                                {!isCheckingHandle && isHandleAvailable === false && <p className="text-red-400">Oops, this handle is already taken.</p>}
+                                                {!isCheckingHandle && handleCheckError && <p className="text-red-400">{handleCheckError}</p>}
+                                            </div>
+                                            <button
+                                                onClick={handleClaim}
+                                                disabled={!isHandleAvailable || isClaiming || isCheckingHandle || !claimInput}
+                                                className={cn(
+                                                "w-full mt-4 py-3 rounded-full text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                                isClaiming ? "bg-primary/50 animate-pulse" : "bg-primary hover:shadow-glow-md",
+                                                "text-primary-foreground"
+                                                )}
+                                            >
+                                                {isClaiming ? "Registering on Pharos..." : "Claim Handle"}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col items-center mt-6">
+                                        <p className="text-xs font-mono text-slate-400">{profileToShow.joinDate}</p>
+                                        <div className='flex items-center gap-2 mt-4'>
+                                            <button 
+                                                onClick={openProfileModal}
+                                                className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-md border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                                            >
+                                                <Edit2 size={14} />
+                                                edit profile
+                                            </button>
+                                            <button 
+                                                onClick={handleAvatarClick}
+                                                className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-md border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                                            >
+                                                change background
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <ProfileInteraction
+                                    isVibing={vibedProfiles.includes(profileToShow.handle)}
+                                    onVibe={() => handleVibe(profileToShow.handle)}
+                                    onUnvibe={() => handleUnvibe(profileToShow.handle)}
+                                    onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
+                                    themeColor={profileToShow.themeColor}
                                 />
-                                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-xs font-bold uppercase tracking-widest" style={{color: 'white'}}>change</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <img 
-                                src={profileToShow.avatar} 
-                                alt="User avatar" 
-                                className="w-32 h-32 rounded-full border-4 border-primary/20 object-cover shadow-lg mb-6"
-                            />
-                        )}
-                      
-                      <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})` }}>{profileToShow.username}</h2>
-                      <p className="text-sm font-mono text-slate-400">@{profileToShow.handle}</p>
-                      
-                      {profileToShow.handle === profile.handle ? (
-                        <>
-                          {!userHandle && (
-                            <div className="w-full max-w-sm mt-8 p-6 bg-white/[0.02] border border-primary/20 rounded-3xl">
-                              <h3 className="text-center text-sm font-bold tracking-widest lowercase mb-4" style={{color: `hsl(${currentAuraColor})`}}>Claim Your .vibes Identity</h3>
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  placeholder="type your desired handle"
-                                  value={claimInput}
-                                  onChange={(e) => setClaimInput(e.target.value.toLowerCase())}
-                                  className={cn(
-                                    "w-full bg-white/5 border rounded-full py-3 pl-4 pr-24 text-sm font-mono lowercase focus:outline-none transition-all",
-                                    isHandleAvailable === true ? "border-green-500/50 focus:border-green-500" :
-                                    isHandleAvailable === false ? "border-red-500/50 focus:border-red-500" :
-                                    "border-primary/30 focus:border-primary"
-                                  )}
-                                />
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-mono">
-                                  <span className="text-slate-500">.vibes</span>
-                                </div>
-                              </div>
-                              <div className="text-center text-xs font-mono h-4 mt-2">
-                                {isCheckingHandle && <p className="text-slate-500 animate-pulse">checking...</p>}
-                                {!isCheckingHandle && isHandleAvailable === true && <p className="text-green-400">Handle available! Claim now.</p>}
-                                {!isCheckingHandle && isHandleAvailable === false && <p className="text-red-400">Oops, this handle is already taken.</p>}
-                                {!isCheckingHandle && handleCheckError && <p className="text-red-400">{handleCheckError}</p>}
-                              </div>
-                              <button
-                                onClick={handleClaim}
-                                disabled={!isHandleAvailable || isClaiming || isCheckingHandle || !claimInput}
-                                className={cn(
-                                  "w-full mt-4 py-3 rounded-full text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-                                   isClaiming ? "bg-primary/50 animate-pulse" : "bg-primary hover:shadow-glow-md",
-                                   "text-primary-foreground"
-                                )}
-                              >
-                                {isClaiming ? "Registering on Pharos..." : "Claim Handle"}
-                              </button>
-                            </div>
-                          )}
-                          <p className="text-xs font-mono text-slate-500 mt-4 lowercase">{profileToShow.joinDate}</p>
-                          <button 
-                              onClick={openProfileModal}
-                              className="mt-8 flex items-center gap-2 py-2 px-6 bg-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
-                          >
-                              <Edit2 size={14} />
-                              edit profile
-                          </button>
-                        </>
-                      ) : (
-                           <ProfileInteraction
-                                isVibing={vibedProfiles.includes(profileToShow.handle)}
-                                onVibe={() => handleVibe(profileToShow.handle)}
-                                onUnvibe={() => handleUnvibe(profileToShow.handle)}
-                                onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
-                                themeColor={profileToShow.themeColor}
-                           />
-                      )}
+                            )}
+                        </div>
                     </div>
-                  </ResonanceCard>
 
                   <div className="w-full border-b" style={{ borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2)`}}>
                     <div className="flex justify-around max-w-sm mx-auto">
                         <button
-                            onClick={() => setProfileTab('vibe')}
-                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'vibe' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
-                            style={profileTab === 'vibe' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
+                            onClick={() => setProfileTab('echo')}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'echo' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            style={profileTab === 'echo' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
                         >
-                            vibe
+                            echo
                         </button>
                         <button
-                            onClick={() => setProfileTab('revibe')}
-                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'revibe' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
-                            style={profileTab === 'revibe' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
+                            onClick={() => setProfileTab('r-echo')}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'r-echo' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            style={profileTab === 'r-echo' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
                         >
-                            revibe
+                            r'echo
                         </button>
                         <button
                             onClick={() => setProfileTab('vibes')}
@@ -2495,7 +2493,7 @@ export default function VibesphereApp() {
                             {item.type === 'revibe' && (
                                 <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address}, focusedPost: null }); }}>
                                     <Repeat size={14} />
-                                    <span>re-vibed by @{item.handle}</span>
+                                    <span>r'echoed by @{item.handle}</span>
                                 </div>
                             )}
                             <div onClick={handleCardClick} className="cursor-pointer">
@@ -3454,5 +3452,7 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
 
     
