@@ -220,7 +220,7 @@ export default function VibesphereApp() {
     themeColor: '262 100% 70%',
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [tempProfile, setTempProfile] = useState({ username: '', bio: '' });
+  const [tempProfile, setTempProfile] = useState({ username: '', bio: '', extendedBio: '', websiteString: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileTab, setProfileTab] = useState<'echo' | 'r-echo' | 'vibes'>('echo');
 
@@ -781,11 +781,8 @@ export default function VibesphereApp() {
         
         getDominantColorFromImage(imageUrl, async (newColorValues) => {
             const newLayout = { 
-                username: profile.username,
-                handle: profile.handle,
                 avatar: imageUrl,
                 vibe_color: newColorValues,
-                bio: profile.bio,
             };
 
             // Optimistic UI update
@@ -819,26 +816,50 @@ export default function VibesphereApp() {
   };
 
   const openProfileModal = () => {
-    setTempProfile({ username: profile.username, bio: profile.bio });
+    setTempProfile({ 
+      username: profile.username, 
+      bio: profile.bio,
+      extendedBio: profile.extendedBio || '',
+      websiteString: profile.websiteString || '',
+    });
     setIsProfileModalOpen(true);
   };
 
   const handleProfileSave = async () => {
-    setProfile(prev => ({ ...prev, username: tempProfile.username, bio: tempProfile.bio }));
+    // Optimistic UI update
+    setProfile(prev => ({ 
+        ...prev, 
+        username: tempProfile.username, 
+        bio: tempProfile.bio,
+        extendedBio: tempProfile.extendedBio,
+        websiteString: tempProfile.websiteString
+    }));
     setIsProfileModalOpen(false);
 
     if (wallet?.address) {
         try {
-            await fetch('/api/layout', {
+            const response = await fetch('/api/layout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     pharos_address: wallet.address,
-                    metadata: { username: tempProfile.username, bio: tempProfile.bio },
+                    metadata: { 
+                        username: tempProfile.username, 
+                        bio: tempProfile.bio 
+                    },
+                    extendedBio: tempProfile.extendedBio,
+                    websiteString: tempProfile.websiteString
                 })
             });
+            if (!response.ok) {
+                throw new Error("Server responded with an error");
+            }
+            toast({title: "sovereign profile synced."});
         } catch (error) {
             console.error("Failed to save profile:", error);
+            toast({variant: "destructive", title: "sync failed. check network."})
+            // Simple rollback for optimistic UI
+            fetchLayout(); 
         }
     }
   };
@@ -889,38 +910,39 @@ export default function VibesphereApp() {
   }, [isConnected, isHomeView]); // Rerun when view changes
   
     // Fetch layout from Neon DB
-    useEffect(() => {
-        const fetchLayout = async () => {
-            if (wallet?.address) {
-                try {
-                    const response = await fetch(`/api/layout?pharos_address=${wallet.address}`);
-                    if (!response.ok) {
-                        console.error("Could not fetch layout from Neon", response.statusText);
-                        return;
-                    }
-                    const data = await response.json();
-                    
-                    if (data) {
-                        setProfile(prev => ({
-                            ...prev,
-                            username: data.username || prev.username,
-                            handle: data.handle || prev.handle,
-                            avatar: data.avatar || prev.avatar,
-                            themeColor: data.vibe_color || prev.themeColor,
-                            bio: data.bio || prev.bio,
-                            extendedBio: data.extendedBio || '',
-                            websiteString: data.websiteString || '',
-                        }));
-                    }
-                } catch (error) {
-                    console.error("Could not fetch layout from Neon", error);
+    const fetchLayout = useCallback(async () => {
+        if (wallet?.address) {
+            try {
+                const response = await fetch(`/api/layout?pharos_address=${wallet.address}`);
+                if (!response.ok) {
+                    console.error("Could not fetch layout from Neon", response.statusText);
+                    return;
                 }
+                const data = await response.json();
+                
+                if (data) {
+                    setProfile(prev => ({
+                        ...prev,
+                        username: data.username || prev.username,
+                        handle: data.handle || prev.handle,
+                        avatar: data.avatar || prev.avatar,
+                        themeColor: data.vibe_color || prev.themeColor,
+                        bio: data.bio || prev.bio,
+                        extendedBio: data.extendedBio || '',
+                        websiteString: data.websiteString || '',
+                    }));
+                }
+            } catch (error) {
+                console.error("Could not fetch layout from Neon", error);
             }
-        };
+        }
+    }, [wallet?.address]);
+
+    useEffect(() => {
         if(isConnected) {
             fetchLayout();
         }
-    }, [isConnected, wallet?.address]);
+    }, [isConnected, fetchLayout]);
 
   // --- RECURSIVE FEED UPDATER ---
   const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
@@ -1460,7 +1482,7 @@ export default function VibesphereApp() {
     const parts = text.split(urlRegex);
   
     return (
-      <p className={cn("whitespace-normal break-words text-left", className)}>
+      <p className={cn("whitespace-normal break-all text-left", className)}>
         {parts.map((part, i) => {
           if (part && part.match(urlRegex)) {
             return (
@@ -2442,7 +2464,7 @@ export default function VibesphereApp() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                       
-                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2">
+                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
                         <div
                             onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                             className={cn(
@@ -2499,7 +2521,7 @@ export default function VibesphereApp() {
                               className="backdrop-blur-2xl overflow-hidden"
                               style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                           >
-                            <div className="flex flex-col text-left gap-2 p-4 pt-2">
+                            <div className="flex flex-col text-left gap-2 p-4">
                                 <Linkify text={`${profileToShow.extendedBio || ''} ${profileToShow.websiteString || ''}`.trim()} className="text-base font-light text-slate-300 max-w-prose" />
                             </div>
                           </ResonanceCard>
@@ -3451,12 +3473,32 @@ export default function VibesphereApp() {
                     />
                   </div>
                   <div>
-                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>bio</label>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>short bio</label>
                     <textarea 
                       value={tempProfile.bio}
-                      onChange={(e) => setTempProfile(p => ({...p, bio: e.target.value}))}
+                      onChange={(e) => setTempProfile(p => ({...p, bio: e.target.value.toLowerCase()}))}
                       className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary resize-none"
-                      rows={3}
+                      rows={2}
+                      placeholder="a short, sovereign vibe."
+                    />
+                  </div>
+                   <div>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>extended bio & links</label>
+                    <textarea 
+                      value={tempProfile.extendedBio}
+                      onChange={(e) => setTempProfile(p => ({...p, extendedBio: e.target.value.toLowerCase()}))}
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary resize-none"
+                      rows={4}
+                      placeholder="your story, projects, social links..."
+                    />
+                  </div>
+                   <div>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>primary website</label>
+                    <input 
+                      value={tempProfile.websiteString}
+                      onChange={(e) => setTempProfile(p => ({...p, websiteString: e.target.value.toLowerCase()}))}
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary"
+                      placeholder="https://your-site.com"
                     />
                   </div>
                 </div>
@@ -3470,7 +3512,12 @@ export default function VibesphereApp() {
                     </button>
                     <button 
                         onClick={handleProfileSave} 
-                        disabled={tempProfile.username === profile.username && tempProfile.bio === profile.bio}
+                        disabled={
+                            tempProfile.username === profile.username && 
+                            tempProfile.bio === profile.bio &&
+                            tempProfile.extendedBio === (profile.extendedBio || '') &&
+                            tempProfile.websiteString === (profile.websiteString || '')
+                        }
                         className="flex-1 py-3 rounded-2xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(var(--primary-glow),0.4)] transition-all disabled:opacity-50"
                     >
                         save

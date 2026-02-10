@@ -60,23 +60,50 @@ export async function getLayout(pharos_address) {
 }
 
 /**
- * Updates or inserts the sovereign layout for a given Pharos address.
+ * Updates or inserts user data for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
- * @param {object} metadata The layout metadata to save.
+ * @param {object} [metadata] The JSONB layout metadata to merge.
+ * @param {string} [extendedBio] The user's extended bio text.
+ * @param {string} [websiteString] The user's primary website URL.
  * @returns {Promise<void>}
  */
-export async function updateLayout(pharos_address, metadata) {
+export async function updateLayout(pharos_address, metadata, extendedBio, websiteString) {
   const dbPool = getDbPool();
-  if (!pharos_address || !metadata || !dbPool) return;
+  if (!pharos_address || !dbPool) return;
+
+  const updates = [];
+  const values = [pharos_address];
+  let paramIndex = 2;
+
+  // The sovereign_layout is a JSONB column, we merge new data into it.
+  if (metadata && Object.keys(metadata).length > 0) {
+    updates.push(`sovereign_layout = COALESCE(users.sovereign_layout, '{}'::jsonb) || $${paramIndex++}`);
+    values.push(metadata);
+  }
+
+  // extended_bio and website_string are standard text columns.
+  if (extendedBio !== undefined) {
+    updates.push(`extended_bio = $${paramIndex++}`);
+    values.push(extendedBio);
+  }
+  
+  if (websiteString !== undefined) {
+    updates.push(`website_string = $${paramIndex++}`);
+    values.push(websiteString);
+  }
+
+  if (updates.length === 0) {
+    return; // No-op if nothing to update
+  }
 
   try {
     const query = `
-      INSERT INTO users (pharos_address, sovereign_layout)
-      VALUES ($1::text, $2)
+      INSERT INTO users (pharos_address)
+      VALUES ($1)
       ON CONFLICT (pharos_address)
-      DO UPDATE SET sovereign_layout = users.sovereign_layout || $2;
+      DO UPDATE SET ${updates.join(', ')};
     `;
-    await dbPool.query(query, [pharos_address, metadata]);
+    await dbPool.query(query, values);
   } catch (error) {
     console.error('Error updating layout in Neon:', error);
     throw error;
