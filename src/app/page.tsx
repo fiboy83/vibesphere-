@@ -2236,6 +2236,7 @@ export default function VibesphereApp() {
                                                 </button>
                                             )}
                                         </div>
+                                    </div>
                                     )}
                             </div>
                         </div>
