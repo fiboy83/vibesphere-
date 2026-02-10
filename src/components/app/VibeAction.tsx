@@ -9,9 +9,10 @@ interface VibeActionProps {
   onVibe: () => void;
   onUnvibe: () => void;
   className?: string;
+  themeColor?: string;
 }
 
-export const VibeAction: React.FC<VibeActionProps> = ({ isVibing: initialIsVibing, onVibe, onUnvibe, className }) => {
+export const VibeAction: React.FC<VibeActionProps> = ({ isVibing: initialIsVibing, onVibe, onUnvibe, className, themeColor = '259 94% 71%' }) => {
   const [isVibing, setIsVibing] = useState(initialIsVibing);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -19,24 +20,17 @@ export const VibeAction: React.FC<VibeActionProps> = ({ isVibing: initialIsVibin
     setIsVibing(initialIsVibing);
   }, [initialIsVibing]);
 
-  const handleVibe = () => {
-    onVibe();
-    setIsVibing(true);
-  };
-
-  const handleUnvibe = () => {
-    onUnvibe();
-    setIsVibing(false);
-  };
-
-  const cardBaseStyle = "relative backdrop-blur-md rounded-3xl transition-all duration-300";
-  const buttonBaseStyle = "flex items-center justify-center gap-2 w-full py-2 px-6 rounded-2xl text-sm font-mono lowercase tracking-widest transition-all duration-300 ease-in-out";
+  const cardBaseStyle = "relative backdrop-blur-xl rounded-3xl transition-all duration-300 bg-white/[0.03] border border-white/10 p-1";
+  const buttonBaseStyle = "flex items-center justify-center gap-2 w-full py-2 px-5 rounded-2xl text-sm font-mono lowercase tracking-widest transition-all duration-300 ease-in-out";
 
   return (
-    <div className={cn(cardBaseStyle, "bg-white/[0.05] border border-white/10 p-1", className)}>
+    <div 
+        className={cn(cardBaseStyle, className)} 
+        style={{'--profile-color': themeColor} as React.CSSProperties}
+    >
       {isVibing ? (
         <motion.button
-          onClick={handleUnvibe}
+          onClick={onUnvibe}
           onHoverStart={() => setIsHovered(true)}
           onHoverEnd={() => setIsHovered(false)}
           className={cn(buttonBaseStyle, "bg-transparent text-slate-300 hover:bg-red-900/30 hover:text-red-400")}
@@ -66,12 +60,16 @@ export const VibeAction: React.FC<VibeActionProps> = ({ isVibing: initialIsVibin
         </motion.button>
       ) : (
         <motion.button
-          onClick={handleVibe}
-          className={cn(buttonBaseStyle, "bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/20 hover:shadow-[0_0_15px_0px_rgba(34,211,238,0.4)]")}
+          onClick={onVibe}
+          className={cn(buttonBaseStyle, "text-[hsl(var(--profile-color))] bg-[hsla(var(--profile-color),0.1)] hover:bg-[hsla(var(--profile-color),0.2)] hover:shadow-[0_0_15px_0px_hsla(var(--profile-color),0.4)]")}
            whileTap={{ scale: 0.95 }}
         >
           <motion.span 
-            className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_1px_rgba(34,211,238,0.7)]"
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ 
+                backgroundColor: `hsl(var(--profile-color))`,
+                boxShadow: `0 0 6px 1px hsla(var(--profile-color), 0.7)`
+            }}
             layoutId="vibe-dot"
           ></motion.span>
           <span className="w-16 text-center">vibe</span>

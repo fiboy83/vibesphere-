@@ -15,6 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { encryptMessage, decryptMessage } from '@/lib/crypto';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VibeAction } from '@/components/app/VibeAction';
+import { ProfileInteraction } from '@/components/app/ProfileInteraction';
 
 export const dynamic = 'force-dynamic';
 
@@ -2423,21 +2424,13 @@ export default function VibesphereApp() {
                           </button>
                         </>
                       ) : (
-                           <div className="mt-8 flex items-center justify-center gap-4">
-                               <div className="w-40">
-                                   <ResonanceCard onClick={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}>
-                                       <div className="flex items-center justify-center gap-3 py-1">
-                                           <MessageSquare size={16} className="text-primary" />
-                                           <span className="text-sm font-mono lowercase tracking-widest text-primary">message</span>
-                                       </div>
-                                   </ResonanceCard>
-                               </div>
-                               <VibeAction
-                                  isVibing={vibedProfiles.includes(profileToShow.handle)}
-                                  onVibe={() => handleVibe(profileToShow.handle)}
-                                  onUnvibe={() => handleUnvibe(profileToShow.handle)}
-                               />
-                           </div>
+                           <ProfileInteraction
+                                isVibing={vibedProfiles.includes(profileToShow.handle)}
+                                onVibe={() => handleVibe(profileToShow.handle)}
+                                onUnvibe={() => handleUnvibe(profileToShow.handle)}
+                                onDm={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
+                                themeColor={profileToShow.themeColor}
+                           />
                       )}
                     </div>
                   </ResonanceCard>
