@@ -216,11 +216,11 @@ export default function VibesphereApp() {
     avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=default-user&backgroundColor=a855f7`,
     bio: 'sovereign identity vibing on the decentralized web.',
     extendedBio: '',
-    websiteString: '',
+    websiteUrl: '',
     themeColor: '262 100% 70%',
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [tempProfile, setTempProfile] = useState({ username: '', bio: '', extendedBio: '', websiteString: '' });
+  const [tempProfile, setTempProfile] = useState({ username: '', bio: '', extendedBio: '', websiteUrl: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileTab, setProfileTab] = useState<'echo' | 'r-echo' | 'vibes'>('echo');
 
@@ -342,7 +342,7 @@ export default function VibesphereApp() {
                     avatar: commentLayout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.pharos_address}&backgroundColor=a855f7`,
                     themeColor: commentLayout.vibe_color || '262 100% 70%',
                     extendedBio: commentLayout.extendedBio || '',
-                    websiteString: commentLayout.websiteString || '',
+                    websiteUrl: commentLayout.websiteUrl || '',
                     likeCount: 0, 
                     commentCount: 0,
                     repostCount: 0,
@@ -365,7 +365,7 @@ export default function VibesphereApp() {
                 avatar: layout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${post.pharos_address}&backgroundColor=a855f7`,
                 themeColor: layout.vibe_color || '262 100% 70%',
                 extendedBio: layout.extendedBio || '',
-                websiteString: layout.websiteString || '',
+                websiteUrl: layout.websiteUrl || '',
                 commentCount: parseInt(post.comment_count, 10) || 0, 
                 repostCount: 0, // Not stored in DB yet
                 likeCount: parseInt(post.like_count, 10) || 0,
@@ -820,7 +820,7 @@ export default function VibesphereApp() {
       username: profile.username, 
       bio: profile.bio,
       extendedBio: profile.extendedBio || '',
-      websiteString: profile.websiteString || '',
+      websiteUrl: profile.websiteUrl || '',
     });
     setIsProfileModalOpen(true);
   };
@@ -832,7 +832,7 @@ export default function VibesphereApp() {
         username: tempProfile.username, 
         bio: tempProfile.bio,
         extendedBio: tempProfile.extendedBio,
-        websiteString: tempProfile.websiteString
+        websiteUrl: tempProfile.websiteUrl
     }));
     setIsProfileModalOpen(false);
 
@@ -848,7 +848,7 @@ export default function VibesphereApp() {
                         bio: tempProfile.bio 
                     },
                     extendedBio: tempProfile.extendedBio,
-                    websiteString: tempProfile.websiteString
+                    websiteUrl: tempProfile.websiteUrl
                 })
             });
             if (!response.ok) {
@@ -929,7 +929,7 @@ export default function VibesphereApp() {
                         themeColor: data.vibe_color || prev.themeColor,
                         bio: data.bio || prev.bio,
                         extendedBio: data.extendedBio || '',
-                        websiteString: data.websiteString || '',
+                        websiteUrl: data.websiteUrl || '',
                     }));
                 }
             } catch (error) {
@@ -1482,7 +1482,7 @@ export default function VibesphereApp() {
     const parts = text.split(urlRegex);
   
     return (
-      <p className={cn("whitespace-normal break-all text-left", className)}>
+      <p className={cn("whitespace-normal break-words text-left", className)}>
         {parts.map((part, i) => {
           if (part && part.match(urlRegex)) {
             return (
@@ -2466,10 +2466,8 @@ export default function VibesphereApp() {
                       
                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
                         <div
-                            onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                             className={cn(
-                                "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center",
-                                profileToShow.handle === profile.handle && 'cursor-pointer'
+                                "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center"
                             )}
                         >
                             <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
@@ -2515,14 +2513,14 @@ export default function VibesphereApp() {
                       )}
                   </div>
                   
-                  {(profileToShow?.extendedBio || profileToShow?.websiteString) && (
+                  {(profileToShow?.extendedBio || profileToShow?.websiteUrl) && (
                       <div className="my-4 w-full">
                           <ResonanceCard 
                               className="backdrop-blur-2xl overflow-hidden"
                               style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                           >
                             <div className="flex flex-col text-left gap-2 p-4">
-                                <Linkify text={`${profileToShow.extendedBio || ''} ${profileToShow.websiteString || ''}`.trim()} className="text-base font-light text-slate-300 max-w-prose" />
+                                <Linkify text={`${profileToShow.extendedBio || ''} ${profileToShow.websiteUrl || ''}`.trim()} className="text-base font-light text-slate-300 max-w-prose" />
                             </div>
                           </ResonanceCard>
                       </div>
@@ -2616,14 +2614,7 @@ export default function VibesphereApp() {
                      </div>
                   )}
 
-                  {!isLoadingFeed && displayedFeed.length === 0 && (
-                    <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
-                        <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
-                          no vibrations found here.
-                        </h2>
-                    </motion.div>
-                  )}
-                  {!isLoadingFeed && displayedFeed.length > 0 && displayedFeed.map((item, index) => {
+                  {!isLoadingFeed && displayedFeed.length > 0 ? displayedFeed.map((item, index) => {
                       const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
                       const cardStyle = { 
                           '--primary': postAuraColor,
@@ -2831,7 +2822,13 @@ export default function VibesphereApp() {
 
                       </ResonanceCard>
                       );
-                    })}
+                    }) : (
+                      <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                          <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
+                            no vibrations found here.
+                          </h2>
+                      </motion.div>
+                  )}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
@@ -3495,8 +3492,8 @@ export default function VibesphereApp() {
                    <div>
                     <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>primary website</label>
                     <input 
-                      value={tempProfile.websiteString}
-                      onChange={(e) => setTempProfile(p => ({...p, websiteString: e.target.value.toLowerCase()}))}
+                      value={tempProfile.websiteUrl}
+                      onChange={(e) => setTempProfile(p => ({...p, websiteUrl: e.target.value.toLowerCase()}))}
                       className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary"
                       placeholder="https://your-site.com"
                     />
@@ -3516,7 +3513,7 @@ export default function VibesphereApp() {
                             tempProfile.username === profile.username && 
                             tempProfile.bio === profile.bio &&
                             tempProfile.extendedBio === (profile.extendedBio || '') &&
-                            tempProfile.websiteString === (profile.websiteString || '')
+                            tempProfile.websiteUrl === (profile.websiteUrl || '')
                         }
                         className="flex-1 py-3 rounded-2xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(var(--primary-glow),0.4)] transition-all disabled:opacity-50"
                     >

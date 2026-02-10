@@ -25,13 +25,13 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { pharos_address, metadata, extendedBio, websiteString } = await request.json();
+    const { pharos_address, metadata, extendedBio, websiteUrl } = await request.json();
 
     if (!pharos_address) {
       return NextResponse.json({ error: 'pharos_address is required' }, { status: 400 });
     }
 
-    await updateLayout(pharos_address, metadata, extendedBio, websiteString);
+    await updateLayout(pharos_address, metadata, extendedBio, websiteUrl);
     return NextResponse.json({ message: 'Layout updated successfully' });
   } catch (error) {
     console.error("Failed to update layout:", error);

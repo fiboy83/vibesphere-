@@ -26,7 +26,7 @@ const getDbPool = () => {
 /**
  * Fetches the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
- * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string, bio: string, extendedBio: string, websiteString: string} | null>} The layout metadata or null if not found.
+ * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string, bio: string, extendedBio: string, websiteUrl: string} | null>} The layout metadata or null if not found.
  */
 export async function getLayout(pharos_address) {
   const dbPool = getDbPool();
@@ -34,7 +34,7 @@ export async function getLayout(pharos_address) {
 
   try {
     const res = await dbPool.query(
-      'SELECT sovereign_layout, extended_bio, website_string FROM users WHERE pharos_address = $1::text',
+      'SELECT sovereign_layout, extended_bio, website_url FROM users WHERE pharos_address = $1::text',
       [pharos_address]
     );
 
@@ -49,7 +49,7 @@ export async function getLayout(pharos_address) {
         handle: layout?.handle || null,
         bio: layout?.bio || null,
         extendedBio: row.extended_bio || null,
-        websiteString: row.website_string || null,
+        websiteUrl: row.website_url || null,
       };
     }
     return null;
@@ -64,10 +64,10 @@ export async function getLayout(pharos_address) {
  * @param {string} pharos_address The user's Pharos wallet address.
  * @param {object} [metadata] The JSONB layout metadata to merge.
  * @param {string} [extendedBio] The user's extended bio text.
- * @param {string} [websiteString] The user's primary website URL.
+ * @param {string} [websiteUrl] The user's primary website URL.
  * @returns {Promise<void>}
  */
-export async function updateLayout(pharos_address, metadata, extendedBio, websiteString) {
+export async function updateLayout(pharos_address, metadata, extendedBio, websiteUrl) {
   const dbPool = getDbPool();
   if (!pharos_address || !dbPool) return;
 
@@ -81,15 +81,15 @@ export async function updateLayout(pharos_address, metadata, extendedBio, websit
     values.push(metadata);
   }
 
-  // extended_bio and website_string are standard text columns.
+  // extended_bio and website_url are standard text columns.
   if (extendedBio !== undefined) {
     updates.push(`extended_bio = $${paramIndex++}`);
     values.push(extendedBio);
   }
   
-  if (websiteString !== undefined) {
-    updates.push(`website_string = $${paramIndex++}`);
-    values.push(websiteString);
+  if (websiteUrl !== undefined) {
+    updates.push(`website_url = $${paramIndex++}`);
+    values.push(websiteUrl);
   }
 
   if (updates.length === 0) {
@@ -164,7 +164,7 @@ export async function getFeed(pharos_address) {
         END AS media_type,
         (
           COALESCE(u.sovereign_layout, '{}'::jsonb) || 
-          jsonb_build_object('extendedBio', u.extended_bio, 'websiteString', u.website_string)
+          jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
         ) as sovereign_layout,
         (SELECT COUNT(*) FROM likes WHERE post_id_onchain = p.id::text) AS like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id_onchain = p.id::text) AS comment_count,
@@ -181,7 +181,7 @@ export async function getFeed(pharos_address) {
                     c.parent_id,
                     (
                       COALESCE(cu.sovereign_layout, '{}'::jsonb) || 
-                      jsonb_build_object('extendedBio', cu.extended_bio, 'websiteString', cu.website_string)
+                      jsonb_build_object('extendedBio', cu.extended_bio, 'websiteUrl', cu.website_url)
                     ) as user_layout
                 FROM comments c
                 LEFT JOIN users cu ON c.pharos_address = cu.pharos_address
