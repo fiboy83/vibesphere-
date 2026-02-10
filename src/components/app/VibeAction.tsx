@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -20,7 +21,7 @@ export const VibeAction: React.FC<VibeActionProps> = ({ isVibing: initialIsVibin
     setIsVibing(initialIsVibing);
   }, [initialIsVibing]);
 
-  const cardBaseStyle = "relative backdrop-blur-xl rounded-3xl transition-all duration-300 bg-white/[0.03] border border-white/10 p-1";
+  const cardBaseStyle = "relative backdrop-blur-2xl rounded-3xl transition-all duration-300 bg-white/[0.03] border border-white/10 p-1";
   const buttonBaseStyle = "flex items-center justify-center gap-2 w-full py-2 px-5 rounded-2xl text-sm font-mono lowercase tracking-widest transition-all duration-300 ease-in-out";
 
   return (
@@ -78,3 +79,5 @@ export const VibeAction: React.FC<VibeActionProps> = ({ isVibing: initialIsVibin
     </div>
   );
 };
+
+    

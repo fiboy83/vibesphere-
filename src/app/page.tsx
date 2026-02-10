@@ -2155,7 +2155,7 @@ export default function VibesphereApp() {
                         style={cardStyle}
                       >
                         {item.type === 'revibe' && (
-                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address }, focusedPost: null }); }}>
+                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address}, focusedPost: null }); }}>
                                 <Repeat size={14} />
                                 <span>r'echoed by @{item.handle}</span>
                             </div>
@@ -2236,8 +2236,7 @@ export default function VibesphereApp() {
                                                 </button>
                                             )}
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                             </div>
                         </div>
 
@@ -2357,14 +2356,16 @@ export default function VibesphereApp() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
 
-                        <div className="absolute inset-0 flex flex-col justify-end p-8 text-center text-white">
-                            <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
-                            <p className="text-sm font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
+                        <div className="absolute inset-0 flex flex-col justify-end p-6 text-center text-white">
+                            <div className="bg-black/40 backdrop-blur-lg rounded-2xl py-4 px-6 mb-6">
+                                <h2 className="text-3xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
+                                <p className="text-sm font-mono text-slate-300" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)' }}>@{profileToShow.handle}</p>
+                            </div>
 
                             {profileToShow.handle === profile.handle ? (
-                                <>
+                                <div className="flex flex-col items-center">
                                     {!userHandle && (
-                                        <div className="w-full max-w-sm mx-auto mt-6 p-6 bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl">
+                                        <div className="w-full max-w-sm mx-auto mb-4 p-6 bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl">
                                             <h3 className="text-center text-sm font-bold tracking-widest lowercase mb-4" style={{color: `hsl(${currentAuraColor})`}}>Claim Your .vibes Identity</h3>
                                             <div className="relative">
                                                 <input
@@ -2402,33 +2403,33 @@ export default function VibesphereApp() {
                                             </button>
                                         </div>
                                     )}
-                                    <div className="flex flex-col items-center mt-6">
-                                        <p className="text-xs font-mono text-slate-400">{profileToShow.joinDate}</p>
-                                        <div className='flex items-center gap-2 mt-4'>
-                                            <button 
-                                                onClick={openProfileModal}
-                                                className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-md border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
-                                            >
-                                                <Edit2 size={14} />
-                                                edit profile
-                                            </button>
-                                            <button 
-                                                onClick={handleAvatarClick}
-                                                className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-md border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
-                                            >
-                                                change background
-                                            </button>
-                                        </div>
+                                    <p className="text-xs font-mono text-slate-400">{profileToShow.joinDate}</p>
+                                    <div className='flex items-center gap-2 mt-4'>
+                                        <button 
+                                            onClick={openProfileModal}
+                                            className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                                        >
+                                            <Edit2 size={14} />
+                                            edit profile
+                                        </button>
+                                        <button 
+                                            onClick={handleAvatarClick}
+                                            className="flex items-center gap-2 py-2 px-6 bg-black/20 backdrop-blur-2xl border border-white/10 rounded-full text-xs font-mono lowercase tracking-widest text-slate-300 hover:bg-white/20 hover:text-white transition-all"
+                                        >
+                                            change background
+                                        </button>
                                     </div>
-                                </>
+                                </div>
                             ) : (
-                                <ProfileInteraction
-                                    isVibing={vibedProfiles.includes(profileToShow.handle)}
-                                    onVibe={() => handleVibe(profileToShow.handle)}
-                                    onUnvibe={() => handleUnvibe(profileToShow.handle)}
-                                    onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
-                                    themeColor={profileToShow.themeColor}
-                                />
+                                <div className="flex justify-center">
+                                    <ProfileInteraction
+                                        isVibing={vibedProfiles.includes(profileToShow.handle)}
+                                        onVibe={() => handleVibe(profileToShow.handle)}
+                                        onUnvibe={() => handleUnvibe(profileToShow.handle)}
+                                        onMessage={() => pushView({ tab: 'inbox', conversationWith: profileToShow.handle, viewingProfile: profileToShow })}
+                                        themeColor={profileToShow.themeColor}
+                                    />
+                                </div>
                             )}
                         </div>
                     </div>
@@ -3452,6 +3453,8 @@ export default function VibesphereApp() {
     </div>
   );
 }
+
+    
 
     
 
