@@ -2368,9 +2368,7 @@ export default function VibesphereApp() {
                             {profileToShow.bio && (
                                 <div className="mb-4">
                                     <ResonanceCard style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
-                                        <div className="backdrop-blur-lg p-3 rounded-2xl">
-                                            <p className="text-sm font-mono text-slate-300 text-center">{profileToShow.bio}</p>
-                                        </div>
+                                        <p className="text-sm font-mono text-slate-300 text-center">{profileToShow.bio}</p>
                                     </ResonanceCard>
                                 </div>
                             )}
@@ -3466,9 +3464,3 @@ export default function VibesphereApp() {
     </div>
   );
 }
-
-    
-
-    
-
-    
