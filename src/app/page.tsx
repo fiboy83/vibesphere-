@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -1404,7 +1405,7 @@ export default function VibesphereApp() {
               break;
           case 'vibes':
               if (profileToShow.handle === profile.handle) {
-                  // This should find all items, even nested ones. A simple filter is not enough. A simple filter is not enough.
+                  // This should find all items, even nested ones. A simple filter is not enough.
                   const likedFeed: any[] = [];
                   const findLikedRecursive = (items: any[]) => {
                       for (const item of items) {
@@ -1524,7 +1525,7 @@ export default function VibesphereApp() {
                     <div className="flex gap-3 items-start">
                         <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${commentAuraColor})`}}/>
                         <div className="flex-1">
-                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: comment.username, handle: comment.handle, avatar: comment.avatar, themeColor: comment.themeColor, pharos_address: comment.pharos_address}, focusedPost: null })}} className='flex items-center gap-2 group'>
+                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null })}} className='flex items-center gap-2 group'>
                                 <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
                                 <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
                             </div>
@@ -2039,7 +2040,7 @@ export default function VibesphereApp() {
                       style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                   >
                       <div 
-                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: focusedPost.username, handle: focusedPost.handle, avatar: focusedPost.avatar, themeColor: focusedPost.themeColor, pharos_address: focusedPost.pharos_address}, focusedPost: null })}}
+                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: focusedPost, focusedPost: null })}}
                           className="flex items-center gap-4 mb-4 cursor-pointer group"
                       >
                           <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
@@ -2262,7 +2263,7 @@ export default function VibesphereApp() {
                         style={cardStyle}
                       >
                         {item.type === 'revibe' && (
-                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address}, focusedPost: null }); }}>
+                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: item, focusedPost: null }); }}>
                                 <Repeat size={14} />
                                 <span>r'echoed by @{item.handle}</span>
                             </div>
@@ -2273,7 +2274,7 @@ export default function VibesphereApp() {
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
                                     const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                    pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor, pharos_address: userToView.pharos_address}, focusedPost: null });
+                                    pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
@@ -2613,8 +2614,16 @@ export default function VibesphereApp() {
                         ))}
                      </div>
                   )}
+                  
+                  {!isLoadingFeed && displayedFeed.length === 0 && (
+                      <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                          <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
+                            no vibrations found here.
+                          </h2>
+                      </motion.div>
+                  )}
 
-                  {!isLoadingFeed && displayedFeed.length > 0 ? displayedFeed.map((item, index) => {
+                  {!isLoadingFeed && displayedFeed.length > 0 && displayedFeed.map((item, index) => {
                       const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
                       const cardStyle = { 
                           '--primary': postAuraColor,
@@ -2639,7 +2648,7 @@ export default function VibesphereApp() {
                           style={cardStyle}
                       >
                           {item.type === 'revibe' && (
-                              <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: {username: item.username, handle: item.handle, avatar: item.avatar, themeColor: item.themeColor, pharos_address: item.pharos_address}, focusedPost: null }); }}>
+                              <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: item, focusedPost: null }); }}>
                                   <Repeat size={14} />
                                   <span>r'echoed by @{item.handle}</span>
                               </div>
@@ -2650,7 +2659,7 @@ export default function VibesphereApp() {
                                   onClick={(e) => { 
                                       e.stopPropagation(); 
                                       const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
-                                      pushView({ tab: 'user-profile', viewingProfile: {username: userToView.username, handle: userToView.handle, avatar: userToView.avatar, themeColor: userToView.themeColor, pharos_address: userToView.pharos_address}, focusedPost: null });
+                                      pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
                                   }}
                                   className="flex items-center gap-3 cursor-pointer group"
                               >
@@ -2822,13 +2831,7 @@ export default function VibesphereApp() {
 
                       </ResonanceCard>
                       );
-                    }) : (
-                      <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
-                          <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
-                            no vibrations found here.
-                          </h2>
-                      </motion.div>
-                  )}
+                    })}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
