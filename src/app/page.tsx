@@ -2239,7 +2239,7 @@ export default function VibesphereApp() {
                       </motion.div>
                   )}
                   {!isLoadingFeed && displayedFeed.map((item, index) => {
-                    const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
+                    const postAuraColor = getPostAuraColor(item);
                     const cardStyle = { 
                         '--primary': postAuraColor,
                         '--primary-glow': postAuraColor.replace(/ /g, ', '),
@@ -2272,24 +2272,24 @@ export default function VibesphereApp() {
                               <div 
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
+                                    const userToView = item.type === 'revibe' && item.quotedPost ? item : item;
                                     pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
                                 <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                  <img src={(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                  <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                      {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).username}
+                                      {item.username}
                                     </span>
                                     <div 
                                         className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).handle} • {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).time}</span>
+                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                                 </div>
                               </div>
                               <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 -mt-1">
@@ -2464,10 +2464,12 @@ export default function VibesphereApp() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                       
-                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
+                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
                           <div
+                              onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                               className={cn(
-                                  "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center"
+                                  "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center",
+                                  profileToShow.handle === profile.handle && "cursor-pointer"
                               )}
                           >
                               <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
@@ -2623,7 +2625,7 @@ export default function VibesphereApp() {
                   )}
 
                   {!isLoadingFeed && displayedFeed.length > 0 && displayedFeed.map((item, index) => {
-                      const postAuraColor = getPostAuraColor(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item);
+                      const postAuraColor = getPostAuraColor(item);
                       const cardStyle = { 
                           '--primary': postAuraColor,
                           '--primary-glow': postAuraColor.replace(/ /g, ', '),
@@ -2657,24 +2659,24 @@ export default function VibesphereApp() {
                               <div 
                                   onClick={(e) => { 
                                       e.stopPropagation(); 
-                                      const userToView = item.type === 'revibe' && item.quotedPost ? item.quotedPost : item;
+                                      const userToView = item;
                                       pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
                                   }}
                                   className="flex items-center gap-3 cursor-pointer group"
                               >
                                   <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                    <img src={(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                    <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                   </div>
                                   <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
                                       <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                        {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).username}
+                                        {item.username}
                                       </span>
                                       <div 
                                           className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
                                       ></div>
                                     </div>
-                                    <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).handle} • {(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item).time}</span>
+                                    <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                                   </div>
                                 </div>
                                 <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 -mt-1">
@@ -3646,4 +3648,5 @@ export default function VibesphereApp() {
     
 
     
+
 
