@@ -1528,9 +1528,11 @@ export default function VibesphereApp() {
                     style={{'--primary': commentAuraColor, '--primary-glow': commentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                 >
                     <div className="flex gap-3 items-start">
-                        <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover" style={{borderColor: `hsl(${commentAuraColor})`}}/>
+                        <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }} className="cursor-pointer group">
+                            <img src={comment.avatar} alt="commenter avatar" className="w-10 h-10 rounded-full border-2 object-cover transition-colors group-hover:border-primary/50" style={{borderColor: `hsl(${commentAuraColor})`}}/>
+                        </div>
                         <div className="flex-1">
-                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null })}} className='flex items-center gap-2 group'>
+                            <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null })}} className='flex items-center gap-2 group cursor-pointer'>
                                 <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
                                 <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
                             </div>
@@ -2375,15 +2377,23 @@ export default function VibesphereApp() {
                                             className="mt-2 first:mt-0 cursor-pointer"
                                             onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
                                         >
-                                            <div className="flex items-start gap-2">
-                                                <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border" style={{borderColor: `hsl(${commentAuraColor})`}}/>
-                                                <div className="flex-1 text-sm">
-                                                    <p className="font-light text-slate-300">
-                                                        <span className="font-bold mr-2" style={{color: `hsl(${commentAuraColor})`}}>@{comment.handle}</span>
-                                                        {comment.text}
-                                                    </p>
-                                                </div>
-                                            </div>
+                                          <div className="flex items-start gap-2">
+                                              <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }} className="cursor-pointer group">
+                                                <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border transition-colors group-hover:border-primary/50" style={{borderColor: `hsl(${commentAuraColor})`}}/>
+                                              </div>
+                                              <div className="flex-1 text-sm">
+                                                  <p className="font-light text-slate-300">
+                                                      <span 
+                                                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }}
+                                                          className="font-bold mr-2 cursor-pointer hover:underline" style={{color: `hsl(${commentAuraColor})`}}
+                                                      >
+                                                          @{comment.handle}
+                                                      </span>
+                                                      {' '}
+                                                      {comment.text}
+                                                  </p>
+                                              </div>
+                                          </div>
                                             <AnimatePresence>
                                                 {isCommentFocused && (
                                                     <motion.div
@@ -2758,10 +2768,18 @@ export default function VibesphereApp() {
                                           onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
                                       >
                                           <div className="flex items-start gap-2">
-                                              <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border" style={{borderColor: `hsl(${commentAuraColor})`}}/>
+                                              <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }} className="cursor-pointer group">
+                                                  <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border transition-colors group-hover:border-primary/50" style={{borderColor: `hsl(${commentAuraColor})`}}/>
+                                              </div>
                                               <div className="flex-1 text-sm">
                                                   <p className="font-light text-slate-300">
-                                                      <span className="font-bold mr-2" style={{color: `hsl(${commentAuraColor})`}}>@{comment.handle}</span>
+                                                      <span 
+                                                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }}
+                                                          className="font-bold mr-2 cursor-pointer hover:underline" style={{color: `hsl(${commentAuraColor})`}}
+                                                      >
+                                                          @{comment.handle}
+                                                      </span>
+                                                      {' '}
                                                       {comment.text}
                                                   </p>
                                               </div>
@@ -3613,6 +3631,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
