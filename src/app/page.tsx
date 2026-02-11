@@ -1534,9 +1534,9 @@ export default function VibesphereApp() {
                         <div className="flex-1">
                             <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null })}} className='flex items-center gap-2 group cursor-pointer'>
                                 <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
-                                <span className="text-xs text-slate-500 font-mono">@{comment.handle} &bull; {comment.time}</span>
+                                <span className="text-xs text-slate-400 font-mono">@{comment.handle} &bull; {comment.time}</span>
                             </div>
-                            <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
+                            <p className="text-base text-slate-200 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
                             <AnimatePresence>
                                 {isCommentFocused && (
                                     <motion.div
@@ -1974,7 +1974,7 @@ export default function VibesphereApp() {
                     <img src={profile.avatar} alt="User Avatar" className="w-10 h-10 rounded-full border-2 border-primary/50 object-cover transition-colors duration-500" />
                     <div>
                       <p className="font-bold text-sm" style={{ color: `hsl(${profile.themeColor})` }}>{profile.username}</p>
-                      <p className="text-xs text-slate-400 font-mono">@{profile.handle}</p>
+                      <p className="text-xs text-slate-300 font-mono">@{profile.handle}</p>
                     </div>
                   </div>
                 </div>
@@ -2010,9 +2010,9 @@ export default function VibesphereApp() {
                               <div className="flex-1">
                                   <div className='flex items-center gap-2'>
                                       <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}>{parentPostForCommentView.username}</span>
-                                      <span className="text-xs text-slate-500 font-mono">@{parentPostForCommentView.handle} &bull; {parentPostForCommentView.time}</span>
+                                      <span className="text-xs text-slate-400 font-mono">@{parentPostForCommentView.handle} &bull; {parentPostForCommentView.time}</span>
                                   </div>
-                                  <p className="text-base text-slate-300 leading-relaxed mt-1 font-light whitespace-pre-wrap">{parentPostForCommentView.text}</p>
+                                  <p className="text-base text-slate-200 leading-relaxed mt-1 font-light whitespace-pre-wrap">{parentPostForCommentView.text}</p>
                               </div>
                           </div>
                           <div className="ml-5 h-8 w-0.5 bg-white/10" />
@@ -2031,7 +2031,7 @@ export default function VibesphereApp() {
                             <div className="flex items-center gap-2">
                               <h2 className="text-lg font-bold transition-colors group-hover:brightness-125" style={{color: `hsl(${currentAuraColor})`}}>{focusedPost.username}</h2>
                             </div>
-                            <p className="text-sm font-mono text-slate-400">@{focusedPost.handle}</p>
+                            <p className="text-sm font-mono text-slate-300">@{focusedPost.handle}</p>
                           </div>
                       </div>
 
@@ -2049,7 +2049,7 @@ export default function VibesphereApp() {
                             : 'text-lg md:text-xl'
                           }`}>{focusedPost.text}</p>
                           
-                          <p className="text-xs font-mono text-slate-500 mt-6">{focusedPost.time}</p>
+                          <p className="text-xs font-mono text-slate-400 mt-6">{focusedPost.time}</p>
                         </div>
                         
                         <div className="mt-4 pt-4 border-t" style={{borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2)`}}>
@@ -2112,7 +2112,7 @@ export default function VibesphereApp() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
                           >
-                            <h3 className="text-base font-bold lowercase tracking-widest text-slate-400 my-6">replies</h3>
+                            <h3 className="text-base font-bold lowercase tracking-widest text-slate-300 my-6">replies</h3>
                             <div className="flex flex-col gap-6">
                                 {/* New Comment Input */}
                                 <div className="flex gap-3 items-start">
@@ -2153,7 +2153,7 @@ export default function VibesphereApp() {
                                     ))
                                 ) : (
                                   <div className="text-center py-8">
-                                      <p className="text-sm text-slate-500 font-mono">no replies yet.</p>
+                                      <p className="text-sm text-slate-400 font-mono">no replies yet.</p>
                                   </div>
                                 )}
                             </div>
@@ -2273,7 +2273,7 @@ export default function VibesphereApp() {
                                         style={{'--primary': postAuraColor} as React.CSSProperties}
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                  <span className="text-[11px] text-slate-400 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                 </div>
                               </div>
                               <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
@@ -2296,7 +2296,7 @@ export default function VibesphereApp() {
                                             <img src={mainPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
                                             <div>
                                                 <span className="text-sm font-bold group-hover:underline" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>{mainPost.username}</span>
-                                                <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
+                                                <span className="text-xs text-slate-400 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
                                             </div>
                                         </div>
                                         {mainPost.media && (
@@ -2305,7 +2305,7 @@ export default function VibesphereApp() {
                                                 {mainPost.media.type === 'video' && <video src={mainPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
                                             </div>
                                         )}
-                                        <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{mainPost.text}</p>
+                                        <p className="text-slate-200 text-sm leading-relaxed font-light whitespace-pre-wrap">{mainPost.text}</p>
                                     </div>
                                 ) : (
                                     <div>
@@ -2391,7 +2391,7 @@ export default function VibesphereApp() {
                                                 <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border transition-colors group-hover:border-primary/50" style={{borderColor: `hsl(${commentAuraColor})`}}/>
                                               </div>
                                               <div className="flex-1 text-sm">
-                                                  <p className="font-light text-slate-300">
+                                                  <p className="font-light text-slate-200">
                                                       <span 
                                                           onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }}
                                                           className="font-bold mr-2 cursor-pointer hover:underline" style={{color: `hsl(${commentAuraColor})`}}
@@ -2514,7 +2514,7 @@ export default function VibesphereApp() {
                               style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                           >
                             <div className="flex flex-col text-left gap-2 p-4">
-                                <Linkify text={`${profileToShow.extendedBio || ''} ${profileToShow.websiteUrl || ''}`.trim()} className="text-base font-light text-slate-300 max-w-prose" />
+                                <Linkify text={`${profileToShow.extendedBio || ''} ${profileToShow.websiteUrl || ''}`.trim()} className="text-base font-light text-slate-200 max-w-prose" />
                             </div>
                           </ResonanceCard>
                       </div>
@@ -2660,7 +2660,7 @@ export default function VibesphereApp() {
                                           style={{'--primary': postAuraColor} as React.CSSProperties}
                                       ></div>
                                     </div>
-                                    <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                    <span className="text-[11px] text-slate-400 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                   </div>
                                 </div>
                                 <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
@@ -2684,7 +2684,7 @@ export default function VibesphereApp() {
                                               <img src={mainPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
                                               <div>
                                                   <span className="text-sm font-bold group-hover:underline" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>{mainPost.username}</span>
-                                                  <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
+                                                  <span className="text-xs text-slate-400 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
                                               </div>
                                           </div>
                                           {mainPost.media && (
@@ -2693,7 +2693,7 @@ export default function VibesphereApp() {
                                                   {mainPost.media.type === 'video' && <video src={mainPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
                                               </div>
                                           )}
-                                          <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{mainPost.text}</p>
+                                          <p className="text-slate-200 text-sm leading-relaxed font-light whitespace-pre-wrap">{mainPost.text}</p>
                                       </div>
                                   ) : (
                                     <div className="text-slate-200 text-base leading-relaxed font-light mb-2 whitespace-pre-wrap">
@@ -2779,7 +2779,7 @@ export default function VibesphereApp() {
                                                   <img src={comment.avatar} alt="commenter avatar" className="w-6 h-6 rounded-full border transition-colors group-hover:border-primary/50" style={{borderColor: `hsl(${commentAuraColor})`}}/>
                                               </div>
                                               <div className="flex-1 text-sm">
-                                                  <p className="font-light text-slate-300">
+                                                  <p className="font-light text-slate-200">
                                                       <span 
                                                           onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }}
                                                           className="font-bold mr-2 cursor-pointer hover:underline" style={{color: `hsl(${commentAuraColor})`}}
@@ -2861,10 +2861,10 @@ export default function VibesphereApp() {
                                         </div>
                                         <div className="flex-1">
                                             <img src={notif.from.avatar} alt={`${notif.from.username} avatar`} className="w-6 h-6 rounded-full inline-block mr-2 border border-white/10" />
-                                            <p className="inline text-sm text-slate-300 font-light">
+                                            <p className="inline text-sm text-slate-200 font-light">
                                                 <span className="font-bold" style={{color: 'white'}}>{notif.from.username}</span> {notif.content}
                                             </p>
-                                            <p className="text-xs text-slate-500 font-mono mt-1">{notif.time}</p>
+                                            <p className="text-xs text-slate-400 font-mono mt-1">{notif.time}</p>
                                         </div>
                                         {notif.unread && <div className="w-2 h-2 rounded-full bg-primary mt-1 shadow-[0_0_8px_1px_hsl(var(--primary))]"></div>}
                                     </div>
@@ -2873,7 +2873,7 @@ export default function VibesphereApp() {
                         })
                     ) : (
                         <div className="text-center py-20">
-                            <p className="text-sm text-slate-500 font-mono">no new vibrations.</p>
+                            <p className="text-sm text-slate-400 font-mono">no new vibrations.</p>
                         </div>
                     )}
                 </motion.div>
@@ -2925,7 +2925,7 @@ export default function VibesphereApp() {
                                             vote
                                         </button>
                                     </div>
-                                    <p className="text-xs font-mono text-slate-500 mt-2">voting ends in 3 days</p>
+                                    <p className="text-xs font-mono text-slate-400 mt-2">voting ends in 3 days</p>
                                 </div>
                             </div>
                         </div>
@@ -2960,7 +2960,7 @@ export default function VibesphereApp() {
                              </div>
                         </div>
 
-                        <p className="text-center text-[10px] font-mono text-slate-600 mt-8">
+                        <p className="text-center text-[10px] font-mono text-slate-500 mt-8">
                             powered by pharos network protocols.
                         </p>
                     </div>
@@ -2968,7 +2968,7 @@ export default function VibesphereApp() {
               ) : activeTab === 'settings' ? (
                 <motion.div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Settings</h2>
-                    <p className="text-center text-slate-500 font-mono mt-2">sovereign settings panel coming soon.</p>
+                    <p className="text-center text-slate-400 font-mono mt-2">sovereign settings panel coming soon.</p>
                 </motion.div>
               ) : activeTab === 'wallet' ? (
                   <motion.div 
@@ -3046,7 +3046,7 @@ export default function VibesphereApp() {
                                         </div>
                                         <div>
                                           <p className="text-sm font-light lowercase">{isSent ? `sent to ${tx.to.slice(0,6)}...` : `received from ${tx.from.slice(0,6)}...`}</p>
-                                          <p className="text-[11px] font-mono text-slate-500">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                                          <p className="text-[11px] font-mono text-slate-400">{new Date(tx.timestamp).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -3076,7 +3076,7 @@ export default function VibesphereApp() {
                                       </div>
                                       <div>
                                           <p className="text-sm font-light lowercase">faucet received</p>
-                                          <p className="text-[11px] font-mono text-slate-500">confirmed</p>
+                                          <p className="text-[11px] font-mono text-slate-400">confirmed</p>
                                       </div>
                                   </div>
                                   <p className="text-sm font-mono text-green-400">+0.03 phrs</p>
@@ -3233,9 +3233,9 @@ export default function VibesphereApp() {
                                                         <span className="font-bold text-sm" style={{ color: `hsl(${partnerAuraColor})` }}>
                                                             {partner.username}
                                                         </span>
-                                                        <span className="text-xs text-slate-500 font-mono flex-shrink-0">{partner.time}</span>
+                                                        <span className="text-xs text-slate-400 font-mono flex-shrink-0">{partner.time}</span>
                                                     </div>
-                                                      <p className="text-slate-400 mt-1 font-light text-sm truncate">{partner.lastMessage}</p>
+                                                      <p className="text-slate-300 mt-1 font-light text-sm truncate">{partner.lastMessage}</p>
                                                 </div>
                                             </div>
                                         </ResonanceCard>
@@ -3270,7 +3270,7 @@ export default function VibesphereApp() {
                                     <img src={partnerInfo.avatar} alt="avatar" className="w-10 h-10 rounded-full border-2 border-primary object-cover group-hover:scale-105 transition-transform" />
                                     <div>
                                         <h3 className="font-bold text-primary text-lg group-hover:brightness-125 transition-all">{partnerInfo.username || partnerInfo.handle}</h3>
-                                        <p className="text-sm font-mono text-slate-400">@{partnerInfo.handle}</p>
+                                        <p className="text-sm font-mono text-slate-300">@{partnerInfo.handle}</p>
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar -mr-4 pr-4">
@@ -3310,7 +3310,7 @@ export default function VibesphereApp() {
                                                 </motion.div>
                                             );
                                         }) : (
-                                            <div className="text-center py-20 text-slate-500 font-mono text-sm">
+                                            <div className="text-center py-20 text-slate-400 font-mono text-sm">
                                                 no messages yet.
                                             </div>
                                         )}
@@ -3645,6 +3645,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
