@@ -2256,24 +2256,24 @@ export default function VibesphereApp() {
                               <div 
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    pushView({ tab: 'user-profile', viewingProfile: mainPost, focusedPost: null });
+                                    pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
                                 <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                  <img src={mainPost.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                  <img src={author.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>
-                                      {mainPost.username}
+                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
+                                      {author.username}
                                     </span>
                                     <div 
                                         className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
-                                        style={{'--primary': getPostAuraColor(mainPost)} as React.CSSProperties}
+                                        style={{'--primary': postAuraColor} as React.CSSProperties}
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{mainPost.handle} • {mainPost.time}</span>
+                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                 </div>
                               </div>
                               <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
@@ -2289,7 +2289,16 @@ export default function VibesphereApp() {
                                             borderColor: `hsla(${getPostAuraColor(mainPost).replace(/ /g, ',')}, 0.3)`,
                                         }}
                                     >
-                                        {/* This inner header is removed for re-echo to avoid redundancy */}
+                                        <div 
+                                            className="flex items-center gap-3 mb-2 cursor-pointer group"
+                                            onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: mainPost, focusedPost: null }); }}
+                                        >
+                                            <img src={mainPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
+                                            <div>
+                                                <span className="text-sm font-bold group-hover:underline" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>{mainPost.username}</span>
+                                                <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
+                                            </div>
+                                        </div>
                                         {mainPost.media && (
                                             <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
                                                 {mainPost.media.type === 'image' && <img src={mainPost.media.url} alt="Post media" className="w-full h-auto" />}
@@ -2577,7 +2586,7 @@ export default function VibesphereApp() {
                     </div>
                   </div>
                   
-                  {isLoadingFeed ? (
+                  {isLoadingFeed && (
                     <div className="w-full space-y-4 mt-4">
                         {[...Array(2)].map((_, i) => (
                             <ResonanceCard key={i}>
@@ -2597,30 +2606,25 @@ export default function VibesphereApp() {
                             </ResonanceCard>
                         ))}
                      </div>
-                  ) : !isLoadingFeed && displayedFeed.length === 0 ? (
-                      <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
-                          <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
-                            no vibrations found here.
-                          </h2>
-                      </motion.div>
-                  ) : (
-                  !isLoadingFeed && displayedFeed.map((item, index) => {
-                      const postAuraColor = getPostAuraColor(item);
+                  )}
+
+                  {!isLoadingFeed && displayedFeed.length > 0 ? (
+                    displayedFeed.map((item, index) => {
+                      const isRevibe = item.type === 'revibe' && item.quotedPost;
+                      const mainPost = isRevibe ? item.quotedPost : item;
+                      const author = isRevibe ? item : mainPost;
+
+                      const postAuraColor = getPostAuraColor(author);
                       const cardStyle = { 
                           '--primary': postAuraColor,
                           '--primary-glow': postAuraColor.replace(/ /g, ', '),
                       } as React.CSSProperties;
-                      const isBookmarked = bookmarkedPosts.includes(item.id);
-                      const isLiked = likedPosts.includes(item.id);
-                      const isExpanded = expandedPosts.includes(item.id);
-
+                      const isBookmarked = bookmarkedPosts.includes(mainPost.id);
+                      const isLiked = likedPosts.includes(mainPost.id);
+                      const isExpanded = expandedPosts.includes(mainPost.id);
 
                       const handleCardClick = () => {
-                      if (item.type === 'revibe' && item.quotedPost) {
-                          pushView({ focusedPost: item.quotedPost });
-                      } else {
-                          pushView({ focusedPost: item });
-                      }
+                          pushView({ focusedPost: mainPost });
                       };
 
                       return (
@@ -2628,10 +2632,10 @@ export default function VibesphereApp() {
                          key={`${item.id}-${index}`} 
                           style={cardStyle}
                       >
-                          {item.type === 'revibe' && (
-                              <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: item, focusedPost: null }); }}>
+                          {isRevibe && (
+                              <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }}>
                                   <Repeat size={14} />
-                                  <span>r'echoed by @{item.handle}</span>
+                                  <span>r'echoed by @{author.handle}</span>
                               </div>
                           )}
                           <div onClick={handleCardClick} className="cursor-pointer">
@@ -2639,54 +2643,57 @@ export default function VibesphereApp() {
                               <div 
                                   onClick={(e) => { 
                                       e.stopPropagation(); 
-                                      const userToView = item;
-                                      pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
+                                      pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null });
                                   }}
                                   className="flex items-center gap-3 cursor-pointer group"
                               >
                                   <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                    <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                    <img src={author.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                   </div>
                                   <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
                                       <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                        {item.username}
+                                        {author.username}
                                       </span>
                                       <div 
                                           className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
+                                          style={{'--primary': postAuraColor} as React.CSSProperties}
                                       ></div>
                                     </div>
-                                    <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                                    <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                   </div>
                                 </div>
-                                <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 -mt-1">
+                                <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
                                   <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                                 </button>
                               </div>
                               
                               <div className="min-h-[40px] pl-12">
-                                  {item.type === 'revibe' && item.quotedPost ? (
+                                  {isRevibe ? (
                                       <div 
                                           className="mt-2 p-3 rounded-2xl border" 
                                           style={{ 
-                                              borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)`,
-                                              '--primary': getPostAuraColor(item.quotedPost)
+                                              borderColor: `hsla(${getPostAuraColor(mainPost).replace(/ /g, ',')}, 0.3)`,
+                                              '--primary': getPostAuraColor(mainPost)
                                           } as React.CSSProperties}
                                       >
-                                          <div className="flex items-center gap-3 mb-2">
-                                              <img src={item.quotedPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
+                                          <div 
+                                              className="flex items-center gap-3 mb-2 cursor-pointer group"
+                                              onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: mainPost, focusedPost: null }); }}
+                                          >
+                                              <img src={mainPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
                                               <div>
-                                                  <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{item.quotedPost.username}</span>
-                                                  <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
+                                                  <span className="text-sm font-bold group-hover:underline" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>{mainPost.username}</span>
+                                                  <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
                                               </div>
                                           </div>
-                                          {item.quotedPost.media && (
+                                          {mainPost.media && (
                                               <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
-                                                  {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                                                  {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                                  {mainPost.media.type === 'image' && <img src={mainPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                                  {mainPost.media.type === 'video' && <video src={mainPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
                                               </div>
                                           )}
-                                          <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
+                                          <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{mainPost.text}</p>
                                       </div>
                                   ) : (
                                     <div className="text-slate-200 text-base leading-relaxed font-light mb-2 whitespace-pre-wrap">
@@ -2719,21 +2726,21 @@ export default function VibesphereApp() {
                               <motion.button 
                                   whileTap={{ scale: 1.2 }}
                                   transition={{ duration: 0.1 }}
-                                  onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: mainPost }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                   <MessageSquare size={18} strokeWidth={1.5} />
-                                  <span className="text-sm font-mono">{item.commentCount}</span>
+                                  <span className="text-sm font-mono">{mainPost.commentCount}</span>
                               </motion.button>
                               <motion.button 
                                   whileTap={{ scale: 1.2 }}
                                   transition={{ duration: 0.1 }}
-                                  onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  onClick={(e) => {e.stopPropagation(); handleRepost(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                   <Repeat size={20} strokeWidth={1.5} />
-                                  <span className="text-sm font-mono">{item.repostCount}</span>
+                                  <span className="text-sm font-mono">{mainPost.repostCount}</span>
                               </motion.button>
                               <motion.button 
                                   whileTap={{ scale: 1.2 }}
                                   transition={{ duration: 0.1 }}
-                                  onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
+                                  onClick={(e) => {e.stopPropagation(); handleToggleLike(mainPost.id)}}
                                   className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
                                   style={isLiked ? {
                                       color: `hsl(${postAuraColor})`,
@@ -2745,12 +2752,12 @@ export default function VibesphereApp() {
                                       strokeWidth={1.5}
                                       fill={isLiked ? 'currentColor' : 'none'}
                                   />
-                                  <span className="text-sm font-mono">{item.likeCount}</span>
+                                  <span className="text-sm font-mono">{mainPost.likeCount}</span>
                               </motion.button>
                               <motion.button
                                   whileTap={{ scale: 1.2 }}
                                   transition={{ duration: 0.1 }}
-                                  onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  onClick={(e) => {e.stopPropagation(); handleToggleBookmark(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                   <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
                               </motion.button>
                           </div>
@@ -2820,7 +2827,14 @@ export default function VibesphereApp() {
 
                       </ResonanceCard>
                       );
-                    }))}
+                    })
+                  ) : (
+                    <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                      <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
+                        no vibrations found here.
+                      </h2>
+                    </motion.div>
+                  )}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
@@ -3631,6 +3645,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
