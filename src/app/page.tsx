@@ -1452,7 +1452,7 @@ export default function VibesphereApp() {
                 findBookmarkedRecursive(item.comments);
             }
             if (item.quotedPost) {
-                findBookmarkedRecursive([item.quotedPost]);
+                findBookmarkedRecursive(item.quotedPost);
             }
         }
       };
@@ -2271,24 +2271,24 @@ export default function VibesphereApp() {
                               <div 
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    pushView({ tab: 'user-profile', viewingProfile: mainPost, focusedPost: null });
+                                    pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
                                 <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                  <img src={mainPost.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                  <img src={author.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>
-                                      {mainPost.username}
+                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
+                                      {author.username}
                                     </span>
                                     <div 
                                         className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
-                                        style={{'--primary': getPostAuraColor(mainPost)} as React.CSSProperties}
+                                        style={{'--primary': postAuraColor} as React.CSSProperties}
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{mainPost.handle} • {mainPost.time}</span>
+                                  <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                 </div>
                               </div>
                               <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
@@ -3661,6 +3661,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
