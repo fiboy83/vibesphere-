@@ -2010,6 +2010,7 @@ export default function VibesphereApp() {
                 className="relative"
               >
                  <div
+                    aria-hidden="true"
                     className="absolute inset-x-0 -top-20 h-96"
                     style={{
                       background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
@@ -2900,6 +2901,7 @@ export default function VibesphereApp() {
                     className="w-full max-w-2xl mx-auto"
                 >
                     <div
+                        aria-hidden="true"
                         className="absolute inset-x-0 -top-20 h-96"
                         style={{
                             background: `radial-gradient(ellipse 50% 50% at 50% 0%, hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2), transparent 70%)`
@@ -2992,7 +2994,7 @@ export default function VibesphereApp() {
                     {/* 1. balance card: the core resonance */}
                     <ResonanceCard>
                       <div className="p-4">
-                        <div className="absolute top-0 right-0 p-6 opacity-20">
+                        <div aria-hidden="true" className="absolute top-0 right-0 p-6 opacity-20">
                           <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" strokeWidth="1">
                             <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
@@ -3659,6 +3661,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
