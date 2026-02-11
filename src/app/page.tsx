@@ -136,6 +136,7 @@ const ResonanceCard = ({ children, style, onClick, className }: { children: Reac
         style={style}
       >
         <div 
+          aria-hidden="true"
           className="absolute -top-10 -right-10 w-32 h-32 bg-primary blur-[80px] rounded-full opacity-20 pointer-events-none transition-colors duration-500"
         ></div>
         
@@ -1530,7 +1531,14 @@ export default function VibesphereApp() {
             <div className={`mt-4 ${level > 0 ? "ml-4 border-l border-white/10 pl-4" : ""}`}>
                 <ResonanceCard 
                     key={comment.id}
-                    onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
+                    onClick={() => {
+                        if (isCommentFocused) {
+                            setFocusedCommentId(null);
+                        } else {
+                            setFocusedCommentId(comment.id);
+                            setReplyingTo(null);
+                        }
+                    }}
                     style={{'--primary': commentAuraColor, '--primary-glow': commentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                 >
                     <div className="flex gap-3 items-start">
@@ -1562,7 +1570,7 @@ export default function VibesphereApp() {
                                         </motion.button>
                                         <motion.button
                                             whileTap={{ scale: 1.2 }}
-                                            onClick={(e) => { e.stopPropagation(); setReplyingTo(replyingTo === comment.id ? null : comment.id) }}
+                                            onClick={(e) => { e.stopPropagation(); setReplyingTo(replyingTo === comment.id ? null : comment.id); setFocusedCommentId(null); }}
                                             className="flex items-center gap-1.5 text-xs hover:brightness-125"
                                             style={{color: 'hsl(var(--primary))'}}
                                         >
@@ -1642,7 +1650,7 @@ export default function VibesphereApp() {
             <h2 className="text-5xl font-black italic lowercase tracking-tighter mb-4 animate-pulse-glow" style={{color: 'hsl(var(--primary))'}}>
               vibesphere
             </h2>
-            <p className="text-[11px] font-mono text-slate-500 mb-12">
+            <p className="text-[11px] font-mono text-slate-300 mb-12">
               invite only. prove your sovereignty.
             </p>
 
@@ -1789,7 +1797,7 @@ export default function VibesphereApp() {
                     onClick={() => setIsSidebarOpen(true)}
                     className="p-2 hover:bg-white/10 rounded-full transition"
                   >
-                    <Menu size={22} className="text-slate-400" />
+                    <Menu size={22} className="text-slate-300" />
                   </motion.button>
                 ) : <div className='w-10 h-10'/>}
               </AnimatePresence>
@@ -1820,13 +1828,13 @@ export default function VibesphereApp() {
                       onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
                       className="absolute right-4 p-1 hover:bg-white/10 rounded-full transition-colors"
                     >
-                      <X size={18} className="text-slate-400 hover:text-white" strokeWidth={1.5} />
+                      <X size={18} className="text-slate-300 hover:text-white" strokeWidth={1.5} />
                     </button>
                   </motion.div>
                 ) : (
                   <motion.h1 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="text-sm font-black tracking-[0.3em] lowercase italic bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent"
+                    className="text-sm font-black tracking-[0.3em] lowercase italic bg-gradient-to-r from-slate-300 via-white to-slate-300 bg-clip-text text-transparent"
                   >
                     vibes of sovereign
                   </motion.h1>
@@ -1840,7 +1848,7 @@ export default function VibesphereApp() {
                   onClick={() => setIsSearchOpen(true)} 
                   className="p-2 hover:bg-white/10 rounded-full transition"
                 >
-                  <Search size={22} className="text-slate-400" />
+                  <Search size={22} className="text-slate-300" />
                 </motion.button>
               ) : <div className='w-10 h-10'/>}
             </motion.header>
@@ -2029,7 +2037,7 @@ export default function VibesphereApp() {
                       style={{'--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}
                   >
                       <div 
-                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: focusedPost, focusedPost: null })}}
+                          onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: focusedPost, focusedPost: null }); }}
                           className="flex items-center gap-4 mb-4 cursor-pointer group"
                       >
                           <img src={focusedPost.avatar} alt="avatar" className="w-12 h-12 rounded-full border-2 transition-all group-hover:scale-105" style={{borderColor: `hsl(${currentAuraColor})`}} />
@@ -2262,24 +2270,24 @@ export default function VibesphereApp() {
                               <div 
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null });
+                                    pushView({ tab: 'user-profile', viewingProfile: mainPost, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
                                 <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                  <img src={author.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                  <img src={mainPost.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                      {author.username}
+                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>
+                                      {mainPost.username}
                                     </span>
                                     <div 
                                         className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
-                                        style={{'--primary': postAuraColor} as React.CSSProperties}
+                                        style={{'--primary': getPostAuraColor(mainPost)} as React.CSSProperties}
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                  <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{mainPost.handle} • {mainPost.time}</span>
                                 </div>
                               </div>
                               <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
@@ -2390,7 +2398,7 @@ export default function VibesphereApp() {
                                         <div 
                                             key={comment.id}
                                             className="mt-2 first:mt-0 cursor-pointer"
-                                            onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
+                                            onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: comment, viewingProfile: comment })}}
                                         >
                                           <div className="flex items-start gap-2">
                                               <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }} className="cursor-pointer group">
@@ -2778,7 +2786,7 @@ export default function VibesphereApp() {
                                       <div 
                                           key={comment.id}
                                           className="mt-2 first:mt-0 cursor-pointer"
-                                          onClick={() => setFocusedCommentId(isCommentFocused ? null : comment.id)}
+                                          onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: comment, viewingProfile: comment })}}
                                       >
                                           <div className="flex items-start gap-2">
                                               <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null }); }} className="cursor-pointer group">
@@ -3651,6 +3659,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
