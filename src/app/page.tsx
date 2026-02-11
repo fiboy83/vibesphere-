@@ -155,7 +155,7 @@ const ResonanceCard = ({ children, style, onClick, className }: { children: Reac
 const SidebarLink = ({ icon, label, onClick }: {icon: React.ReactNode, label: string, onClick: () => void}) => (
   <button onClick={onClick} className="group flex items-center gap-4 transition-all">
     <span className="text-slate-500 group-hover:text-purple-400 transition-colors">{icon}</span>
-    <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-400 group-hover:text-white">{label}</span>
+    <span className="text-[11px] font-mono font-bold tracking-[0.2em] lowercase text-slate-300 group-hover:text-white">{label}</span>
   </button>
 );
 
@@ -1060,6 +1060,7 @@ export default function VibesphereApp() {
   };
 
   const handleRepost = async (postId: number) => {
+    if (!wallet?.address) return;
     let originalPost: any = null;
 
     const findItemRecursive = (items: any[], id: number): any => {
@@ -1085,17 +1086,22 @@ export default function VibesphereApp() {
 
     const newPost = {
         id: Date.now(),
-        userId: profile.handle,
+        // Re-echoer's info
         username: profile.username,
         handle: profile.handle,
         avatar: profile.avatar,
         themeColor: profile.themeColor,
+        pharos_address: wallet.address,
+        // Post metadata
         time: 'now',
+        text: '',
+        type: 'revibe',
+        // Stats
         commentCount: 0,
         repostCount: 0,
         likeCount: 0,
-        text: '',
-        type: 'revibe',
+        comments: [],
+        // The original post
         quotedPost: originalPost,
     };
 
@@ -1534,7 +1540,7 @@ export default function VibesphereApp() {
                         <div className="flex-1">
                             <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: comment, focusedPost: null })}} className='flex items-center gap-2 group cursor-pointer'>
                                 <span className="text-sm font-bold group-hover:underline" style={{color: `hsl(${commentAuraColor})`}}>{comment.username}</span>
-                                <span className="text-xs text-slate-400 font-mono">@{comment.handle} &bull; {comment.time}</span>
+                                <span className="text-xs text-slate-300 font-mono">@{comment.handle} &bull; {comment.time}</span>
                             </div>
                             <p className="text-base text-slate-200 leading-relaxed mt-1 font-light whitespace-pre-wrap">{comment.text}</p>
                             <AnimatePresence>
@@ -1696,7 +1702,7 @@ export default function VibesphereApp() {
               <h2 className="text-4xl font-black italic lowercase tracking-tighter mb-2" style={{color: 'hsl(var(--primary))'}}>
                 vibesphere
               </h2>
-              <p className="text-[11px] font-mono text-slate-500 mb-12 text-center leading-relaxed">
+              <p className="text-[11px] font-mono text-slate-300 mb-12 text-center leading-relaxed">
                 connect your sovereignty. <br/> no email. no password. just vibe.
               </p>
 
@@ -2010,7 +2016,7 @@ export default function VibesphereApp() {
                               <div className="flex-1">
                                   <div className='flex items-center gap-2'>
                                       <span className="text-sm font-bold" style={{color: `hsl(${getPostAuraColor(parentPostForCommentView)})`}}>{parentPostForCommentView.username}</span>
-                                      <span className="text-xs text-slate-400 font-mono">@{parentPostForCommentView.handle} &bull; {parentPostForCommentView.time}</span>
+                                      <span className="text-xs text-slate-300 font-mono">@{parentPostForCommentView.handle} &bull; {parentPostForCommentView.time}</span>
                                   </div>
                                   <p className="text-base text-slate-200 leading-relaxed mt-1 font-light whitespace-pre-wrap">{parentPostForCommentView.text}</p>
                               </div>
@@ -2049,7 +2055,7 @@ export default function VibesphereApp() {
                             : 'text-lg md:text-xl'
                           }`}>{focusedPost.text}</p>
                           
-                          <p className="text-xs font-mono text-slate-400 mt-6">{focusedPost.time}</p>
+                          <p className="text-xs font-mono text-slate-300 mt-6">{focusedPost.time}</p>
                         </div>
                         
                         <div className="mt-4 pt-4 border-t" style={{borderColor: `hsla(${currentAuraColor.replace(/ /g, ',')}, 0.2)`}}>
@@ -2153,7 +2159,7 @@ export default function VibesphereApp() {
                                     ))
                                 ) : (
                                   <div className="text-center py-8">
-                                      <p className="text-sm text-slate-400 font-mono">no replies yet.</p>
+                                      <p className="text-sm text-slate-300 font-mono">no replies yet.</p>
                                   </div>
                                 )}
                             </div>
@@ -2246,7 +2252,7 @@ export default function VibesphereApp() {
                         style={cardStyle}
                       >
                         {isRevibe && (
-                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }}>
+                            <div className="text-xs font-mono text-slate-300 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }}>
                                 <Repeat size={14} />
                                 <span>r'echoed by @{author.handle}</span>
                             </div>
@@ -2273,7 +2279,7 @@ export default function VibesphereApp() {
                                         style={{'--primary': postAuraColor} as React.CSSProperties}
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-400 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                  <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                 </div>
                               </div>
                               <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
@@ -2296,7 +2302,7 @@ export default function VibesphereApp() {
                                             <img src={mainPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
                                             <div>
                                                 <span className="text-sm font-bold group-hover:underline" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>{mainPost.username}</span>
-                                                <span className="text-xs text-slate-400 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
+                                                <span className="text-xs text-slate-300 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
                                             </div>
                                         </div>
                                         {mainPost.media && (
@@ -2414,7 +2420,7 @@ export default function VibesphereApp() {
                                                         <motion.button
                                                             whileTap={{ scale: 1.2 }}
                                                             onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
-                                                            className="flex items-center gap-1.5 text-xs text-slate-400 hover:brightness-125"
+                                                            className="flex items-center gap-1.5 text-xs text-slate-300 hover:brightness-125"
                                                             style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
                                                         >
                                                             <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
@@ -2423,7 +2429,7 @@ export default function VibesphereApp() {
                                                         <motion.button
                                                             whileTap={{ scale: 1.2 }}
                                                             onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
-                                                            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary"
+                                                            className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-primary"
                                                         >
                                                             <MessageSquare size={14}/>
                                                             <span>Reply</span>
@@ -2633,7 +2639,7 @@ export default function VibesphereApp() {
                           style={cardStyle}
                       >
                           {isRevibe && (
-                              <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }}>
+                              <div className="text-xs font-mono text-slate-300 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }}>
                                   <Repeat size={14} />
                                   <span>r'echoed by @{author.handle}</span>
                               </div>
@@ -2660,7 +2666,7 @@ export default function VibesphereApp() {
                                           style={{'--primary': postAuraColor} as React.CSSProperties}
                                       ></div>
                                     </div>
-                                    <span className="text-[11px] text-slate-400 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                    <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                   </div>
                                 </div>
                                 <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
@@ -2684,7 +2690,7 @@ export default function VibesphereApp() {
                                               <img src={mainPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
                                               <div>
                                                   <span className="text-sm font-bold group-hover:underline" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>{mainPost.username}</span>
-                                                  <span className="text-xs text-slate-400 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
+                                                  <span className="text-xs text-slate-300 font-mono tracking-tighter"> @{mainPost.handle} • {mainPost.time}</span>
                                               </div>
                                           </div>
                                           {mainPost.media && (
@@ -2802,7 +2808,7 @@ export default function VibesphereApp() {
                                                       <motion.button
                                                           whileTap={{ scale: 1.2 }}
                                                           onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
-                                                          className="flex items-center gap-1.5 text-xs text-slate-400 hover:brightness-125"
+                                                          className="flex items-center gap-1.5 text-xs text-slate-300 hover:brightness-125"
                                                           style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
                                                       >
                                                           <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
@@ -2811,7 +2817,7 @@ export default function VibesphereApp() {
                                                       <motion.button
                                                           whileTap={{ scale: 1.2 }}
                                                           onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
-                                                          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary"
+                                                          className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-primary"
                                                       >
                                                           <MessageSquare size={14}/>
                                                           <span>Reply</span>
@@ -2830,7 +2836,7 @@ export default function VibesphereApp() {
                     })
                   ) : (
                     <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
-                      <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
+                      <h2 className="text-xl font-light lowercase tracking-widest text-slate-300">
                         no vibrations found here.
                       </h2>
                     </motion.div>
@@ -2864,7 +2870,7 @@ export default function VibesphereApp() {
                                             <p className="inline text-sm text-slate-200 font-light">
                                                 <span className="font-bold" style={{color: 'white'}}>{notif.from.username}</span> {notif.content}
                                             </p>
-                                            <p className="text-xs text-slate-400 font-mono mt-1">{notif.time}</p>
+                                            <p className="text-xs text-slate-300 font-mono mt-1">{notif.time}</p>
                                         </div>
                                         {notif.unread && <div className="w-2 h-2 rounded-full bg-primary mt-1 shadow-[0_0_8px_1px_hsl(var(--primary))]"></div>}
                                     </div>
@@ -2873,7 +2879,7 @@ export default function VibesphereApp() {
                         })
                     ) : (
                         <div className="text-center py-20">
-                            <p className="text-sm text-slate-400 font-mono">no new vibrations.</p>
+                            <p className="text-sm text-slate-300 font-mono">no new vibrations.</p>
                         </div>
                     )}
                 </motion.div>
@@ -2901,7 +2907,7 @@ export default function VibesphereApp() {
 
                         <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                             <div className="text-center">
-                                <p className="text-sm font-mono lowercase tracking-widest text-slate-400">current balance</p>
+                                <p className="text-sm font-mono lowercase tracking-widest text-slate-300">current balance</p>
                                 <p className="text-5xl font-black mt-2 tracking-tighter italic">
                                     {parseFloat(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
                                     <span className="text-2xl font-light not-italic text-primary"> $phrs</span>
@@ -2910,7 +2916,7 @@ export default function VibesphereApp() {
                         </ResonanceCard>
 
                         <div>
-                            <h3 className="text-lg font-light lowercase tracking-[0.2em] text-slate-400 mb-6 text-center">active governance</h3>
+                            <h3 className="text-lg font-light lowercase tracking-[0.2em] text-slate-300 mb-6 text-center">active governance</h3>
                             <div className="flex flex-col gap-4">
                                 <div className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/10 transition-all hover:border-primary/30 hover:bg-white/[0.03]">
                                     <div className="flex justify-between items-center">
@@ -2925,13 +2931,13 @@ export default function VibesphereApp() {
                                             vote
                                         </button>
                                     </div>
-                                    <p className="text-xs font-mono text-slate-400 mt-2">voting ends in 3 days</p>
+                                    <p className="text-xs font-mono text-slate-300 mt-2">voting ends in 3 days</p>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                             <h3 className="text-lg font-light lowercase tracking-[0.2em] text-slate-400 mb-6 text-center">pharos gateway</h3>
+                             <h3 className="text-lg font-light lowercase tracking-[0.2em] text-slate-300 mb-6 text-center">pharos gateway</h3>
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <a href="https://pharos.fi/swap" target="_blank" rel="noopener noreferrer" className="group">
                                     <ResonanceCard>
@@ -2968,7 +2974,7 @@ export default function VibesphereApp() {
               ) : activeTab === 'settings' ? (
                 <motion.div>
                     <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Settings</h2>
-                    <p className="text-center text-slate-400 font-mono mt-2">sovereign settings panel coming soon.</p>
+                    <p className="text-center text-slate-300 font-mono mt-2">sovereign settings panel coming soon.</p>
                 </motion.div>
               ) : activeTab === 'wallet' ? (
                   <motion.div 
@@ -2984,22 +2990,22 @@ export default function VibesphereApp() {
                           </svg>
                         </div>
                         
-                        <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">total balance</span>
+                        <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-300">total balance</span>
                         <h3 className="text-4xl font-black mt-2 tracking-tighter italic">
                           {isConnected ? parseFloat(balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}) : '---'} <span className="text-sm font-light not-italic text-primary">phrs</span>
                         </h3>
-                        {isConnected && <p className="text-[11px] font-mono text-slate-500 mt-1">≈ $... usd</p>}
+                        {isConnected && <p className="text-[11px] font-mono text-slate-300 mt-1">≈ $... usd</p>}
 
                         <div className="mt-4 flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
                           <div className="flex flex-col">
-                            <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">your address</span>
+                            <span className="text-[8px] font-mono text-slate-300 uppercase tracking-widest">your address</span>
                             <code className="text-[10px] font-mono text-primary">
                               {wallet?.address && `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`}
                             </code>
                           </div>
                           <button 
                             onClick={copyAddress}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+                            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-300 hover:text-white"
                           >
                             <Copy size={14} />
                           </button>
@@ -3027,7 +3033,7 @@ export default function VibesphereApp() {
                     {/* 2. transaction history */}
                     <div className="mt-12 flex flex-col gap-4">
                       <div className="flex justify-between items-center px-2">
-                          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500">transaction history</span>
+                          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-slate-300">transaction history</span>
                           {wallet?.address && <a href={`https://pharos-testnet.socialscan.io/address/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-primary hover:underline">view all on explorer</a>}
                       </div>
                       
@@ -3046,7 +3052,7 @@ export default function VibesphereApp() {
                                         </div>
                                         <div>
                                           <p className="text-sm font-light lowercase">{isSent ? `sent to ${tx.to.slice(0,6)}...` : `received from ${tx.from.slice(0,6)}...`}</p>
-                                          <p className="text-[11px] font-mono text-slate-400">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                                          <p className="text-[11px] font-mono text-slate-300">{new Date(tx.timestamp).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -3076,7 +3082,7 @@ export default function VibesphereApp() {
                                       </div>
                                       <div>
                                           <p className="text-sm font-light lowercase">faucet received</p>
-                                          <p className="text-[11px] font-mono text-slate-400">confirmed</p>
+                                          <p className="text-[11px] font-mono text-slate-300">confirmed</p>
                                       </div>
                                   </div>
                                   <p className="text-sm font-mono text-green-400">+0.03 phrs</p>
@@ -3085,7 +3091,7 @@ export default function VibesphereApp() {
                         ) : (
                             <ResonanceCard>
                               <div className="flex items-center gap-4 p-4 justify-center text-center">
-                                  <p className="text-sm text-slate-400 font-mono lowercase">your transaction history is synced on-chain.</p>
+                                  <p className="text-sm text-slate-300 font-mono lowercase">your transaction history is synced on-chain.</p>
                               </div>
                             </ResonanceCard>
                         )}
@@ -3119,7 +3125,7 @@ export default function VibesphereApp() {
                             </div>
 
                             <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-8 text-center">
-                              <p className="text-[10px] font-mono text-slate-400 break-all lowercase">
+                              <p className="text-[10px] font-mono text-slate-300 break-all lowercase">
                                 {wallet?.address}
                               </p>
                             </div>
@@ -3133,7 +3139,7 @@ export default function VibesphereApp() {
                             
                             <button 
                               onClick={() => setShowReceiveModal(false)}
-                              className="text-[10px] font-mono text-slate-500 hover:text-white uppercase tracking-widest mt-2"
+                              className="text-[10px] font-mono text-slate-300 hover:text-white uppercase tracking-widest mt-2"
                             >
                               close
                             </button>
@@ -3176,7 +3182,7 @@ export default function VibesphereApp() {
                             >
                               {isSending ? 'sending...' : 'confirm send'}
                             </button>
-                            <button onClick={() => setShowSendModal(false)} className="w-full mt-4 text-[10px] font-mono text-slate-500 uppercase">cancel</button>
+                            <button onClick={() => setShowSendModal(false)} className="w-full mt-4 text-[10px] font-mono text-slate-300 uppercase">cancel</button>
                           </motion.div>
                         </motion.div>
                       )}
@@ -3186,7 +3192,7 @@ export default function VibesphereApp() {
                 <motion.div
                   className="w-full max-w-md mx-auto flex flex-col gap-4"
                 >
-                  <h2 className="text-center text-slate-500 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Atlantic Testnet</h2>
+                  <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-sm mb-4">Market Pulse / Pharos Atlantic Testnet</h2>
                   {/* Market data would go here */}
                 </motion.div>
                 ) : activeTab === 'inbox' ? (
@@ -3233,7 +3239,7 @@ export default function VibesphereApp() {
                                                         <span className="font-bold text-sm" style={{ color: `hsl(${partnerAuraColor})` }}>
                                                             {partner.username}
                                                         </span>
-                                                        <span className="text-xs text-slate-400 font-mono flex-shrink-0">{partner.time}</span>
+                                                        <span className="text-xs text-slate-300 font-mono flex-shrink-0">{partner.time}</span>
                                                     </div>
                                                       <p className="text-slate-300 mt-1 font-light text-sm truncate">{partner.lastMessage}</p>
                                                 </div>
@@ -3310,7 +3316,7 @@ export default function VibesphereApp() {
                                                 </motion.div>
                                             );
                                         }) : (
-                                            <div className="text-center py-20 text-slate-400 font-mono text-sm">
+                                            <div className="text-center py-20 text-slate-300 font-mono text-sm">
                                                 no messages yet.
                                             </div>
                                         )}
@@ -3386,16 +3392,16 @@ export default function VibesphereApp() {
                     <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full border border-primary/50 object-cover" />
                     <span className="text-sm font-bold lowercase" style={{color: `hsl(${profile.themeColor})`}}>{profile.username}</span>
                   </div>
-                  <button onClick={() => setIsComposerOpen(false)} className="p-2 rounded-full hover:bg-white/10 text-slate-400">
+                  <button onClick={() => setIsComposerOpen(false)} className="p-2 rounded-full hover:bg-white/10 text-slate-300">
                     <X size={18} />
                   </button>
                 </div>
                 
                 {/* Composer Tabs */}
                 <div className="flex gap-2 mb-4 p-1 bg-white/5 rounded-full">
-                  <button onClick={() => setComposerTab('media')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'media' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><FileUp size={14}/>media</button>
-                  <button onClick={() => setComposerTab('tekt')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'tekt' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><Type size={14}/>tekt</button>
-                  <button onClick={() => setComposerTab('artikel')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'artikel' ? 'bg-primary/20 text-white' : 'text-slate-400 hover:bg-white/5'}`}><FileText size={14}/>artikel</button>
+                  <button onClick={() => setComposerTab('media')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'media' ? 'bg-primary/20 text-white' : 'text-slate-300 hover:bg-white/5'}`}><FileUp size={14}/>media</button>
+                  <button onClick={() => setComposerTab('tekt')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'tekt' ? 'bg-primary/20 text-white' : 'text-slate-300 hover:bg-white/5'}`}><Type size={14}/>tekt</button>
+                  <button onClick={() => setComposerTab('artikel')} className={`flex-1 flex items-center justify-center gap-2 text-xs font-light lowercase tracking-widest py-2 rounded-full transition-colors ${composerTab === 'artikel' ? 'bg-primary/20 text-white' : 'text-slate-300 hover:bg-white/5'}`}><FileText size={14}/>artikel</button>
                 </div>
 
                 {/* Content Area */}
@@ -3471,7 +3477,7 @@ export default function VibesphereApp() {
                 <h3 className="text-sm font-bold lowercase tracking-widest mb-6 text-primary">edit profile</h3>
                 <div className='flex flex-col gap-4'>
                   <div>
-                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>username</label>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-300'>username</label>
                     <input 
                       value={tempProfile.username}
                       onChange={(e) => setTempProfile(p => ({...p, username: e.target.value}))}
@@ -3479,7 +3485,7 @@ export default function VibesphereApp() {
                     />
                   </div>
                   <div>
-                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>short bio</label>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-300'>short bio</label>
                     <textarea 
                       value={tempProfile.bio}
                       onChange={(e) => setTempProfile(p => ({...p, bio: e.target.value.toLowerCase()}))}
@@ -3489,7 +3495,7 @@ export default function VibesphereApp() {
                     />
                   </div>
                    <div>
-                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>extended bio & links</label>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-300'>extended bio & links</label>
                     <textarea 
                       value={tempProfile.extendedBio}
                       onChange={(e) => setTempProfile(p => ({...p, extendedBio: e.target.value.toLowerCase()}))}
@@ -3499,7 +3505,7 @@ export default function VibesphereApp() {
                     />
                   </div>
                    <div>
-                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400'>primary website</label>
+                    <label className='text-[10px] font-mono uppercase tracking-[0.2em] text-slate-300'>primary website</label>
                     <input 
                       value={tempProfile.websiteUrl}
                       onChange={(e) => setTempProfile(p => ({...p, websiteUrl: e.target.value.toLowerCase()}))}
@@ -3645,6 +3651,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
