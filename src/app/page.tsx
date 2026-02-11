@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -1564,6 +1562,7 @@ export default function VibesphereApp() {
                                             onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
                                             className="flex items-center gap-1.5 text-xs hover:brightness-125"
                                             style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {color: 'hsl(var(--primary))'}}
+                                            aria-label="Like comment"
                                         >
                                             <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
                                             <span>{comment.likeCount}</span>
@@ -1573,6 +1572,7 @@ export default function VibesphereApp() {
                                             onClick={(e) => { e.stopPropagation(); setReplyingTo(replyingTo === comment.id ? null : comment.id); setFocusedCommentId(null); }}
                                             className="flex items-center gap-1.5 text-xs hover:brightness-125"
                                             style={{color: 'hsl(var(--primary))'}}
+                                            aria-label="Reply to comment"
                                         >
                                             <MessageSquare size={14}/>
                                             <span>Reply</span>
@@ -1593,7 +1593,7 @@ export default function VibesphereApp() {
                                 onChange={(e) => setCommentText(e.target.value.toLowerCase())}
                                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(postId, comment.id))}
                                 placeholder={`reply to @${comment.handle}...`}
-                                className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
+                                className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none placeholder:text-slate-500"
                                 rows={1}
                                 autoFocus
                             />
@@ -1603,6 +1603,7 @@ export default function VibesphereApp() {
                                 className={`absolute right-1 bottom-1 transition-colors ${
                                   commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
                                 }`}
+                                aria-label="Send reply"
                             >
                                 <Send size={16} strokeWidth={2} />
                             </button>
@@ -1675,7 +1676,7 @@ export default function VibesphereApp() {
             </div>
             
             <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                <p className="text-[9px] font-mono text-slate-400 text-center leading-normal lowercase">
                   *vibesphere is a decentralized social layer. your vibe is your key.
                 </p>
             </div>
@@ -1734,7 +1735,7 @@ export default function VibesphereApp() {
               </div>
 
               <div className="mt-12 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                <p className="text-[9px] font-mono text-slate-600 text-center leading-normal lowercase">
+                <p className="text-[9px] font-mono text-slate-400 text-center leading-normal lowercase">
                   *vibesphere is a decentralized application. 100% on-chain & non-custodial.
                 </p>
               </div>
@@ -1754,6 +1755,7 @@ export default function VibesphereApp() {
                 onClick={popView}
                 className="fixed top-6 left-6 p-2 hover:bg-white/10 rounded-full transition-colors z-[60]"
                 style={{ color: `hsl(${currentAuraColor})` }}
+                aria-label="Go back"
               >
                 <ArrowLeft size={22} strokeWidth={1.5} />
               </motion.button>
@@ -1785,6 +1787,7 @@ export default function VibesphereApp() {
                     onClick={popView}
                     className="p-2 hover:bg-white/10 rounded-full transition-colors h-10 w-10 flex items-center justify-center"
                     style={{ color: `hsl(${currentAuraColor})` }}
+                    aria-label="Go back"
                   >
                     <ArrowLeft size={22} strokeWidth={1.5} />
                   </motion.button>
@@ -1796,6 +1799,7 @@ export default function VibesphereApp() {
                     exit={{ opacity: 0 }}
                     onClick={() => setIsSidebarOpen(true)}
                     className="p-2 hover:bg-white/10 rounded-full transition"
+                    aria-label="Open menu"
                   >
                     <Menu size={22} className="text-slate-300" />
                   </motion.button>
@@ -1827,6 +1831,7 @@ export default function VibesphereApp() {
                     <button 
                       onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
                       className="absolute right-4 p-1 hover:bg-white/10 rounded-full transition-colors"
+                      aria-label="Close search"
                     >
                       <X size={18} className="text-slate-300 hover:text-white" strokeWidth={1.5} />
                     </button>
@@ -1847,6 +1852,7 @@ export default function VibesphereApp() {
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   onClick={() => setIsSearchOpen(true)} 
                   className="p-2 hover:bg-white/10 rounded-full transition"
+                  aria-label="Open search"
                 >
                   <Search size={22} className="text-slate-300" />
                 </motion.button>
@@ -2074,6 +2080,7 @@ export default function VibesphereApp() {
                                 transition={{ duration: 0.1 }}
                                 onClick={(e) => { e.stopPropagation(); setIsCommentSectionVisible(prev => !prev); }}
                                 className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
+                                aria-label="View comments"
                               >
                                 <MessageSquare size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.commentCount}</span>
@@ -2082,7 +2089,9 @@ export default function VibesphereApp() {
                               <motion.button
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all">
+                                onClick={(e) => {e.stopPropagation(); handleRepost(focusedPost.id)}} className="group flex items-center gap-2 text-primary hover:brightness-125 transition-all"
+                                aria-label="Re-echo post"
+                                >
                                 <Repeat size={22} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{focusedPost.repostCount}</span>
                               </motion.button>
@@ -2096,6 +2105,7 @@ export default function VibesphereApp() {
                                     color: `hsl(${currentAuraColor})`,
                                     filter: `drop-shadow(0 0 6px hsl(${currentAuraColor.replace(/ /g, ', ')}))`
                                 } : {}}
+                                aria-label="Like post"
                               >
                                 <Sparkles 
                                     size={20} 
@@ -2109,6 +2119,7 @@ export default function VibesphereApp() {
                                 transition={{ duration: 0.1 }}
                                 onClick={(e) => { e.stopPropagation(); handleToggleBookmark(focusedPost.id); }}
                                 className={`group flex items-center gap-2 transition-all text-primary hover:brightness-125`}
+                                aria-label="Bookmark post"
                               >
                                 <Bookmark 
                                   size={20} 
@@ -2142,7 +2153,7 @@ export default function VibesphereApp() {
                                                     onChange={(e) => setCommentText(e.target.value.toLowerCase())}
                                                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendComment(focusedPost.id, null))}
                                                     placeholder="post your reply..."
-                                                    className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none"
+                                                    className="w-full bg-transparent border-b border-white/10 pb-2 pl-2 pr-10 text-base font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 resize-none placeholder:text-slate-500"
                                                     rows={1}
                                                 />
                                                 <button 
@@ -2151,6 +2162,7 @@ export default function VibesphereApp() {
                                                     className={`absolute right-1 bottom-1 transition-colors ${
                                                     commentText.trim() ? 'text-primary hover:text-primary/80' : 'text-slate-700'
                                                     }`}
+                                                    aria-label="Send reply"
                                                 >
                                                     <Send size={16} strokeWidth={2} />
                                                 </button>
@@ -2213,7 +2225,7 @@ export default function VibesphereApp() {
                         ))}
                      </div>
                   ) : displayedFeed.length === 0 && (
-                      <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
+                      <motion.div className="text-center py-20 flex flex-col items-center text-slate-300">
                           {activeTab === 'bookmarks' ? (
                             <>
                               <Bookmark size={32} strokeWidth={1.5} className="mb-6"/>
@@ -2291,7 +2303,7 @@ export default function VibesphereApp() {
                                   <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                 </div>
                               </div>
-                              <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
+                              <button aria-label="Share post" onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
                                 <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                               </button>
                             </div>
@@ -2353,14 +2365,18 @@ export default function VibesphereApp() {
                             <motion.button 
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: mainPost }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: mainPost }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                aria-label="View comments"
+                                >
                                 <MessageSquare size={18} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{mainPost.commentCount}</span>
                             </motion.button>
                             <motion.button 
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleRepost(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                onClick={(e) => {e.stopPropagation(); handleRepost(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                aria-label="Re-echo post"
+                                >
                                 <Repeat size={20} strokeWidth={1.5} />
                                 <span className="text-sm font-mono">{mainPost.repostCount}</span>
                             </motion.button>
@@ -2373,6 +2389,7 @@ export default function VibesphereApp() {
                                     color: `hsl(${postAuraColor})`,
                                     filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
                                 } : {}}
+                                aria-label="Like post"
                             >
                                 <Sparkles 
                                     size={18} 
@@ -2384,7 +2401,9 @@ export default function VibesphereApp() {
                             <motion.button
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleToggleBookmark(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                onClick={(e) => {e.stopPropagation(); handleToggleBookmark(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                aria-label="Bookmark post"
+                                >
                                 <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
                             </motion.button>
                         </div>
@@ -2431,6 +2450,7 @@ export default function VibesphereApp() {
                                                             onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
                                                             className="flex items-center gap-1.5 text-xs text-slate-300 hover:brightness-125"
                                                             style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
+                                                            aria-label="Like comment"
                                                         >
                                                             <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
                                                             <span>{comment.likeCount}</span>
@@ -2439,6 +2459,7 @@ export default function VibesphereApp() {
                                                             whileTap={{ scale: 1.2 }}
                                                             onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
                                                             className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-primary"
+                                                            aria-label="Reply to comment"
                                                         >
                                                             <MessageSquare size={14}/>
                                                             <span>Reply</span>
@@ -2499,6 +2520,7 @@ export default function VibesphereApp() {
                               <button 
                                   onClick={openProfileModal}
                                   className="group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
+                                  aria-label="Edit profile"
                               >
                                   <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
                                       <Edit2 size={14} />
@@ -2513,6 +2535,7 @@ export default function VibesphereApp() {
                             <button
                                 onClick={handleAvatarClick}
                                 className="group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 px-4 text-center transition-colors hover:border-primary/40"
+                                aria-label="Upload new avatar"
                             >
                                 <div className="flex items-center gap-2 text-xs font-mono lowercase tracking-widest text-slate-300 hover:text-white transition-colors">
                                     <FileUp size={14} />
@@ -2552,11 +2575,11 @@ export default function VibesphereApp() {
                           )}
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-mono">
-                          <span className="text-slate-500">.vibes</span>
+                          <span className="text-slate-400">.vibes</span>
                         </div>
                       </div>
                       <div className="text-center text-xs font-mono h-4 mt-2">
-                        {isCheckingHandle && <p className="text-slate-500 animate-pulse">checking...</p>}
+                        {isCheckingHandle && <p className="text-slate-400 animate-pulse">checking...</p>}
                         {!isCheckingHandle && isHandleAvailable === true && <p className="text-green-400">Handle tersedia! Klaim kedaulatanmu sekarang.</p>}
                         {!isCheckingHandle && isHandleAvailable === false && <p className="text-red-400">Yah, handle ini sudah ada yang punya, Broo!</p>}
                         {!isCheckingHandle && handleCheckError && <p className="text-red-400">{handleCheckError}</p>}
@@ -2579,21 +2602,21 @@ export default function VibesphereApp() {
                     <div className="flex justify-around max-w-sm mx-auto">
                         <button
                             onClick={() => setProfileTab('echo')}
-                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'echo' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'echo' ? 'border-b-2' : 'text-slate-400 hover:text-white border-b-2 border-transparent'}`}
                             style={profileTab === 'echo' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
                         >
                             echo
                         </button>
                         <button
                             onClick={() => setProfileTab('r-echo')}
-                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'r-echo' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'r-echo' ? 'border-b-2' : 'text-slate-400 hover:text-white border-b-2 border-transparent'}`}
                             style={profileTab === 'r-echo' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
                         >
                             r'echo
                         </button>
                         <button
                             onClick={() => setProfileTab('vibes')}
-                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'vibes' ? 'border-b-2' : 'text-slate-500 hover:text-white border-b-2 border-transparent'}`}
+                            className={`flex-1 py-3 text-center text-sm font-bold lowercase tracking-widest transition-colors ${profileTab === 'vibes' ? 'border-b-2' : 'text-slate-400 hover:text-white border-b-2 border-transparent'}`}
                             style={profileTab === 'vibes' ? { color: `hsl(${currentAuraColor})`, borderColor: `hsl(${currentAuraColor})` } : {}}
                         >
                             vibes
@@ -2678,7 +2701,7 @@ export default function VibesphereApp() {
                                     <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
                                   </div>
                                 </div>
-                                <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
+                                <button aria-label="Share post" onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
                                   <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                                 </button>
                               </div>
@@ -2741,14 +2764,18 @@ export default function VibesphereApp() {
                               <motion.button 
                                   whileTap={{ scale: 1.2 }}
                                   transition={{ duration: 0.1 }}
-                                  onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: mainPost }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: mainPost }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                  aria-label="View comments"
+                                  >
                                   <MessageSquare size={18} strokeWidth={1.5} />
                                   <span className="text-sm font-mono">{mainPost.commentCount}</span>
                               </motion.button>
                               <motion.button 
                                   whileTap={{ scale: 1.2 }}
                                   transition={{ duration: 0.1 }}
-                                  onClick={(e) => {e.stopPropagation(); handleRepost(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  onClick={(e) => {e.stopPropagation(); handleRepost(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                  aria-label="Re-echo post"
+                                  >
                                   <Repeat size={20} strokeWidth={1.5} />
                                   <span className="text-sm font-mono">{mainPost.repostCount}</span>
                               </motion.button>
@@ -2761,6 +2788,7 @@ export default function VibesphereApp() {
                                       color: `hsl(${postAuraColor})`,
                                       filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
                                   } : {}}
+                                  aria-label="Like post"
                               >
                                   <Sparkles 
                                       size={18} 
@@ -2772,7 +2800,9 @@ export default function VibesphereApp() {
                               <motion.button
                                   whileTap={{ scale: 1.2 }}
                                   transition={{ duration: 0.1 }}
-                                  onClick={(e) => {e.stopPropagation(); handleToggleBookmark(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                  onClick={(e) => {e.stopPropagation(); handleToggleBookmark(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                  aria-label="Bookmark post"
+                                  >
                                   <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
                               </motion.button>
                           </div>
@@ -2819,6 +2849,7 @@ export default function VibesphereApp() {
                                                           onClick={(e) => { e.stopPropagation(); handleToggleLike(comment.id); }}
                                                           className="flex items-center gap-1.5 text-xs text-slate-300 hover:brightness-125"
                                                           style={likedPosts.includes(comment.id) ? { color: `hsl(${commentAuraColor})` } : {}}
+                                                          aria-label="Like comment"
                                                       >
                                                           <Sparkles size={14} fill={likedPosts.includes(comment.id) ? 'currentColor' : 'none'}/>
                                                           <span>{comment.likeCount}</span>
@@ -2827,6 +2858,7 @@ export default function VibesphereApp() {
                                                           whileTap={{ scale: 1.2 }}
                                                           onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: comment }); }}
                                                           className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-primary"
+                                                          aria-label="Reply to comment"
                                                       >
                                                           <MessageSquare size={14}/>
                                                           <span>Reply</span>
@@ -2976,7 +3008,7 @@ export default function VibesphereApp() {
                              </div>
                         </div>
 
-                        <p className="text-center text-[10px] font-mono text-slate-500 mt-8">
+                        <p className="text-center text-[10px] font-mono text-slate-400 mt-8">
                             powered by pharos network protocols.
                         </p>
                     </div>
@@ -3016,6 +3048,7 @@ export default function VibesphereApp() {
                           <button 
                             onClick={copyAddress}
                             className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-300 hover:text-white"
+                            aria-label="Copy wallet address"
                           >
                             <Copy size={14} />
                           </button>
@@ -3176,14 +3209,14 @@ export default function VibesphereApp() {
                               placeholder="recipient address (0x...)"
                               value={recipient}
                               onChange={(e) => setRecipient(e.target.value)}
-                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-4 text-[10px] font-mono focus:outline-none focus:border-primary"
+                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-4 text-[10px] font-mono focus:outline-none focus:border-primary placeholder:text-slate-500"
                             />
                             <input 
                               placeholder="amount"
                               type="number"
                               value={amount}
                               onChange={(e) => setAmount(e.target.value)}
-                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-6 text-[10px] font-mono focus:outline-none focus:border-primary"
+                              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl mb-6 text-[10px] font-mono focus:outline-none focus:border-primary placeholder:text-slate-500"
                             />
                             <button 
                               onClick={handleSend} 
@@ -3340,7 +3373,7 @@ export default function VibesphereApp() {
                                             onChange={(e) => setInboxInput(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendInboxMessage())}
                                             placeholder="send a sovereign message..."
-                                            className="w-full bg-white/5 border border-primary/20 rounded-full py-4 pl-6 pr-16 text-sm font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200"
+                                            className="w-full bg-white/5 border border-primary/20 rounded-full py-4 pl-6 pr-16 text-sm font-light lowercase focus:outline-none focus:border-primary/50 transition-all text-slate-200 placeholder:text-slate-500"
                                             style={headerAuraStyle}
                                         />
                                         <button 
@@ -3352,6 +3385,7 @@ export default function VibesphereApp() {
                                                 : 'bg-slate-800 text-slate-600'
                                             }`}
                                             style={headerAuraStyle}
+                                            aria-label="Send message"
                                         >
                                             <Send size={18} strokeWidth={2} className="-rotate-45" />
                                         </button>
@@ -3402,7 +3436,7 @@ export default function VibesphereApp() {
                     <img src={profile.avatar} alt="Your avatar" className="w-8 h-8 rounded-full border border-primary/50 object-cover" />
                     <span className="text-sm font-bold lowercase" style={{color: `hsl(${profile.themeColor})`}}>{profile.username}</span>
                   </div>
-                  <button onClick={() => setIsComposerOpen(false)} className="p-2 rounded-full hover:bg-white/10 text-slate-300">
+                  <button aria-label="Close composer" onClick={() => setIsComposerOpen(false)} className="p-2 rounded-full hover:bg-white/10 text-slate-300">
                     <X size={18} />
                   </button>
                 </div>
@@ -3424,7 +3458,7 @@ export default function VibesphereApp() {
                       composerTab === 'tekt' ? 'what is your vibe...' :
                       'share your sovereign thoughts...'
                     }
-                    className="w-full bg-transparent text-lg text-slate-200 resize-none focus:outline-none placeholder:text-slate-600"
+                    className="w-full bg-transparent text-lg text-slate-200 resize-none focus:outline-none placeholder:text-slate-500"
                     rows={composerTab === 'artikel' ? 8 : 4}
                   />
 
@@ -3434,7 +3468,7 @@ export default function VibesphereApp() {
                         <div className="relative group rounded-2xl overflow-hidden border border-white/10">
                           {mediaType === 'image' && <img src={mediaPreview} alt="media preview" className="w-full h-auto max-h-60 object-contain" />}
                           {mediaType === 'video' && <video src={mediaPreview} className="w-full h-auto max-h-60" autoPlay muted loop playsInline />}
-                          <button onClick={() => { setMediaFile(null); setMediaPreview(null); }} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button aria-label="Remove media" onClick={() => { setMediaFile(null); setMediaPreview(null); }} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
                             <X size={16} />
                           </button>
                         </div>
@@ -3491,7 +3525,7 @@ export default function VibesphereApp() {
                     <input 
                       value={tempProfile.username}
                       onChange={(e) => setTempProfile(p => ({...p, username: e.target.value}))}
-                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary"
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary placeholder:text-slate-500"
                     />
                   </div>
                   <div>
@@ -3499,7 +3533,7 @@ export default function VibesphereApp() {
                     <textarea 
                       value={tempProfile.bio}
                       onChange={(e) => setTempProfile(p => ({...p, bio: e.target.value.toLowerCase()}))}
-                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary resize-none"
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary resize-none placeholder:text-slate-500"
                       rows={2}
                       placeholder="a short, sovereign vibe."
                     />
@@ -3509,7 +3543,7 @@ export default function VibesphereApp() {
                     <textarea 
                       value={tempProfile.extendedBio}
                       onChange={(e) => setTempProfile(p => ({...p, extendedBio: e.target.value.toLowerCase()}))}
-                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary resize-none"
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary resize-none placeholder:text-slate-500"
                       rows={4}
                       placeholder="your story, projects, social links..."
                     />
@@ -3519,7 +3553,7 @@ export default function VibesphereApp() {
                     <input 
                       value={tempProfile.websiteUrl}
                       onChange={(e) => setTempProfile(p => ({...p, websiteUrl: e.target.value.toLowerCase()}))}
-                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary"
+                      className="w-full mt-1 p-3 bg-white/5 border border-primary/20 rounded-2xl text-sm font-mono lowercase focus:outline-none focus:border-primary placeholder:text-slate-500"
                       placeholder="https://your-site.com"
                     />
                   </div>
@@ -3593,7 +3627,7 @@ export default function VibesphereApp() {
               className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-5 bg-black/80 backdrop-blur-xl border-t border-white/5 z-[80]"
             >
               {/* home - familiar house icon */}
-              <button onClick={() => pushView({ tab: 'home', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'home' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+              <button aria-label="Home" onClick={() => pushView({ tab: 'home', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'home' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 9.5L12 3L21 9.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V9.5Z" stroke="url(#paint0_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <defs>
@@ -3606,7 +3640,7 @@ export default function VibesphereApp() {
               </button>
 
               {/* market - familiar chart/trading icon */}
-              <button onClick={() => pushView({ tab: 'market', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'market' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+              <button aria-label="Market" onClick={() => pushView({ tab: 'market', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'market' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 18L9 12L13 16L21 8M21 8H16M21 8V13" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <defs>
@@ -3619,12 +3653,12 @@ export default function VibesphereApp() {
               </button>
 
               {/* plus button - center focus */}
-              <button onClick={() => setIsComposerOpen(true)} className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-500">
+              <button aria-label="Create new post" onClick={() => setIsComposerOpen(true)} className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-500">
                 <span className="text-3xl font-light" style={{color: 'white'}}>+</span>
               </button>
 
               {/* inbok - familiar mail icon */}
-              <button onClick={handleInboxClick} className={`relative p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+              <button aria-label="Inbox" onClick={handleInboxClick} className={`relative p-2 transition-all ${activeTab === 'inbox' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 7L12 13L21 7M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <defs>
@@ -3640,7 +3674,7 @@ export default function VibesphereApp() {
               </button>
 
               {/* wallet - familiar card/wallet icon */}
-              <button onClick={() => pushView({ tab: 'wallet', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'wallet' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
+              <button aria-label="Wallet" onClick={() => pushView({ tab: 'wallet', viewingProfile: null, focusedPost: null })} className={`p-2 transition-all ${activeTab === 'wallet' ? 'opacity-100 scale-110' : 'opacity-80 hover:opacity-100'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M20 12V8C20 6.89543 19.1046 6 18 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H18C19.1046 18 20 17.1046 20 16V14M20 12H17C15.8954 12 15 12.8954 15 14C15 15.1046 15.8954 16 17 16H20M20 12V14" stroke="url(#paint3_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <defs>
@@ -3661,6 +3695,7 @@ export default function VibesphereApp() {
     
 
     
+
 
 
 
