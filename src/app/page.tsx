@@ -585,7 +585,7 @@ export default function VibesphereApp() {
   
     const isNewTab = newView.tab && newView.tab !== currentView.tab;
   
-    if (isNewTab && ['bookmarks', 'profile', 'notifications', 'defi', 'swap', 'settings', 'wallet', 'market'].includes(newView.tab!)) {
+    if (isNewTab && ['bookmarks', 'profile', 'notifications', 'pharos-eco', 'settings', 'wallet', 'market'].includes(newView.tab!)) {
       setViewStack(prev => [...prev, { tab: newView.tab!, viewingProfile: newView.viewingProfile || null, focusedPost: null, conversationWith: null }]);
     } else if (newView.tab === 'inbox') {
       setViewStack(prev => [...prev, { 
@@ -1394,7 +1394,7 @@ export default function VibesphereApp() {
 
 
   const profileToShow = (activeTab === 'profile' && !viewingProfile) 
-      ? profile
+      ? { ...profile, ...viewingProfile }
       : (activeTab === 'user-profile' && viewingProfile) 
       ? viewingProfile
       : null;
@@ -1923,38 +1923,20 @@ export default function VibesphereApp() {
                     </button>
 
                     <button
-                        onClick={() => pushView({ tab: 'defi', viewingProfile: null, focusedPost: null })}
+                        onClick={() => pushView({ tab: 'pharos-eco', viewingProfile: null, focusedPost: null })}
                         className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
-                        ${activeTab === 'defi'
+                        ${activeTab === 'pharos-eco'
                             ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
                             : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
                         }`}
                         >
                         <div
-                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'defi' ? 'opacity-100' : ''}`}
-                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'defi' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
+                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'pharos-eco' ? 'opacity-100' : ''}`}
+                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'pharos-eco' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
                         />
                         <div className="relative flex items-center gap-4">
-                            <DollarSign size={20} strokeWidth={1.5} className={`${activeTab === 'defi' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
-                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'defi' ? 'text-shadow-glow' : ''}`}>defi</span>
-                        </div>
-                    </button>
-                    
-                    <button
-                        onClick={() => pushView({ tab: 'swap', viewingProfile: null, focusedPost: null })}
-                        className={`group relative flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-300
-                        ${activeTab === 'swap'
-                            ? 'border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary-glow),0.2)]'
-                            : 'border-primary/20 text-primary/70 hover:border-primary/20 hover:text-primary'
-                        }`}
-                        >
-                        <div
-                            className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${activeTab === 'swap' ? 'opacity-100' : ''}`}
-                            style={{ background: `radial-gradient(circle at center, hsla(var(--primary-glow), ${activeTab === 'swap' ? '0.15' : '0.1'}) 0%, transparent 70%)` }}
-                        />
-                        <div className="relative flex items-center gap-4">
-                            <Repeat size={20} strokeWidth={1.5} className={`${activeTab === 'swap' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
-                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'swap' ? 'text-shadow-glow' : ''}`}>swap</span>
+                            <Globe size={20} strokeWidth={1.5} className={`${activeTab === 'pharos-eco' ? 'drop-shadow-[0_0_3px_hsl(var(--primary-glow))]' : ''}`} />
+                            <span className={`text-xl font-bold tracking-widest lowercase ${activeTab === 'pharos-eco' ? 'text-shadow-glow' : ''}`}>pharos eco</span>
                         </div>
                     </button>
                     
@@ -2239,21 +2221,21 @@ export default function VibesphereApp() {
                       </motion.div>
                   )}
                   {!isLoadingFeed && displayedFeed.map((item, index) => {
-                    const postAuraColor = getPostAuraColor(item);
+                    const isRevibe = item.type === 'revibe' && item.quotedPost;
+                    const mainPost = isRevibe ? item.quotedPost : item;
+                    const author = isRevibe ? item : mainPost;
+
+                    const postAuraColor = getPostAuraColor(author);
                     const cardStyle = { 
                         '--primary': postAuraColor,
                         '--primary-glow': postAuraColor.replace(/ /g, ', '),
                     } as React.CSSProperties;
-                    const isBookmarked = bookmarkedPosts.includes(item.id);
-                    const isLiked = likedPosts.includes(item.id);
-                    const isExpanded = expandedPosts.includes(item.id);
+                    const isBookmarked = bookmarkedPosts.includes(mainPost.id);
+                    const isLiked = likedPosts.includes(mainPost.id);
+                    const isExpanded = expandedPosts.includes(mainPost.id);
 
                     const handleCardClick = () => {
-                      if (item.type === 'revibe' && item.quotedPost) {
-                        pushView({ focusedPost: item.quotedPost });
-                      } else {
-                        pushView({ focusedPost: item });
-                      }
+                      pushView({ focusedPost: mainPost });
                     };
 
                     return (
@@ -2261,10 +2243,10 @@ export default function VibesphereApp() {
                         key={`${item.id}-${index}`} 
                         style={cardStyle}
                       >
-                        {item.type === 'revibe' && (
-                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: item, focusedPost: null }); }}>
+                        {isRevibe && (
+                            <div className="text-xs font-mono text-slate-400 mb-2 flex items-center gap-2" onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }}>
                                 <Repeat size={14} />
-                                <span>r'echoed by @{item.handle}</span>
+                                <span>r'echoed by @{author.handle}</span>
                             </div>
                         )}
                         <div onClick={handleCardClick} className="cursor-pointer">
@@ -2272,70 +2254,63 @@ export default function VibesphereApp() {
                               <div 
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    const userToView = item.type === 'revibe' && item.quotedPost ? item : item;
-                                    pushView({ tab: 'user-profile', viewingProfile: userToView, focusedPost: null });
+                                    pushView({ tab: 'user-profile', viewingProfile: mainPost, focusedPost: null });
                                 }}
                                 className="flex items-center gap-3 cursor-pointer group"
                               >
                                 <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all">
-                                  <img src={item.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
+                                  <img src={mainPost.avatar} alt="avatar" className="w-full h-full object-cover bg-white/10" />
                                 </div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>
-                                      {item.username}
+                                    <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${getPostAuraColor(mainPost)})` }}>
+                                      {mainPost.username}
                                     </span>
                                     <div 
                                         className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"
+                                        style={{'--primary': getPostAuraColor(mainPost)} as React.CSSProperties}
                                     ></div>
                                   </div>
-                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
+                                  <span className="text-[11px] text-slate-500 font-mono tracking-tighter">@{mainPost.handle} • {mainPost.time}</span>
                                 </div>
                               </div>
-                              <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item.type === 'revibe' && item.quotedPost ? item.quotedPost : item)}} className="group p-2 -mr-2 -mt-1">
+                              <button onClick={(e) => {e.stopPropagation(); handleOpenShareModal(mainPost)}} className="group p-2 -mr-2 -mt-1">
                                 <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
                               </button>
                             </div>
                             
-                            <div className="min-h-[40px] pl-12">
-                                {item.type === 'revibe' && item.quotedPost ? (
+                            <div className={`min-h-[40px] ${isRevibe ? '' : 'pl-12'}`}>
+                                {isRevibe ? (
                                     <div 
                                         className="mt-2 p-3 rounded-2xl border" 
                                         style={{ 
-                                            borderColor: `hsla(${getPostAuraColor(item.quotedPost).replace(/ /g, ',')}, 0.3)`,
-                                            '--primary': getPostAuraColor(item.quotedPost)
-                                        } as React.CSSProperties}
+                                            borderColor: `hsla(${getPostAuraColor(mainPost).replace(/ /g, ',')}, 0.3)`,
+                                        }}
                                     >
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <img src={item.quotedPost.avatar} alt="avatar" className="w-6 h-6 rounded-full" />
-                                            <div>
-                                                <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{item.quotedPost.username}</span>
-                                                <span className="text-xs text-slate-500 font-mono tracking-tighter"> @{item.quotedPost.handle} • {item.quotedPost.time}</span>
-                                            </div>
-                                        </div>
-                                        {item.quotedPost.media && (
+                                        {/* This inner header is removed for re-echo to avoid redundancy */}
+                                        {mainPost.media && (
                                             <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
-                                                {item.quotedPost.media.type === 'image' && <img src={item.quotedPost.media.url} alt="Post media" className="w-full h-auto" />}
-                                                {item.quotedPost.media.type === 'video' && <video src={item.quotedPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                                {mainPost.media.type === 'image' && <img src={mainPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                                {mainPost.media.type === 'video' && <video src={mainPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
                                             </div>
                                         )}
-                                        <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{item.quotedPost.text}</p>
+                                        <p className="text-slate-300 text-sm leading-relaxed font-light whitespace-pre-wrap">{mainPost.text}</p>
                                     </div>
                                 ) : (
                                     <div>
-                                      {item.media && (
+                                      {mainPost.media && (
                                          <div className="mb-2 rounded-xl overflow-hidden border border-white/10">
-                                           {item.media.type === 'image' && <img src={item.media.url} alt="Post media" className="w-full h-auto" />}
-                                           {item.media.type === 'video' && <video src={item.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
+                                           {mainPost.media.type === 'image' && <img src={mainPost.media.url} alt="Post media" className="w-full h-auto" />}
+                                           {mainPost.media.type === 'video' && <video src={mainPost.media.url} className="w-full h-auto" autoPlay muted loop playsInline />}
                                          </div>
                                       )}
                                        <div className="text-slate-200 text-base leading-relaxed font-light mb-2 whitespace-pre-wrap">
-                                            <p className={!isExpanded ? 'line-clamp-3' : ''}>{item.text}</p>
-                                            {item.text.length > 150 && !isExpanded && (
+                                            <p className={!isExpanded ? 'line-clamp-3' : ''}>{mainPost.text}</p>
+                                            {mainPost.text.length > 150 && !isExpanded && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setExpandedPosts(prev => [...prev, item.id]);
+                                                        setExpandedPosts(prev => [...prev, mainPost.id]);
                                                     }}
                                                     className="text-primary/80 hover:text-primary text-xs font-mono lowercase transition-colors"
                                                 >
@@ -2352,21 +2327,21 @@ export default function VibesphereApp() {
                             <motion.button 
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: mainPost }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <MessageSquare size={18} strokeWidth={1.5} />
-                                <span className="text-sm font-mono">{item.commentCount}</span>
+                                <span className="text-sm font-mono">{mainPost.commentCount}</span>
                             </motion.button>
                             <motion.button 
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleRepost(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                onClick={(e) => {e.stopPropagation(); handleRepost(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <Repeat size={20} strokeWidth={1.5} />
-                                <span className="text-sm font-mono">{item.repostCount}</span>
+                                <span className="text-sm font-mono">{mainPost.repostCount}</span>
                             </motion.button>
                             <motion.button 
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
+                                onClick={(e) => {e.stopPropagation(); handleToggleLike(mainPost.id)}}
                                 className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
                                 style={isLiked ? {
                                     color: `hsl(${postAuraColor})`,
@@ -2378,19 +2353,19 @@ export default function VibesphereApp() {
                                     strokeWidth={1.5}
                                     fill={isLiked ? 'currentColor' : 'none'}
                                 />
-                                <span className="text-sm font-mono">{item.likeCount}</span>
+                                <span className="text-sm font-mono">{mainPost.likeCount}</span>
                             </motion.button>
                             <motion.button
                                 whileTap={{ scale: 1.2 }}
                                 transition={{ duration: 0.1 }}
-                                onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
+                                onClick={(e) => {e.stopPropagation(); handleToggleBookmark(mainPost.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10">
                                 <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
                             </motion.button>
                         </div>
                         
-                        {item.comments && item.comments.length > 0 && (
+                        {mainPost.comments && mainPost.comments.length > 0 && (
                             <div className="mt-3 pt-3 border-t pl-12" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.1)`}}>
-                                {item.comments.slice(0, 2).map((comment: any) => {
+                                {mainPost.comments.slice(0, 2).map((comment: any) => {
                                     const commentAuraColor = getPostAuraColor(comment);
                                     const isCommentFocused = focusedCommentId === comment.id;
 
@@ -2466,10 +2441,8 @@ export default function VibesphereApp() {
                       
                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4">
                           <div
-                              onClick={profileToShow.handle === profile.handle ? handleAvatarClick : undefined}
                               className={cn(
-                                  "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center",
-                                  profileToShow.handle === profile.handle && "cursor-pointer"
+                                  "group w-fit backdrop-blur-2xl border border-primary/20 bg-black/40 rounded-3xl py-2 md:py-2 px-3 md:px-5 text-center"
                               )}
                           >
                               <h2 className="text-xl md:text-2xl font-black lowercase italic tracking-tighter" style={{ color: `hsl(${currentAuraColor})`, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileToShow.username}</h2>
@@ -2594,7 +2567,7 @@ export default function VibesphereApp() {
                     </div>
                   </div>
                   
-                  {isLoadingFeed && (
+                  {isLoadingFeed ? (
                     <div className="w-full space-y-4 mt-4">
                         {[...Array(2)].map((_, i) => (
                             <ResonanceCard key={i}>
@@ -2614,17 +2587,14 @@ export default function VibesphereApp() {
                             </ResonanceCard>
                         ))}
                      </div>
-                  )}
-                  
-                  {!isLoadingFeed && displayedFeed.length === 0 && (
+                  ) : !isLoadingFeed && displayedFeed.length === 0 ? (
                       <motion.div className="text-center py-20 flex flex-col items-center text-slate-500">
                           <h2 className="text-xl font-light lowercase tracking-widest text-slate-400">
                             no vibrations found here.
                           </h2>
                       </motion.div>
-                  )}
-
-                  {!isLoadingFeed && displayedFeed.length > 0 && displayedFeed.map((item, index) => {
+                  ) : (
+                  !isLoadingFeed && displayedFeed.map((item, index) => {
                       const postAuraColor = getPostAuraColor(item);
                       const cardStyle = { 
                           '--primary': postAuraColor,
@@ -2832,7 +2802,7 @@ export default function VibesphereApp() {
 
                       </ResonanceCard>
                       );
-                    })}
+                    }))}
                 </motion.div>
               ) : activeTab === 'notifications' ? (
                 <motion.div 
@@ -2875,7 +2845,7 @@ export default function VibesphereApp() {
                         </div>
                     )}
                 </motion.div>
-              ) : activeTab === 'defi' ? (
+              ) : activeTab === 'pharos-eco' ? (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -2894,7 +2864,7 @@ export default function VibesphereApp() {
                         <h2 className="text-center text-slate-300 font-light tracking-[0.3em] uppercase text-2xl"
                             style={{ color: `hsl(${currentAuraColor})`, textShadow: `0 0 10px hsla(${currentAuraColor.replace(/ /g, ',')}, 0.5)` }}
                         >
-                            defi hub
+                            pharos eco
                         </h2>
 
                         <ResonanceCard style={{ '--primary': currentAuraColor, '--primary-glow': currentAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
@@ -2962,11 +2932,6 @@ export default function VibesphereApp() {
                             powered by pharos network protocols.
                         </p>
                     </div>
-                </motion.div>
-              ) : activeTab === 'swap' ? (
-                 <motion.div>
-                    <h2 className="text-center text-slate-300 font-light tracking-widest uppercase text-lg">Swap</h2>
-                    <p className="text-center text-slate-500 font-mono mt-2">token swap interface coming soon.</p>
                 </motion.div>
               ) : activeTab === 'settings' ? (
                 <motion.div>
@@ -3648,5 +3613,6 @@ export default function VibesphereApp() {
     
 
     
+
 
 
