@@ -393,9 +393,8 @@ export default function VibesphereApp() {
   }, [toast, wallet?.address]);
 
   const fetchArticles = useCallback(async () => {
-    const userAddress = wallet?.address;
     try {
-      const response = await fetch(`/api/articles?pharos_address=${userAddress || ''}`);
+      const response = await fetch(`/api/articles`);
       if (!response.ok) throw new Error("Failed to fetch articles from server.");
       const data = await response.json();
 
@@ -430,7 +429,7 @@ export default function VibesphereApp() {
           description: error.message || "Failed to connect to the sovereign network.",
       });
     }
-  }, [toast, wallet?.address]);
+  }, [toast]);
 
   const fetchConversations = useCallback(async () => {
     if (!wallet?.address) return;
@@ -2409,11 +2408,7 @@ export default function VibesphereApp() {
                              </div>
                              <div className="pl-12">
                                <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
-                               <a href={`https://gateway.ipfs.io/ipfs/${item.contentHash}`} target="_blank" rel="noopener noreferrer" 
-                                className="flex items-center gap-2 mt-2 text-primary/80 hover:text-primary transition-colors text-xs font-mono">
-                                 <span>read article on ipfs</span>
-                                 <ExternalLink size={12} />
-                               </a>
+                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.contentHash}</p>
                              </div>
                            </ResonanceCard>
                         )
@@ -2831,11 +2826,7 @@ export default function VibesphereApp() {
                              </div>
                              <div className="pl-12">
                                <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
-                               <a href={`https://gateway.ipfs.io/ipfs/${item.contentHash}`} target="_blank" rel="noopener noreferrer" 
-                                className="flex items-center gap-2 mt-2 text-primary/80 hover:text-primary transition-colors text-xs font-mono">
-                                 <span>read article on ipfs</span>
-                                 <ExternalLink size={12} />
-                               </a>
+                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.contentHash}</p>
                              </div>
                            </ResonanceCard>
                         )
