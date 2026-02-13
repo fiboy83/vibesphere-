@@ -11,7 +11,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "deploy": "hardhat run scripts/deploy.js --network pharos",
-    "deploy:identity": "hardhat run scripts/deploy_identity.js --network pharos"
+    "deploy:identity": "hardhat run scripts/deploy_identity.js --network pharos",
+    "deploy:article": "hardhat run scripts/deploy_article.js --network pharos"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",
