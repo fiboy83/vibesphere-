@@ -2795,6 +2795,39 @@ export default function VibesphereApp() {
                           '--primary': postAuraColor,
                           '--primary-glow': postAuraColor.replace(/ /g, ', '),
                       } as React.CSSProperties;
+                      
+                      if (item.type === 'article') {
+                        return (
+                           <ResonanceCard key={`${item.id}-${index}`} style={cardStyle}>
+                             <div className="flex justify-between items-start mb-3">
+                               <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }} className="flex items-center gap-3 cursor-pointer group">
+                                 <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all flex items-center justify-center bg-primary/10">
+                                   <FileText size={16} className="text-primary" />
+                                 </div>
+                                 <div className="flex flex-col">
+                                   <div className="flex items-center gap-2">
+                                     <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>{author.username}</span>
+                                     <div className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"></div>
+                                   </div>
+                                   <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                 </div>
+                               </div>
+                               <button aria-label="Share article" onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item)}} className="group p-2 -mr-2 -mt-1">
+                                 <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
+                               </button>
+                             </div>
+                             <div className="pl-12">
+                               <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
+                               <a href={`https://gateway.ipfs.io/ipfs/${item.contentHash}`} target="_blank" rel="noopener noreferrer" 
+                                className="flex items-center gap-2 mt-2 text-primary/80 hover:text-primary transition-colors text-xs font-mono">
+                                 <span>read article on ipfs</span>
+                                 <ExternalLink size={12} />
+                               </a>
+                             </div>
+                           </ResonanceCard>
+                        )
+                      }
+                      
                       const isBookmarked = bookmarkedPosts.includes(mainPost.id);
                       const isLiked = likedPosts.includes(mainPost.id);
                       const isExpanded = expandedPosts.includes(mainPost.id);
@@ -2880,8 +2913,8 @@ export default function VibesphereApp() {
                                           </div>
                                       )}
                                       <div>
-                                          <p className={!isExpanded ? 'line-clamp-3' : ''}>{item.text}</p>
-                                          {item.text.length > 150 && !isExpanded && (
+                                          <p className={!isExpanded ? 'line-clamp-3' : ''}>{item.text || ''}</p>
+                                          {item.text?.length > 150 && !isExpanded && (
                                               <button
                                                   onClick={(e) => {
                                                       e.stopPropagation();
