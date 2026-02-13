@@ -55,14 +55,12 @@
     "patch-package": "^8.0.0",
     "pg": "^8.12.0",
     "react": "^19.2.4",
-    "react-day-picker": "^9.11.3",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.54.2",
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.1",
-    "use-sync-external-store": "^1.6.0",
     "viem": "^2.18.2",
     "zod": "^3.24.2"
   },
@@ -80,7 +78,6 @@
     "typescript": "^5"
   },
   "overrides": {
-    "ox": "^0.11.3",
-    "use-sync-external-store": "$use-sync-external-store"
+    "ox": "^0.11.3"
   }
 }
