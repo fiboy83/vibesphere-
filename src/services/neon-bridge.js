@@ -358,9 +358,8 @@ export async function saveArticle(author_address, title, content_hash, tx_hash) 
   const dbPool = getDbPool();
   if (!author_address || !title || !content_hash || !tx_hash || !dbPool) return;
   try {
-    // Assumes an 'articles' table exists with these columns.
     const query = `
-      INSERT INTO articles (author_address, title, content_hash, tx_hash, visibility)
+      INSERT INTO vibesphere_articles (author_address, title, content_hash, tx_hash, visibility)
       VALUES ($1::text, $2::text, $3::text, $4::text, 'public')
       ON CONFLICT (tx_hash) DO NOTHING;
     `;
@@ -403,7 +402,7 @@ export async function getArticles(pharos_address) {
           COALESCE(u.sovereign_layout, '{}'::jsonb) || 
           jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
         ) as sovereign_layout
-      FROM articles a
+      FROM vibesphere_articles a
       LEFT JOIN users u ON a.author_address = u.pharos_address
       ORDER BY a.created_at DESC
       LIMIT 50;
