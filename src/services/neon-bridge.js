@@ -345,3 +345,73 @@ export async function getConversations(pharos_address) {
     throw error;
   }
 }
+
+/**
+ * Saves a new article to the database.
+ * @param {string} author_address The author's Pharos wallet address.
+ * @param {string} title The title of the article.
+ * @param {string} content_hash The IPFS/Arweave content hash (CID).
+ * @param {string} tx_hash The on-chain transaction hash.
+ * @returns {Promise<void>}
+ */
+export async function saveArticle(author_address, title, content_hash, tx_hash) {
+  const dbPool = getDbPool();
+  if (!author_address || !title || !content_hash || !tx_hash || !dbPool) return;
+  try {
+    // Assumes an 'articles' table exists with these columns.
+    const query = `
+      INSERT INTO articles (author_address, title, content_hash, tx_hash, visibility)
+      VALUES ($1::text, $2::text, $3::text, $4::text, 'public')
+      ON CONFLICT (tx_hash) DO NOTHING;
+    `;
+    await dbPool.query(query, [author_address, title, content_hash, tx_hash]);
+    console.log(`[NEON SAVE ARTICLE]: Successfully saved article with tx_hash: ${tx_hash}`);
+  } catch (error) {
+    console.error('[NEON SAVE ARTICLE ERROR]', {
+        message: error.message,
+        stack: error.stack,
+        detail: error.detail,
+    });
+    throw error;
+  }
+}
+
+/**
+ * Fetches all articles from the database.
+ * @returns {Promise<any[]>} A list of articles with author layout data.
+ */
+export async function getArticles() {
+  console.log(`[NEON GET_ARTICLES]: Fetching all articles.`);
+  const dbPool = getDbPool();
+  if (!dbPool) {
+    console.error('[NEON GET_ARTICLES]: DB Pool not available. Returning empty array.');
+    return [];
+  }
+
+  try {
+    const query = `
+      SELECT
+        a.id,
+        a.title,
+        a.content_hash,
+        a.created_at,
+        a.tx_hash,
+        a.author_address AS pharos_address,
+        a.visibility,
+        (
+          COALESCE(u.sovereign_layout, '{}'::jsonb) || 
+          jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
+        ) as sovereign_layout
+      FROM articles a
+      LEFT JOIN users u ON a.author_address = u.pharos_address
+      ORDER BY a.created_at DESC
+      LIMIT 50;
+    `;
+    const res = await dbPool.query(query);
+    console.log(`[NEON GET_ARTICLES]: Query successful, found ${res.rows.length} rows.`);
+    return res.rows;
+  } catch (error) {
+    console.error('[NEON GET_ARTICLES ERROR]: Error fetching articles from Neon:', error);
+    throw error;
+  }
+}

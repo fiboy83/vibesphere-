@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, X, Share2, MessageSquare, Repeat, Sparkles, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network, Globe } from 'lucide-react';
+import { Menu, Search, X, Share2, MessageSquare, Repeat, Sparkles, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network, Globe, ExternalLink } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 import { useToast } from "@/hooks/use-toast";
-import { postContractAddress, postContractAbi, identityContractAddress, identityContractAbi } from '@/constants/contracts';
+import { postContractAddress, postContractAbi, identityContractAddress, identityContractAbi, articleContractAddress, articleContractAbi } from '@/constants/contracts';
 import { cn } from '@/lib/utils';
 import { useDebounce } from 'use-debounce';
 import { formatDistanceToNow } from 'date-fns';
@@ -193,6 +193,7 @@ export default function VibesphereApp() {
   // --- COMPOSER STATE ---
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerTab, setComposerTab] = useState<'media' | 'tekt' | 'artikel'>('tekt');
+  const [composerTitle, setComposerTitle] = useState('');
   const [composerText, setComposerText] = useState('');
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
@@ -233,6 +234,7 @@ export default function VibesphereApp() {
 
   // --- FEED & BOOKMARK STATE ---
   const [feed, setFeed] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
@@ -359,6 +361,7 @@ export default function VibesphereApp() {
 
             return {
                 id: post.id,
+                created_at: post.created_at,
                 text: post.content,
                 time: formatDistanceToNow(new Date(post.created_at)),
                 handle: handle,
@@ -386,6 +389,46 @@ export default function VibesphereApp() {
         });
     } finally {
         setIsLoadingFeed(false);
+    }
+  }, [toast, wallet?.address]);
+
+  const fetchArticles = useCallback(async () => {
+    const userAddress = wallet?.address;
+    try {
+      const response = await fetch(`/api/articles?pharos_address=${userAddress || ''}`);
+      if (!response.ok) throw new Error("Failed to fetch articles from server.");
+      const data = await response.json();
+
+      const processedArticles = data.map((article: any) => {
+        const layout = article.sovereign_layout || {};
+        const handle = layout.handle || `${article.pharos_address.slice(0, 6)}.vibes`;
+        return {
+          id: article.id,
+          created_at: article.created_at,
+          title: article.title,
+          contentHash: article.content_hash,
+          time: formatDistanceToNow(new Date(article.created_at)),
+          handle: handle,
+          username: layout.username || 'Sovereign_User',
+          avatar: layout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${article.pharos_address}&backgroundColor=a855f7`,
+          themeColor: layout.vibe_color || '262 100% 70%',
+          pharos_address: article.pharos_address,
+          type: 'article',
+          // Articles don't have these, but we add them for type consistency in the feed
+          commentCount: 0,
+          repostCount: 0,
+          likeCount: 0,
+          comments: [],
+        };
+      });
+      setArticles(processedArticles);
+    } catch (error: any) {
+      console.error("Could not fetch articles:", error);
+      toast({
+          variant: "destructive",
+          title: "Could not load articles",
+          description: error.message || "Failed to connect to the sovereign network.",
+      });
     }
   }, [toast, wallet?.address]);
 
@@ -441,10 +484,11 @@ export default function VibesphereApp() {
   useEffect(() => {
     if (isConnected) {
         fetchFeed();
+        fetchArticles();
         fetchUserHandle();
         fetchConversations();
     }
-  }, [isConnected, fetchFeed, fetchUserHandle, fetchConversations]);
+  }, [isConnected, fetchFeed, fetchArticles, fetchUserHandle, fetchConversations]);
 
   useEffect(() => {
     if (conversationWith) {
@@ -535,6 +579,10 @@ export default function VibesphereApp() {
     }
   };
   
+  const combinedFeed = useMemo(() => {
+    return [...feed, ...articles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [feed, articles]);
+
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setSearchResults([]);
@@ -551,7 +599,7 @@ export default function VibesphereApp() {
       for (const item of items) {
         if (foundIds.has(item.id)) continue;
 
-        const contentMatch = item.text?.toLowerCase().includes(lowerCaseQuery);
+        const contentMatch = item.text?.toLowerCase().includes(lowerCaseQuery) || item.title?.toLowerCase().includes(lowerCaseQuery);
         const userMatch = item.username?.toLowerCase().includes(lowerCaseQuery);
         const handleMatch = item.handle?.toLowerCase().includes(lowerCaseQuery);
 
@@ -569,10 +617,10 @@ export default function VibesphereApp() {
       }
     };
     
-    searchRecursive(feed);
+    searchRecursive(combinedFeed);
     setSearchResults(results);
 
-  }, [searchQuery, feed]);
+  }, [searchQuery, combinedFeed]);
 
 
   const pushView = (newView: Partial<typeof currentView>) => {
@@ -1076,7 +1124,7 @@ export default function VibesphereApp() {
       }
       return null;
     };
-    originalPost = findItemRecursive(feed, postId);
+    originalPost = findItemRecursive(combinedFeed, postId);
 
     if (!originalPost) {
         toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
@@ -1092,6 +1140,7 @@ export default function VibesphereApp() {
         themeColor: profile.themeColor,
         pharos_address: wallet.address,
         // Post metadata
+        created_at: new Date().toISOString(),
         time: 'now',
         text: '',
         type: 'revibe',
@@ -1110,8 +1159,7 @@ export default function VibesphereApp() {
     }));
     
     if (itemFound) {
-      const newFeed = [newPost, ...feedWithUpdatedCount];
-      setFeed(newFeed);
+      setFeed([newPost, ...feedWithUpdatedCount]);
       toast({ title: "vibe r'echoed" });
     } else {
       toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
@@ -1225,6 +1273,62 @@ export default function VibesphereApp() {
     }
   };
 
+    const handlePublishArticle = async () => {
+    if (!wallet) return toast({ variant: "destructive", title: "Connection not available." });
+    if (!composerTitle.trim() || !composerText.trim()) return;
+
+    setIsPosting(true);
+    toast({ title: "Publishing your article on-chain..." });
+
+    try {
+      const provider = await wallet.getEthereumProvider();
+      const walletClient = createWalletClient({ chain: pharosTestnet, transport: custom(provider) });
+      const [account] = await walletClient.getAddresses();
+
+      const hash = await walletClient.writeContract({
+        address: articleContractAddress as `0x${string}`,
+        abi: articleContractAbi,
+        functionName: 'publishArticle',
+        args: [composerTitle, composerText], // title, contentHash
+        account,
+      });
+
+      toast({ title: "Transaction sent! Waiting for confirmation...", description: `tx: ${hash.slice(0, 10)}...` });
+      await publicClient.waitForTransactionReceipt({ hash });
+      toast({ title: "Article published on-chain! ✨ Syncing to DB..." });
+
+      const dbResponse = await fetch('/api/articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author_address: wallet.address,
+          title: composerTitle,
+          content_hash: composerText,
+          tx_hash: hash,
+        }),
+      });
+
+      if (!dbResponse.ok) {
+        const errorData = await dbResponse.json().catch(() => ({}));
+        throw new Error(`Failed to sync article to the database: ${errorData.details || dbResponse.statusText}`);
+      }
+      
+      await fetchArticles();
+      setIsComposerOpen(false);
+      resetComposer();
+
+    } catch (error: any) {
+      console.error("Failed to publish article", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to publish article",
+        description: error.message || error.shortMessage || "The network might be congested or the transaction was rejected.",
+      });
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
   const handleClaim = async () => {
     if (!wallet || !claimInput || !isHandleAvailable) return;
 
@@ -1290,6 +1394,7 @@ export default function VibesphereApp() {
   };
   
   const resetComposer = () => {
+    setComposerTitle('');
     setComposerText('');
     setMediaFile(null);
     setMediaPreview(null);
@@ -1408,10 +1513,10 @@ export default function VibesphereApp() {
   if (profileToShow) {
       switch (profileTab) {
           case 'echo':
-              feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type !== 'revibe');
+              feedForProfileTab = combinedFeed.filter(item => item.handle === profileToShow.handle && item.type !== 'revibe');
               break;
           case 'r-echo':
-              feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type === 'revibe');
+              feedForProfileTab = combinedFeed.filter(item => item.handle === profileToShow.handle && item.type === 'revibe');
               break;
           case 'vibes':
               if (profileToShow.handle === profile.handle) {
@@ -1430,7 +1535,7 @@ export default function VibesphereApp() {
                           }
                       }
                   }
-                  findLikedRecursive(feed);
+                  findLikedRecursive(combinedFeed);
                   feedForProfileTab = likedFeed;
               } else {
                   feedForProfileTab = [];
@@ -1443,18 +1548,18 @@ export default function VibesphereApp() {
   if (activeTab === 'bookmarks') {
       const findBookmarkedRecursive = (items: any[]) => {
         for (const item of items) {
-            if (bookmarkedPosts.includes(item.id)) {
+            if (bookmarkedPosts.includes(item.id) && item.type !== 'article') {
                 bookmarkedFeed.push(item);
             }
             if (item.comments && item.comments.length > 0) {
                 findBookmarkedRecursive(item.comments);
             }
             if (item.quotedPost) {
-                findBookmarkedRecursive(item.quotedPost);
+                findBookmarkedRecursive([item.quotedPost]);
             }
         }
       };
-      findBookmarkedRecursive(feed);
+      findBookmarkedRecursive(combinedFeed);
   }
 
 
@@ -1464,7 +1569,7 @@ export default function VibesphereApp() {
     ? bookmarkedFeed
     : profileToShow
     ? feedForProfileTab
-    : feed;
+    : combinedFeed;
   
   
   if (!ready) {
@@ -2065,7 +2170,7 @@ export default function VibesphereApp() {
                           )}
 
                           <p className={`text-slate-200 leading-relaxed font-light whitespace-pre-wrap ${
-                            focusedPost.type === 'artikel'
+                            focusedPost.type === 'artikel' || focusedPost.type === 'article'
                             ? 'text-base md:text-lg'
                             : 'text-lg md:text-xl'
                           }`}>{focusedPost.text}</p>
@@ -2259,6 +2364,39 @@ export default function VibesphereApp() {
                         '--primary': postAuraColor,
                         '--primary-glow': postAuraColor.replace(/ /g, ', '),
                     } as React.CSSProperties;
+
+                    if (item.type === 'article') {
+                        return (
+                           <ResonanceCard key={`${item.id}-${index}`} style={cardStyle}>
+                             <div className="flex justify-between items-start mb-3">
+                               <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }} className="flex items-center gap-3 cursor-pointer group">
+                                 <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all flex items-center justify-center bg-primary/10">
+                                   <FileText size={16} className="text-primary" />
+                                 </div>
+                                 <div className="flex flex-col">
+                                   <div className="flex items-center gap-2">
+                                     <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>{author.username}</span>
+                                     <div className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"></div>
+                                   </div>
+                                   <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                 </div>
+                               </div>
+                               <button aria-label="Share article" onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item)}} className="group p-2 -mr-2 -mt-1">
+                                 <Share2 size={16} className="text-primary/70 group-hover:text-white transition-colors duration-500" style={{strokeWidth: 1.5}}/>
+                               </button>
+                             </div>
+                             <div className="pl-12">
+                               <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
+                               <a href={`https://gateway.ipfs.io/ipfs/${item.contentHash}`} target="_blank" rel="noopener noreferrer" 
+                                className="flex items-center gap-2 mt-2 text-primary/80 hover:text-primary transition-colors text-xs font-mono">
+                                 <span>read article on ipfs</span>
+                                 <ExternalLink size={12} />
+                               </a>
+                             </div>
+                           </ResonanceCard>
+                        )
+                    }
+
                     const isBookmarked = bookmarkedPosts.includes(mainPost.id);
                     const isLiked = likedPosts.includes(mainPost.id);
                     const isExpanded = expandedPosts.includes(mainPost.id);
@@ -3449,17 +3587,25 @@ export default function VibesphereApp() {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1">
+                <div className="flex-1 flex flex-col gap-4">
+                  {composerTab === 'artikel' && (
+                    <input
+                      value={composerTitle}
+                      onChange={e => setComposerTitle(e.target.value)}
+                      placeholder="article title..."
+                      className="w-full bg-transparent text-xl text-slate-100 font-bold focus:outline-none placeholder:text-slate-500"
+                    />
+                  )}
                   <textarea
                     value={composerText}
                     onChange={e => setComposerText(e.target.value)}
                     placeholder={
                       composerTab === 'media' ? 'add a vibe to your media...' :
                       composerTab === 'tekt' ? 'what is your vibe...' :
-                      'share your sovereign thoughts...'
+                      'article content hash (ipfs/arweave cid)...'
                     }
                     className="w-full bg-transparent text-lg text-slate-200 resize-none focus:outline-none placeholder:text-slate-500"
-                    rows={composerTab === 'artikel' ? 8 : 4}
+                    rows={composerTab === 'artikel' ? 4 : 4}
                   />
 
                   {composerTab === 'media' && (
@@ -3484,8 +3630,11 @@ export default function VibesphereApp() {
 
                 <div className="mt-6 flex justify-end">
                    <button 
-                      onClick={handlePost} 
-                      disabled={(!composerText.trim() && !mediaFile) || isPosting}
+                      onClick={composerTab === 'artikel' ? handlePublishArticle : handlePost} 
+                      disabled={
+                        isPosting ||
+                        (composerTab === 'artikel' ? (!composerTitle.trim() || !composerText.trim()) : (!composerText.trim() && !mediaFile))
+                      }
                       className={cn(
                         "py-3 px-8 text-primary-foreground rounded-full text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:shadow-none",
                         isPosting
@@ -3493,7 +3642,7 @@ export default function VibesphereApp() {
                           : "bg-primary hover:shadow-[0_0_20px_rgba(var(--primary-glow),0.4)]"
                       )}
                     >
-                      {isPosting ? "broadcasting..." : "post"}
+                      {isPosting ? "broadcasting..." : (composerTab === 'artikel' ? "publish" : "post")}
                     </button>
                 </div>
               </motion.div>
@@ -3692,17 +3841,3 @@ export default function VibesphereApp() {
     </div>
   );
 }
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
