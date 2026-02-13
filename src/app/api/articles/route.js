@@ -23,13 +23,13 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { author_address, title, content_hash, tx_hash } = await request.json();
+    const { author_address, title, content_hash } = await request.json();
 
-    if (!author_address || !title || !content_hash || !tx_hash) {
-      return NextResponse.json({ error: 'author_address, title, content_hash, and tx_hash are required' }, { status: 400 });
+    if (!author_address || !title || !content_hash) {
+      return NextResponse.json({ error: 'author_address, title, and content_hash are required' }, { status: 400 });
     }
 
-    await saveArticle(author_address, title, content_hash, tx_hash);
+    await saveArticle(author_address, title, content_hash);
     return NextResponse.json({ message: 'Article saved successfully' });
   } catch (error) {
     console.error('[API /api/articles ERROR]: Failed to save article to Neon.', {

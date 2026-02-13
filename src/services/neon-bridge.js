@@ -351,20 +351,18 @@ export async function getConversations(pharos_address) {
  * @param {string} author_address The author's Pharos wallet address.
  * @param {string} title The title of the article.
  * @param {string} content_hash The IPFS/Arweave content hash (CID).
- * @param {string} tx_hash The on-chain transaction hash.
  * @returns {Promise<void>}
  */
-export async function saveArticle(author_address, title, content_hash, tx_hash) {
+export async function saveArticle(author_address, title, content_hash) {
   const dbPool = getDbPool();
-  if (!author_address || !title || !content_hash || !tx_hash || !dbPool) return;
+  if (!author_address || !title || !content_hash || !dbPool) return;
   try {
     const query = `
-      INSERT INTO vibesphere_articles (author_address, title, content_hash, tx_hash, visibility)
-      VALUES ($1::text, $2::text, $3::text, $4::text, 'public')
-      ON CONFLICT (tx_hash) DO NOTHING;
+      INSERT INTO articles (author_address, title, content_hash, visibility)
+      VALUES ($1::text, $2::text, $3::text, 'public');
     `;
-    await dbPool.query(query, [author_address, title, content_hash, tx_hash]);
-    console.log(`[NEON SAVE ARTICLE]: Successfully saved article with tx_hash: ${tx_hash}`);
+    await dbPool.query(query, [author_address, title, content_hash]);
+    console.log(`[NEON SAVE ARTICLE]: Successfully saved article.`);
   } catch (error) {
     console.error('[NEON SAVE ARTICLE ERROR]', {
         message: error.message,
@@ -376,12 +374,12 @@ export async function saveArticle(author_address, title, content_hash, tx_hash) 
 }
 
 /**
- * Fetches all articles from the database.
- * @param {string | null} pharos_address The requesting user's Pharos wallet address (optional).
+ * Fetches articles from the database.
+ * @param {string | null} pharos_address The requesting user's Pharos wallet address (optional, for filtering).
  * @returns {Promise<any[]>} A list of articles with author layout data.
  */
 export async function getArticles(pharos_address) {
-  console.log(`[NEON GET_ARTICLES]: Fetching all articles for: ${pharos_address || 'guest'}`);
+  console.log(`[NEON GET_ARTICLES]: Fetching articles for: ${pharos_address || 'guest'}`);
   const dbPool = getDbPool();
   if (!dbPool) {
     console.error('[NEON GET_ARTICLES]: DB Pool not available. Returning empty array.');
@@ -389,25 +387,34 @@ export async function getArticles(pharos_address) {
   }
 
   try {
-    const query = `
+    const params = [];
+    let query = `
       SELECT
         a.id,
         a.title,
         a.content_hash,
-        a.created_at,
-        a.tx_hash,
-        a.author_address AS pharos_address,
+        a.timestamp as created_at,
+        a.author_address as pharos_address,
         a.visibility,
         (
           COALESCE(u.sovereign_layout, '{}'::jsonb) || 
           jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
         ) as sovereign_layout
-      FROM vibesphere_articles a
+      FROM articles a
       LEFT JOIN users u ON a.author_address = u.pharos_address
-      ORDER BY a.created_at DESC
+    `;
+
+    if (pharos_address) {
+      query += ' WHERE a.author_address = $1::text';
+      params.push(pharos_address);
+    }
+    
+    query += `
+      ORDER BY a.timestamp DESC
       LIMIT 50;
     `;
-    const res = await dbPool.query(query);
+
+    const res = await dbPool.query(query, params);
     console.log(`[NEON GET_ARTICLES]: Query successful, found ${res.rows.length} rows.`);
     return res.rows;
   } catch (error) {
