@@ -378,10 +378,11 @@ export async function saveArticle(author_address, title, content_hash, tx_hash) 
 
 /**
  * Fetches all articles from the database.
+ * @param {string | null} pharos_address The requesting user's Pharos wallet address (optional).
  * @returns {Promise<any[]>} A list of articles with author layout data.
  */
-export async function getArticles() {
-  console.log(`[NEON GET_ARTICLES]: Fetching all articles.`);
+export async function getArticles(pharos_address) {
+  console.log(`[NEON GET_ARTICLES]: Fetching all articles for: ${pharos_address || 'guest'}`);
   const dbPool = getDbPool();
   if (!dbPool) {
     console.error('[NEON GET_ARTICLES]: DB Pool not available. Returning empty array.');
