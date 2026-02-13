@@ -375,11 +375,11 @@ export async function saveArticle(author_address, title, content_hash) {
 
 /**
  * Fetches articles from the database.
- * @param {string | null} pharos_address The requesting user's Pharos wallet address (optional, for filtering).
+ * @param {string | null} author_address The requesting user's Pharos wallet address (optional, for filtering).
  * @returns {Promise<any[]>} A list of articles with author layout data.
  */
-export async function getArticles(pharos_address) {
-  console.log(`[NEON GET_ARTICLES]: Fetching articles for: ${pharos_address || 'guest'}`);
+export async function getArticles(author_address) {
+  console.log(`[NEON GET_ARTICLES]: Fetching articles for: ${author_address || 'guest'}`);
   const dbPool = getDbPool();
   if (!dbPool) {
     console.error('[NEON GET_ARTICLES]: DB Pool not available. Returning empty array.');
@@ -404,9 +404,9 @@ export async function getArticles(pharos_address) {
       LEFT JOIN users u ON a.author_address = u.pharos_address
     `;
 
-    if (pharos_address) {
+    if (author_address) {
       query += ' WHERE a.author_address = $1::text';
-      params.push(pharos_address);
+      params.push(author_address);
     }
     
     query += `

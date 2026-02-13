@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   console.log('[API /api/articles GET]: Received request.');
   const { searchParams } = new URL(request.url);
-  const pharos_address = searchParams.get('pharos_address');
+  const author_address = searchParams.get('author_address');
   try {
-    const articles = await getArticles(pharos_address);
+    const articles = await getArticles(author_address);
     console.log(`[API /api/articles GET]: Found ${articles.length} articles.`);
     return NextResponse.json(articles);
   } catch (error) {
