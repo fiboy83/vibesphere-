@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Search, X, Share2, MessageSquare, Repeat, Sparkles, Send, Copy, ArrowLeft, Edit2, FileUp, Video, Type, FileText, Bookmark, User, Bell, DollarSign, Settings, Landmark, Network, Globe, ExternalLink } from 'lucide-react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback } from 'viem';
+import { createPublicClient, http, formatEther, parseEther, createWalletClient, custom, fallback, decodeEventLog } from 'viem';
 import { pharosTestnet } from '@/components/providers/privy-provider';
 import { useToast } from "@/hooks/use-toast";
 import { postContractAddress, postContractAbi, identityContractAddress, identityContractAbi, articleContractAddress, articleContractAbi } from '@/constants/contracts';
@@ -1294,8 +1294,30 @@ export default function VibesphereApp() {
       });
 
       toast({ title: "Transaction sent! Waiting for confirmation...", description: `tx: ${hash.slice(0, 10)}...` });
-      await publicClient.waitForTransactionReceipt({ hash });
-      toast({ title: "Article published on-chain! ✨ Syncing to DB..." });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      let articleId: string | null = null;
+      try {
+        const log = receipt.logs.find(
+          (l) => l.address.toLowerCase() === articleContractAddress.toLowerCase()
+        );
+        if (log) {
+          const decodedEvent = decodeEventLog({
+            abi: articleContractAbi,
+            data: log.data,
+            topics: log.topics,
+            eventName: 'ArticlePublished'
+          });
+          articleId = (decodedEvent.args as { articleId: bigint }).articleId.toString();
+        }
+      } catch(e) {
+          console.warn("Could not decode article ID from event", e);
+      }
+
+      toast({ 
+        title: articleId ? `Article #${articleId} published!` : "Article published on-chain! ✨",
+        description: `Syncing to DB...` 
+      });
 
       const dbResponse = await fetch('/api/articles', {
         method: 'POST',
@@ -2786,30 +2808,21 @@ export default function VibesphereApp() {
 
                   {!isLoadingFeed && displayedFeed.length > 0 ? (
                     displayedFeed.map((item, index) => {
-                      const isRevibe = item.type === 'revibe' && item.quotedPost;
-                      const mainPost = isRevibe ? item.quotedPost : item;
-                      const author = isRevibe ? item : mainPost;
-
-                      const postAuraColor = getPostAuraColor(author);
-                      const cardStyle = { 
-                          '--primary': postAuraColor,
-                          '--primary-glow': postAuraColor.replace(/ /g, ', '),
-                      } as React.CSSProperties;
-                      
                       if (item.type === 'article') {
+                        const postAuraColor = getPostAuraColor(item);
                         return (
-                           <ResonanceCard key={`${item.id}-${index}`} style={cardStyle}>
+                           <ResonanceCard key={`${item.id}-${index}`} style={{'--primary': postAuraColor, '--primary-glow': postAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                              <div className="flex justify-between items-start mb-3">
-                               <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: author, focusedPost: null }); }} className="flex items-center gap-3 cursor-pointer group">
+                               <div onClick={(e) => { e.stopPropagation(); pushView({ tab: 'user-profile', viewingProfile: item, focusedPost: null }); }} className="flex items-center gap-3 cursor-pointer group">
                                  <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden group-hover:border-primary/50 transition-all flex items-center justify-center bg-primary/10">
                                    <FileText size={16} className="text-primary" />
                                  </div>
                                  <div className="flex flex-col">
                                    <div className="flex items-center gap-2">
-                                     <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>{author.username}</span>
+                                     <span className="text-sm font-bold transition-colors duration-500" style={{ color: `hsl(${postAuraColor})` }}>{item.username}</span>
                                      <div className="w-1.5 h-1.5 rounded-full bg-primary opacity-75 transition-colors duration-500 shadow-[0_0_8px_1px_hsl(var(--primary))]"></div>
                                    </div>
-                                   <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{author.handle} • {author.time}</span>
+                                   <span className="text-[11px] text-slate-300 font-mono tracking-tighter">@{item.handle} • {item.time}</span>
                                  </div>
                                </div>
                                <button aria-label="Share article" onClick={(e) => {e.stopPropagation(); handleOpenShareModal(item)}} className="group p-2 -mr-2 -mt-1">
@@ -2827,6 +2840,16 @@ export default function VibesphereApp() {
                            </ResonanceCard>
                         )
                       }
+                      
+                      const isRevibe = item.type === 'revibe' && item.quotedPost;
+                      const mainPost = isRevibe ? item.quotedPost : item;
+                      const author = isRevibe ? item : mainPost;
+
+                      const postAuraColor = getPostAuraColor(author);
+                      const cardStyle = { 
+                          '--primary': postAuraColor,
+                          '--primary-glow': postAuraColor.replace(/ /g, ', '),
+                      } as React.CSSProperties;
                       
                       const isBookmarked = bookmarkedPosts.includes(mainPost.id);
                       const isLiked = likedPosts.includes(mainPost.id);
