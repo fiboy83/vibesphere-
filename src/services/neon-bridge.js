@@ -154,77 +154,78 @@ async function syncArticlesFromChain() {
   const shortAddress = articleContractAddress.slice(0, 6);
   console.log(`[vibesphere] 🌐 Bridge Active: Listening for PHRS articles on ${shortAddress}...`);
 
+  let logs;
   try {
     const publicClient = createPublicClient({
       chain: pharosTestnet,
       transport: http('https://atlantic.dplabs-internal.com'),
     });
 
-    const latestBlock = await publicClient.getBlockNumber();
-    // Start syncing from the specific deployment block of the contract
     const fromBlock = 13496097n;
+    const toBlock = fromBlock + 5000n; // Fixed range for debugging
 
-    console.log(`[NEON SYNC]: Scanning for 'ArticlePosted' events from block ${fromBlock} to ${latestBlock}.`);
+    console.log(`[NEON SYNC]: Scanning for 'ArticlePosted' events from block ${fromBlock} to ${toBlock}.`);
 
-    const logs = await publicClient.getLogs({
+    logs = await publicClient.getLogs({
       address: articleContractAddress,
       abi: articleContractAbi,
       eventName: 'ArticlePosted',
       fromBlock,
-      toBlock: latestBlock,
+      toBlock,
     });
+  } catch (rpcError) {
+    console.error('[NEON SYNC RPC ERROR]: The `getLogs` call failed. This is likely an issue with the RPC node or the query parameters.', rpcError);
+    // Exit gracefully so the rest of the app doesn't crash if this is run via API route.
+    return;
+  }
 
-    if (logs.length === 0) {
-      console.log('[NEON SYNC]: No new article events found in recent blocks.');
-      return;
+  if (!logs || logs.length === 0) {
+    console.log('[NEON SYNC]: No new article events found in the specified block range.');
+    return;
+  }
+
+  console.log(`[NEON SYNC]: Found ${logs.length} article events to process.`);
+
+  const client = await dbPool.connect();
+  try {
+    await client.query('BEGIN');
+
+    for (const log of logs) {
+      const { author, articleId, title, content, timestamp } = log.args;
+      const articleIdStr = articleId.toString();
+      const timestampDate = new Date(Number(timestamp) * 1000);
+
+      // Upsert metadata into 'articles' table. We'll use the tx_hash as a unique key for content hash.
+      const articleMetaResult = await client.query(
+        `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility, contract_address)
+         VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public', $6::text)
+         ON CONFLICT (id) DO UPDATE SET
+           title = EXCLUDED.title,
+           timestamp = EXCLUDED.timestamp
+         RETURNING id;`,
+        [articleIdStr, author, title, log.transactionHash, timestampDate, articleContractAddress]
+      );
+      const dbArticleId = articleMetaResult.rows[0].id;
+
+      // Upsert full content into 'article_content' table
+      await client.query(
+        `INSERT INTO article_content (article_id, title, content, author_address, created_at, tx_hash)
+         VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $6::text)
+         ON CONFLICT (article_id) DO UPDATE SET
+           title = EXCLUDED.title,
+           content = EXCLUDED.content;`,
+        [dbArticleId, title, content, author, timestampDate, log.transactionHash]
+      );
     }
 
-    console.log(`[NEON SYNC]: Found ${logs.length} article events to process.`);
-
-    const client = await dbPool.connect();
-    try {
-      await client.query('BEGIN');
-
-      for (const log of logs) {
-        const { author, articleId, title, content, timestamp } = log.args;
-        const articleIdStr = articleId.toString();
-        const timestampDate = new Date(Number(timestamp) * 1000);
-
-        // Upsert metadata into 'articles' table. We'll use the tx_hash as a unique key for content hash.
-        const articleMetaResult = await client.query(
-          `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility, contract_address)
-           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public', $6::text)
-           ON CONFLICT (id) DO UPDATE SET
-             title = EXCLUDED.title,
-             timestamp = EXCLUDED.timestamp
-           RETURNING id;`,
-          [articleIdStr, author, title, log.transactionHash, timestampDate, articleContractAddress]
-        );
-        const dbArticleId = articleMetaResult.rows[0].id;
-
-        // Upsert full content into 'article_content' table
-        await client.query(
-          `INSERT INTO article_content (article_id, title, content, author_address, created_at, tx_hash)
-           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $6::text)
-           ON CONFLICT (article_id) DO UPDATE SET
-             title = EXCLUDED.title,
-             content = EXCLUDED.content;`,
-          [dbArticleId, title, content, author, timestampDate, log.transactionHash]
-        );
-      }
-
-      await client.query('COMMIT');
-      console.log('[NEON SYNC]: Successfully synced articles to Neon DB.');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      console.error('[NEON SYNC ERROR]: Database transaction failed.', e);
-      throw e;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('[NEON SYNC ERROR]: Failed to sync articles from chain.', error);
-    // We don't re-throw here, so the feed can still be served from existing DB data if the sync fails.
+    await client.query('COMMIT');
+    console.log('[NEON SYNC]: Successfully synced articles to Neon DB.');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    console.error('[NEON SYNC ERROR]: Database transaction failed.', e);
+    throw e;
+  } finally {
+    client.release();
   }
 }
 
