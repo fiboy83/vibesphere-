@@ -1265,7 +1265,7 @@ export default function VibesphereApp() {
       const hash = await walletClient.writeContract({
         address: articleContractAddress as `0x${string}`,
         abi: articleContractAbi,
-        functionName: 'postArticle',
+        functionName: 'publishArticle',
         args: [composerTitle, composerText],
         account,
       });

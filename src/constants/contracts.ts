@@ -311,7 +311,7 @@ export const identityContractAbi = [
   }
 ];
 
-export const articleContractAddress = "0x6b1cf09d412eA114B21A762b5049F4251264f85f"; 
+export const articleContractAddress = "0xeea92f3946f0901828908772b61e3c05c6a07d40"; 
 
 export const articleContractAbi = [
   {
@@ -388,7 +388,7 @@ export const articleContractAbi = [
         "type": "string"
       }
     ],
-    "name": "postArticle",
+    "name": "publishArticle",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

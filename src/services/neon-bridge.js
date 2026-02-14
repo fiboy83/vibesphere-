@@ -4,7 +4,7 @@ const { createPublicClient, http, defineChain, decodeEventLog, encodeEventTopics
 
 // --- Self-contained constants to avoid alias/TS issues in Node script context ---
 
-const articleContractAddress = "0x6b1cf09d412eA114B21A762b5049F4251264f85f"; 
+const articleContractAddress = "0xeea92f3946f0901828908772b61e3c05c6a07d40"; 
 
 const articleContractAbi = [
   {
@@ -78,6 +78,7 @@ const pharosTestnet = defineChain({
   testnet: true,
 });
 
+const INDEXER_STATE_KEY = `last_synced_block_articles_${articleContractAddress}`;
 
 let pool;
 
@@ -109,7 +110,7 @@ async function getLastSyncedBlock() {
         value BIGINT NOT NULL
       );
     `);
-    const res = await client.query("SELECT value FROM indexer_state WHERE key = 'last_synced_block_articles'");
+    const res = await client.query("SELECT value FROM indexer_state WHERE key = $1", [INDEXER_STATE_KEY]);
     if (res.rows.length > 0) {
       return BigInt(res.rows[0].value);
     }
@@ -124,9 +125,9 @@ async function setLastSyncedBlock(blockNumber) {
     const client = await dbPool.connect();
     try {
         await client.query(
-            `INSERT INTO indexer_state (key, value) VALUES ('last_synced_block_articles', $1)
-             ON CONFLICT (key) DO UPDATE SET value = $1;`,
-            [blockNumber.toString()]
+            `INSERT INTO indexer_state (key, value) VALUES ($1, $2)
+             ON CONFLICT (key) DO UPDATE SET value = $2;`,
+            [INDEXER_STATE_KEY, blockNumber.toString()]
         );
     } finally {
         client.release();
@@ -138,7 +139,6 @@ async function setLastSyncedBlock(blockNumber) {
  * A long-running indexer process that fetches ArticlePosted events and syncs them to the DB.
  */
 async function syncArticlesFromChain() {
-  const START_BLOCK = 13496097n; // Contract deployment block
   const BATCH_SIZE = 1000n;
 
   const publicClient = createPublicClient({
@@ -156,10 +156,12 @@ async function syncArticlesFromChain() {
 
   while (true) {
     try {
-      const lastSyncedBlock = await getLastSyncedBlock();
-      let fromBlock = lastSyncedBlock ? lastSyncedBlock + 1n : START_BLOCK;
-      
       const latestBlock = await publicClient.getBlockNumber();
+      const lastSyncedBlock = await getLastSyncedBlock();
+      
+      // If we've never synced, start from the current block to only get new events.
+      // Otherwise, start from the block after the last one we synced.
+      let fromBlock = lastSyncedBlock ? lastSyncedBlock + 1n : latestBlock;
 
       if (fromBlock > latestBlock) {
         // We are caught up, switch to polling mode.
@@ -203,9 +205,6 @@ async function syncArticlesFromChain() {
 
             console.log(`[vibesphere] ✨ New Article Detected: ${title}`);
             
-            // Insert full article data into the 'articles' table.
-            // WARNING: This is not idempotent. If the 'tx_hash' column with a UNIQUE constraint is added,
-            // this can be converted to a safe ON CONFLICT query.
             await client.query(
               `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address)
                VALUES ($1, $2, $3, $4, 'public', $5);`,
@@ -393,8 +392,7 @@ async function getFeed(pharos_address) {
         ) as sovereign_layout
       FROM articles a
       LEFT JOIN users u ON a.author_address = u.pharos_address
-      WHERE a.contract_address = '${articleContractAddress}'
-      AND ($1::text IS NULL OR a.author_address = $1::text)
+      WHERE ($1::text IS NULL OR a.author_address = $1::text)
     `;
 
     const [postRes, articleRes] = await Promise.all([
@@ -566,8 +564,6 @@ async function saveArticle(author_address, title, content, tx_hash) {
   const dbPool = getDbPool();
   if (!author_address || !title || !content || !dbPool) return;
   try {
-    // tx_hash is passed for logging but not inserted, to match schema.
-    // WARNING: This query is not idempotent and can create duplicates.
     await dbPool.query(
       `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address)
        VALUES ($1, $2, $3, NOW(), 'public', $4);`,
