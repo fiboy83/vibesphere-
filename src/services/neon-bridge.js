@@ -36,6 +36,7 @@ async function syncArticlesFromChain() {
   if (!dbPool) return;
 
   console.log('[NEON SYNC]: Starting on-demand article sync from chain.');
+  console.log('[vibesphere] 🌐 Bridge Active: Listening for PHRS articles on 0x6b1c...');
 
   try {
     const publicClient = createPublicClient({
@@ -477,7 +478,7 @@ export async function getArticles(author_address) {
       SELECT
         a.id,
         a.title,
-        a.content_hash,
+        ac.content,
         a.timestamp as created_at,
         a.author_address,
         a.visibility,
@@ -487,6 +488,7 @@ export async function getArticles(author_address) {
         ) as sovereign_layout
       FROM articles a
       LEFT JOIN users u ON a.author_address = u.pharos_address
+      LEFT JOIN article_content ac ON a.id = ac.article_id
     `;
 
     if (author_address) {
@@ -507,3 +509,21 @@ export async function getArticles(author_address) {
     throw error;
   }
 }
+
+module.exports = {
+    getLayout,
+    updateLayout,
+    getFeed,
+    savePost,
+    addLike,
+    removeLike,
+    addBookmark,
+    removeBookmark,
+    addComment,
+    saveMessage,
+    getMessages,
+    getConversations,
+    saveArticle,
+    getArticles,
+    syncArticlesFromChain
+};
