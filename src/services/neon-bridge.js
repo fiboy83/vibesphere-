@@ -1,6 +1,6 @@
 
 const { Pool } = require('pg');
-const { createPublicClient, http, decodeEventLog, defineChain } = require('viem');
+const { createPublicClient, http, defineChain } = require('viem');
 
 // --- Self-contained constants to avoid alias/TS issues in Node script context ---
 
@@ -45,48 +45,6 @@ const articleContractAbi = [
     "type": "event"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "articleMetas",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "author",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_title",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "_content",
-        "type": "string"
-      }
-    ],
-    "name": "postArticle",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "getTotalArticles",
     "outputs": [
@@ -111,7 +69,7 @@ const pharosTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_RPC_URL || 'https://atlantic.dplabs-internal.com'],
+      http: ['https://atlantic.dplabs-internal.com'],
     },
   },
   blockExplorers: {
@@ -124,108 +82,149 @@ const pharosTestnet = defineChain({
 let pool;
 
 const getDbPool = () => {
-    console.log('Attempting to get DB pool...');
     if (!process.env.DATABASE_URL) {
-        console.warn('CRITICAL: DATABASE_URL environment variable is NOT set. Database connection will fail.');
-        return null;
+        throw new Error('CRITICAL: DATABASE_URL environment variable is NOT set. Database connection will fail.');
     }
     if (!pool) {
-        console.log('DATABASE_URL is set. Creating new connection pool.');
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: {
-                rejectUnauthorized: true,
+                rejectUnauthorized: false, // In production, consider using a CA cert
             },
         });
-    } else {
-        console.log('Using existing connection pool.');
     }
     return pool;
 }
 
-/**
- * Fetches recent ArticlePosted events from the blockchain and syncs them to the database.
- * This acts as an on-demand indexer.
- */
-async function syncArticlesFromChain() {
+// --- Indexer State Management ---
+
+async function getLastSyncedBlock() {
   const dbPool = getDbPool();
-  if (!dbPool) return;
-
-  const shortAddress = articleContractAddress.slice(0, 6);
-  console.log(`[vibesphere] 🌐 Bridge Active: Listening for PHRS articles on ${shortAddress}...`);
-
-  let logs;
-  try {
-    const publicClient = createPublicClient({
-      chain: pharosTestnet,
-      transport: http('https://atlantic.dplabs-internal.com'),
-    });
-
-    const fromBlock = 13496097n;
-    const toBlock = fromBlock + 5000n; // Fixed range for debugging
-
-    console.log(`[NEON SYNC]: Scanning for 'ArticlePosted' events from block ${fromBlock} to ${toBlock}.`);
-
-    logs = await publicClient.getLogs({
-      address: articleContractAddress,
-      abi: articleContractAbi,
-      eventName: 'ArticlePosted',
-      fromBlock,
-      toBlock,
-    });
-  } catch (rpcError) {
-    console.error('[NEON SYNC RPC ERROR]: The `getLogs` call failed. This is likely an issue with the RPC node or the query parameters.', rpcError);
-    // Exit gracefully so the rest of the app doesn't crash if this is run via API route.
-    return;
-  }
-
-  if (!logs || logs.length === 0) {
-    console.log('[NEON SYNC]: No new article events found in the specified block range.');
-    return;
-  }
-
-  console.log(`[NEON SYNC]: Found ${logs.length} article events to process.`);
-
   const client = await dbPool.connect();
   try {
-    await client.query('BEGIN');
-
-    for (const log of logs) {
-      const { author, articleId, title, content, timestamp } = log.args;
-      const articleIdStr = articleId.toString();
-      const timestampDate = new Date(Number(timestamp) * 1000);
-
-      // Upsert metadata into 'articles' table. We'll use the tx_hash as a unique key for content hash.
-      const articleMetaResult = await client.query(
-        `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility, contract_address)
-         VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public', $6::text)
-         ON CONFLICT (id) DO UPDATE SET
-           title = EXCLUDED.title,
-           timestamp = EXCLUDED.timestamp
-         RETURNING id;`,
-        [articleIdStr, author, title, log.transactionHash, timestampDate, articleContractAddress]
+    // Ensure the state table exists, creating it if it doesn't.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS indexer_state (
+        key VARCHAR(255) PRIMARY KEY,
+        value BIGINT NOT NULL
       );
-      const dbArticleId = articleMetaResult.rows[0].id;
-
-      // Upsert full content into 'article_content' table
-      await client.query(
-        `INSERT INTO article_content (article_id, title, content, author_address, created_at, tx_hash)
-         VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $6::text)
-         ON CONFLICT (article_id) DO UPDATE SET
-           title = EXCLUDED.title,
-           content = EXCLUDED.content;`,
-        [dbArticleId, title, content, author, timestampDate, log.transactionHash]
-      );
+    `);
+    const res = await client.query("SELECT value FROM indexer_state WHERE key = 'last_synced_block_articles'");
+    if (res.rows.length > 0) {
+      return BigInt(res.rows[0].value);
     }
-
-    await client.query('COMMIT');
-    console.log('[NEON SYNC]: Successfully synced articles to Neon DB.');
-  } catch (e) {
-    await client.query('ROLLBACK');
-    console.error('[NEON SYNC ERROR]: Database transaction failed.', e);
-    throw e;
+    return null; // No state saved yet
   } finally {
     client.release();
+  }
+}
+
+async function setLastSyncedBlock(blockNumber) {
+    const dbPool = getDbPool();
+    const client = await dbPool.connect();
+    try {
+        await client.query(
+            `INSERT INTO indexer_state (key, value) VALUES ('last_synced_block_articles', $1)
+             ON CONFLICT (key) DO UPDATE SET value = $1;`,
+            [blockNumber.toString()]
+        );
+    } finally {
+        client.release();
+    }
+}
+
+
+/**
+ * A long-running indexer process that fetches ArticlePosted events and syncs them to the DB.
+ */
+async function syncArticlesFromChain() {
+  const START_BLOCK = 13496097n;
+  const BATCH_SIZE = 1000n;
+
+  const publicClient = createPublicClient({
+    chain: pharosTestnet,
+    transport: http('https://atlantic.dplabs-internal.com'),
+  });
+
+  console.log(`[vibesphere] 🌐 Bridge Active: Listening for PHRS articles on ${articleContractAddress.slice(0, 6)}...`);
+
+  while (true) {
+    try {
+      const lastSyncedBlock = await getLastSyncedBlock();
+      let fromBlock = lastSyncedBlock ? lastSyncedBlock + 1n : START_BLOCK;
+      
+      const latestBlock = await publicClient.getBlockNumber();
+
+      if (fromBlock > latestBlock) {
+        // We are caught up, switch to polling mode.
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second poll
+        continue;
+      }
+
+      const toBlock = fromBlock + BATCH_SIZE - 1n < latestBlock ? fromBlock + BATCH_SIZE - 1n : latestBlock;
+
+      const logs = await publicClient.getLogs({
+        address: articleContractAddress,
+        abi: articleContractAbi,
+        eventName: 'ArticlePosted',
+        fromBlock,
+        toBlock,
+      });
+
+      if (logs.length > 0) {
+        const client = await getDbPool().connect();
+        try {
+          await client.query('BEGIN');
+          for (const log of logs) {
+            const { author, articleId, title, content, timestamp } = log.args;
+            const articleIdStr = articleId.toString();
+            const timestampDate = new Date(Number(timestamp) * 1000);
+
+            console.log(`[vibesphere] ✨ New Article Detected: ${title}`);
+            
+            // Upsert metadata into 'articles' table
+            const articleMetaResult = await client.query(
+              `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility, contract_address)
+               VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public', $6::text)
+               ON CONFLICT (id) DO UPDATE SET
+                 title = EXCLUDED.title,
+                 timestamp = EXCLUDED.timestamp
+               RETURNING id;`,
+              [articleIdStr, author, title, log.transactionHash, timestampDate, articleContractAddress]
+            );
+            const dbArticleId = articleMetaResult.rows[0].id;
+
+            // Upsert full content into 'article_content' table
+            await client.query(
+              `INSERT INTO article_content (article_id, title, content, author_address, created_at, tx_hash)
+               VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $6::text)
+               ON CONFLICT (article_id) DO UPDATE SET
+                 title = EXCLUDED.title,
+                 content = EXCLUDED.content;`,
+              [dbArticleId, title, content, author, timestampDate, log.transactionHash]
+            );
+          }
+          await client.query('COMMIT');
+        } catch (dbError) {
+          await client.query('ROLLBACK');
+          console.error('[INDEXER DB ERROR]: Database transaction failed.', dbError);
+        } finally {
+          client.release();
+        }
+      }
+      
+      await setLastSyncedBlock(toBlock);
+      if (logs.length === 0) {
+          console.log(`[vibesphere] ⚡ Blocks #${fromBlock}-${toBlock} synced. No new articles.`);
+      } else {
+          console.log(`[vibesphere] ⚡ Block #${toBlock} synced with ${logs.length} new articles.`);
+      }
+
+    } catch (error) {
+      console.error('[INDEXER LOOP ERROR]: An error occurred during the sync cycle:', error);
+      // Wait for 5 seconds before retrying on a major error
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
   }
 }
 
@@ -320,9 +319,6 @@ async function updateLayout(pharos_address, metadata, extendedBio, websiteUrl) {
  * @returns {Promise<any[]>} A list of posts with user data and interaction counts.
  */
 async function getFeed(pharos_address) {
-  // Run the sync process before fetching the feed to get latest articles.
-  await syncArticlesFromChain();
-  
   console.log(`[NEON GET_FEED]: Fetching unified feed for address: ${pharos_address || 'guest'}`);
   const dbPool = getDbPool();
   if (!dbPool) {
@@ -375,8 +371,7 @@ async function getFeed(pharos_address) {
       LEFT JOIN users u ON p.pharos_address = u.pharos_address
     `;
 
-    const articleParams = [];
-    let articleQuery = `
+    const articleQuery = `
       SELECT
         ac.article_id as id,
         ac.title,
@@ -390,16 +385,12 @@ async function getFeed(pharos_address) {
         ) as sovereign_layout
       FROM article_content ac
       LEFT JOIN users u ON ac.author_address = u.pharos_address
+      WHERE ($1::text IS NULL OR ac.author_address = $1::text)
     `;
-
-    if (pharos_address) {
-      articleQuery += ' WHERE ac.author_address = $1::text';
-      articleParams.push(pharos_address);
-    }
 
     const [postRes, articleRes] = await Promise.all([
         dbPool.query(postQuery, [pharos_address || null]),
-        dbPool.query(articleQuery, articleParams)
+        dbPool.query(articleQuery, [pharos_address || null])
     ]);
     
     const combinedFeed = [...postRes.rows, ...articleRes.rows];
@@ -562,22 +553,35 @@ async function getConversations(pharos_address) {
   }
 }
 
-async function saveArticle(author_address, title, content) {
+async function saveArticle(author_address, title, content, tx_hash) {
   const dbPool = getDbPool();
-  if (!author_address || !title || !content || !dbPool) return;
+  if (!author_address || !title || !content || !tx_hash || !dbPool) return;
   try {
-    const query = `
-      INSERT INTO articles (author_address, title, content_hash, visibility)
-      VALUES ($1::text, $2::text, $3::text, 'public');
-    `;
-    await dbPool.query(query, [author_address, title, content]);
-    console.log(`[NEON SAVE ARTICLE]: Successfully saved article.`);
+    const res = await dbPool.query(
+      `INSERT INTO articles (author_address, title, content_hash, visibility, tx_hash, contract_address)
+       VALUES ($1, $2, $3, 'public', $3, $4)
+       ON CONFLICT (tx_hash) DO NOTHING
+       RETURNING id;`,
+      [author_address, title, tx_hash, articleContractAddress]
+    );
+
+    if (res.rows.length === 0) {
+      console.log(`[NEON SAVE ARTICLE]: Article with tx_hash ${tx_hash} already exists.`);
+      return;
+    }
+    
+    const articleId = res.rows[0].id;
+    
+    await dbPool.query(
+      `INSERT INTO article_content (article_id, title, content, author_address, tx_hash)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (article_id) DO UPDATE SET title = $2, content = $3;`,
+      [articleId, title, content, author_address, tx_hash]
+    );
+
+    console.log(`[NEON SAVE ARTICLE]: Successfully saved article ${articleId}.`);
   } catch (error) {
-    console.error('[NEON SAVE ARTICLE ERROR]', {
-        message: error.message,
-        stack: error.stack,
-        detail: error.detail,
-    });
+    console.error('[NEON SAVE ARTICLE ERROR]', error);
     throw error;
   }
 }
@@ -595,7 +599,7 @@ async function getArticles(author_address) {
     let query = `
       SELECT
         a.id,
-        a.title,
+        ac.title,
         ac.content,
         a.timestamp as created_at,
         a.author_address,
@@ -605,8 +609,8 @@ async function getArticles(author_address) {
           jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
         ) as sovereign_layout
       FROM articles a
+      JOIN article_content ac ON a.id = ac.article_id
       LEFT JOIN users u ON a.author_address = u.pharos_address
-      LEFT JOIN article_content ac ON a.id = ac.article_id
     `;
 
     if (author_address) {
