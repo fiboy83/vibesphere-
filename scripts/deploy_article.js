@@ -19,6 +19,7 @@ async function main() {
   console.log(
     `Contract is live on pharos at address: ${contractAddress}`
   );
+  console.log("\nIMPORTANT: Copy this address and paste it into the 'articleContractAddress' variable in 'src/constants/contracts.ts'");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
