@@ -168,14 +168,20 @@ async function syncArticlesFromChain() {
       }
 
       const toBlock = fromBlock + BATCH_SIZE - 1n < latestBlock ? fromBlock + BATCH_SIZE - 1n : latestBlock;
-
-      // Fetch all raw logs for the contract address in the block range.
-      // This is more robust for RPC nodes that may not handle complex topic filters well.
-      const rawLogs = await publicClient.getLogs({
-        address: articleContractAddress,
-        fromBlock,
-        toBlock,
-      });
+      
+      let rawLogs = [];
+      try {
+          rawLogs = await publicClient.getLogs({
+            address: articleContractAddress,
+            fromBlock,
+            toBlock,
+          });
+      } catch (rpcError) {
+          console.error(`[INDEXER RPC ERROR] Failed to fetch logs for blocks ${fromBlock}-${toBlock}:`, rpcError);
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          continue;
+      }
 
       // Filter for 'ArticlePosted' events client-side.
       const logs = rawLogs.filter(log => log.topics[0] === articlePostedTopic);
@@ -197,14 +203,13 @@ async function syncArticlesFromChain() {
 
             console.log(`[vibesphere] ✨ New Article Detected: ${title}`);
             
-            // Insert full article data into the 'articles' table, using tx_hash as the unique key for conflict resolution.
+            // Insert full article data into the 'articles' table.
+            // WARNING: This is not idempotent. If the 'tx_hash' column with a UNIQUE constraint is added,
+            // this can be converted to a safe ON CONFLICT query.
             await client.query(
-              `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address, tx_hash)
-               VALUES ($1, $2, $3, $4, 'public', $5, $6)
-               ON CONFLICT (tx_hash) DO UPDATE SET 
-                 title = EXCLUDED.title, 
-                 content = EXCLUDED.content;`,
-              [author, title, content, timestampDate, articleContractAddress, log.transactionHash]
+              `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address)
+               VALUES ($1, $2, $3, $4, 'public', $5);`,
+              [author, title, content, timestampDate, articleContractAddress]
             );
           }
           await client.query('COMMIT');
@@ -559,17 +564,16 @@ async function getConversations(pharos_address) {
 
 async function saveArticle(author_address, title, content, tx_hash) {
   const dbPool = getDbPool();
-  if (!author_address || !title || !content || !tx_hash || !dbPool) return;
+  if (!author_address || !title || !content || !dbPool) return;
   try {
+    // tx_hash is passed for logging but not inserted, to match schema.
+    // WARNING: This query is not idempotent and can create duplicates.
     await dbPool.query(
-      `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address, tx_hash)
-       VALUES ($1, $2, $3, NOW(), 'public', $4, $5)
-       ON CONFLICT (tx_hash) DO UPDATE SET
-         title = EXCLUDED.title,
-         content = EXCLUDED.content;`,
-      [author_address, title, content, articleContractAddress, tx_hash]
+      `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address)
+       VALUES ($1, $2, $3, NOW(), 'public', $4);`,
+      [author_address, title, content, articleContractAddress]
     );
-    console.log(`[NEON SAVE ARTICLE]: Successfully saved/updated article with tx_hash ${tx_hash}.`);
+    console.log(`[NEON SAVE ARTICLE]: Successfully saved article (tx: ${tx_hash}).`);
   } catch (error) {
     console.error('[NEON SAVE ARTICLE ERROR]', error);
     throw error;
