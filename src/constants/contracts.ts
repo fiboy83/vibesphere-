@@ -311,8 +311,7 @@ export const identityContractAbi = [
   }
 ];
 
-// This address will need to be updated after you deploy the new VibesphereArticle contract.
-export const articleContractAddress = "0xeea92f3946f0901828908772b61e3c05c6a07d40"; 
+export const articleContractAddress = "0x6b1cf09d412eA114B21A762b5049F4251264f85f"; 
 
 export const articleContractAbi = [
   {

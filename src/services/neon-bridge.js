@@ -1,5 +1,9 @@
 
 import { Pool } from 'pg';
+import { createPublicClient, http, decodeEventLog } from 'viem';
+import { pharosTestnet } from '@/components/providers/privy-provider';
+import { articleContractAddress, articleContractAbi } from '@/constants/contracts';
+
 
 let pool;
 
@@ -24,6 +28,89 @@ const getDbPool = () => {
 }
 
 /**
+ * Fetches recent ArticlePosted events from the blockchain and syncs them to the database.
+ * This acts as an on-demand indexer.
+ */
+async function syncArticlesFromChain() {
+  const dbPool = getDbPool();
+  if (!dbPool) return;
+
+  console.log('[NEON SYNC]: Starting on-demand article sync from chain.');
+
+  try {
+    const publicClient = createPublicClient({
+      chain: pharosTestnet,
+      transport: http('https://atlantic.dplabs-internal.com'),
+    });
+
+    const latestBlock = await publicClient.getBlockNumber();
+    // Fetch events from the last 5000 blocks. In a production environment,
+    // you would store the last synced block number in the DB and query from there.
+    const fromBlock = latestBlock > 5000n ? latestBlock - 5000n : 0n;
+
+    const logs = await publicClient.getLogs({
+      address: articleContractAddress,
+      abi: articleContractAbi,
+      eventName: 'ArticlePosted',
+      fromBlock,
+      toBlock: latestBlock,
+    });
+
+    if (logs.length === 0) {
+      console.log('[NEON SYNC]: No new article events found in recent blocks.');
+      return;
+    }
+
+    console.log(`[NEON SYNC]: Found ${logs.length} article events to process.`);
+
+    const client = await dbPool.connect();
+    try {
+      await client.query('BEGIN');
+
+      for (const log of logs) {
+        const { author, articleId, title, content, timestamp } = log.args;
+        const articleIdStr = articleId.toString();
+        const timestampDate = new Date(Number(timestamp) * 1000);
+
+        // Upsert metadata into 'articles' table. We'll use the tx_hash as a unique key for content hash.
+        const articleMetaResult = await client.query(
+          `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility)
+           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public')
+           ON CONFLICT (id) DO UPDATE SET
+             title = EXCLUDED.title,
+             timestamp = EXCLUDED.timestamp
+           RETURNING id;`,
+          [articleIdStr, author, title, log.transactionHash, timestampDate]
+        );
+        const dbArticleId = articleMetaResult.rows[0].id;
+
+        // Upsert full content into 'article_content' table
+        await client.query(
+          `INSERT INTO article_content (article_id, title, content, author_address, created_at)
+           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp)
+           ON CONFLICT (article_id) DO UPDATE SET
+             title = EXCLUDED.title,
+             content = EXCLUDED.content;`,
+          [dbArticleId, title, content, author, timestampDate]
+        );
+      }
+
+      await client.query('COMMIT');
+      console.log('[NEON SYNC]: Successfully synced articles to Neon DB.');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      console.error('[NEON SYNC ERROR]: Database transaction failed.', e);
+      throw e;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[NEON SYNC ERROR]: Failed to sync articles from chain.', error);
+    // We don't re-throw here, so the feed can still be served from existing DB data if the sync fails.
+  }
+}
+
+/**
  * Fetches the sovereign layout for a given Pharos address.
  * @param {string} pharos_address The user's Pharos wallet address.
  * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string, bio: string, extendedBio: string, websiteUrl: string} | null>} The layout metadata or null if not found.
@@ -41,7 +128,6 @@ export async function getLayout(pharos_address) {
     if (res.rows.length > 0) {
       const row = res.rows[0];
       const layout = row.sovereign_layout || {};
-      // Ensure we return an object with expected keys, even if they are null
       return {
         vibe_color: layout?.vibe_color || null,
         avatar: layout?.avatar || null,
@@ -75,13 +161,11 @@ export async function updateLayout(pharos_address, metadata, extendedBio, websit
   const values = [pharos_address];
   let paramIndex = 2;
 
-  // The sovereign_layout is a JSONB column, we merge new data into it.
   if (metadata && Object.keys(metadata).length > 0) {
     updates.push(`sovereign_layout = COALESCE(users.sovereign_layout, '{}'::jsonb) || $${paramIndex++}`);
     values.push(metadata);
   }
 
-  // extended_bio and website_url are standard text columns.
   if (extendedBio !== undefined) {
     updates.push(`extended_bio = $${paramIndex++}`);
     values.push(extendedBio);
@@ -93,7 +177,7 @@ export async function updateLayout(pharos_address, metadata, extendedBio, websit
   }
 
   if (updates.length === 0) {
-    return; // No-op if nothing to update
+    return;
   }
 
   try {
@@ -117,7 +201,10 @@ export async function updateLayout(pharos_address, metadata, extendedBio, websit
  * @returns {Promise<any[]>} A list of posts with user data and interaction counts.
  */
 export async function getFeed(pharos_address) {
-  console.log(`[NEON GET_FEED]: Fetching feed for address: ${pharos_address || 'guest'}`);
+  // Run the sync process before fetching the feed to get latest articles.
+  await syncArticlesFromChain();
+  
+  console.log(`[NEON GET_FEED]: Fetching unified feed for address: ${pharos_address || 'guest'}`);
   const dbPool = getDbPool();
   if (!dbPool) {
     console.error('[NEON GET_FEED]: DB Pool not available. Returning empty feed.');
@@ -125,7 +212,6 @@ export async function getFeed(pharos_address) {
   }
 
   try {
-    // Fetch posts
     const postQuery = `
       SELECT
         p.id,
@@ -170,26 +256,25 @@ export async function getFeed(pharos_address) {
       LEFT JOIN users u ON p.pharos_address = u.pharos_address
     `;
 
-    // Fetch articles
     const articleParams = [];
     let articleQuery = `
       SELECT
-        a.id,
-        a.title,
-        a.content_hash as content,
-        a.timestamp as created_at,
-        a.author_address as pharos_address,
+        ac.article_id as id,
+        ac.title,
+        ac.content,
+        ac.created_at,
+        ac.author_address as pharos_address,
         'article' as type,
         (
           COALESCE(u.sovereign_layout, '{}'::jsonb) || 
           jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
         ) as sovereign_layout
-      FROM articles a
-      LEFT JOIN users u ON a.author_address = u.pharos_address
+      FROM article_content ac
+      LEFT JOIN users u ON ac.author_address = u.pharos_address
     `;
 
     if (pharos_address) {
-      articleQuery += ' WHERE a.author_address = $1::text';
+      articleQuery += ' WHERE ac.author_address = $1::text';
       articleParams.push(pharos_address);
     }
 
@@ -198,15 +283,14 @@ export async function getFeed(pharos_address) {
         dbPool.query(articleQuery, articleParams)
     ]);
     
-    // Combine and sort
     const combinedFeed = [...postRes.rows, ...articleRes.rows];
     combinedFeed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     console.log(`[NEON GET_FEED]: Query successful, found ${combinedFeed.length} total items.`);
-    return combinedFeed.slice(0, 100); // Limit to 100 items
+    return combinedFeed.slice(0, 100);
 
   } catch (error) {
-    console.error('[NEON GET_FEED ERROR]: Error fetching feed from Neon:', error);
+    console.error('[NEON GET_FEED ERROR]: Error fetching unified feed from Neon:', error);
     throw error;
   }
 }
@@ -235,8 +319,6 @@ export async function savePost(pharos_address, content, tx_hash, image_url) {
   }
 }
 
-
-// --- Interaction Functions ---
 
 export async function addLike(postId, pharos_address) {
   const dbPool = getDbPool();
@@ -273,13 +355,6 @@ export async function addComment(postId, pharos_address, content, parentId = nul
 }
 
 
-/**
- * Saves a new message to the database.
- * @param {string} sender_address The sender's Pharos wallet address.
- * @param {string} receiver_address The receiver's Pharos wallet address.
- * @param {string} content The content of the message.
- * @returns {Promise<any>} The newly saved message.
- */
 export async function saveMessage(sender_address, receiver_address, content) {
   const dbPool = getDbPool();
   if (!sender_address || !receiver_address || !content || !dbPool) return null;
@@ -297,12 +372,6 @@ export async function saveMessage(sender_address, receiver_address, content) {
   }
 }
 
-/**
- * Fetches messages between two users.
- * @param {string} address1 One user's Pharos address.
- * @param {string} address2 The other user's Pharos address.
- * @returns {Promise<any[]>} A list of messages.
- */
 export async function getMessages(address1, address2) {
     const dbPool = getDbPool();
     if (!address1 || !address2 || !dbPool) return [];
@@ -331,12 +400,6 @@ export async function getMessages(address1, address2) {
     }
 }
 
-
-/**
- * Fetches a list of conversations for a given user.
- * @param {string} pharos_address The user's Pharos wallet address.
- * @returns {Promise<any[]>} A list of the most recent message from each conversation.
- */
 export async function getConversations(pharos_address) {
   const dbPool = getDbPool();
   if (!pharos_address || !dbPool) return [];
@@ -380,13 +443,6 @@ export async function getConversations(pharos_address) {
   }
 }
 
-/**
- * Saves a new article to the database. The content is stored in the content_hash column.
- * @param {string} author_address The author's Pharos wallet address.
- * @param {string} title The title of the article.
- * @param {string} content The full content of the article.
- * @returns {Promise<void>}
- */
 export async function saveArticle(author_address, title, content) {
   const dbPool = getDbPool();
   if (!author_address || !title || !content || !dbPool) return;
@@ -407,11 +463,6 @@ export async function saveArticle(author_address, title, content) {
   }
 }
 
-/**
- * Fetches articles from the database.
- * @param {string | null} author_address The requesting user's Pharos wallet address (optional, for filtering).
- * @returns {Promise<any[]>} A list of articles with author layout data.
- */
 export async function getArticles(author_address) {
   console.log(`[NEON GET_ARTICLES]: Fetching articles for: ${author_address || 'all'}`);
   const dbPool = getDbPool();
@@ -428,7 +479,7 @@ export async function getArticles(author_address) {
         a.title,
         a.content_hash,
         a.timestamp as created_at,
-        a.author_address as pharos_address,
+        a.author_address,
         a.visibility,
         (
           COALESCE(u.sovereign_layout, '{}'::jsonb) || 
