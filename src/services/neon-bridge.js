@@ -1,6 +1,6 @@
 
 const { Pool } = require('pg');
-const { createPublicClient, http, defineChain } = require('viem');
+const { createPublicClient, http, defineChain, decodeEventLog, encodeEventTopics } = require('viem');
 
 // --- Self-contained constants to avoid alias/TS issues in Node script context ---
 
@@ -138,7 +138,7 @@ async function setLastSyncedBlock(blockNumber) {
  * A long-running indexer process that fetches ArticlePosted events and syncs them to the DB.
  */
 async function syncArticlesFromChain() {
-  const START_BLOCK = 13496097n;
+  const START_BLOCK = 13496097n; // Contract deployment block
   const BATCH_SIZE = 1000n;
 
   const publicClient = createPublicClient({
@@ -147,6 +147,12 @@ async function syncArticlesFromChain() {
   });
 
   console.log(`[vibesphere] 🌐 Bridge Active: Listening for PHRS articles on ${articleContractAddress.slice(0, 6)}...`);
+
+  // Pre-calculate the event topic for "ArticlePosted"
+  const articlePostedTopic = encodeEventTopics({
+    abi: articleContractAbi,
+    eventName: 'ArticlePosted',
+  })[0];
 
   while (true) {
     try {
@@ -163,20 +169,30 @@ async function syncArticlesFromChain() {
 
       const toBlock = fromBlock + BATCH_SIZE - 1n < latestBlock ? fromBlock + BATCH_SIZE - 1n : latestBlock;
 
-      const logs = await publicClient.getLogs({
+      // Fetch all raw logs for the contract address in the block range.
+      // This is more robust for RPC nodes that may not handle complex topic filters well.
+      const rawLogs = await publicClient.getLogs({
         address: articleContractAddress,
-        abi: articleContractAbi,
-        eventName: 'ArticlePosted',
         fromBlock,
         toBlock,
       });
 
+      // Filter for 'ArticlePosted' events client-side.
+      const logs = rawLogs.filter(log => log.topics[0] === articlePostedTopic);
+      
       if (logs.length > 0) {
         const client = await getDbPool().connect();
         try {
           await client.query('BEGIN');
           for (const log of logs) {
-            const { author, articleId, title, content, timestamp } = log.args;
+            // Decode the event log to get the arguments
+            const decodedEvent = decodeEventLog({
+              abi: articleContractAbi,
+              data: log.data,
+              topics: log.topics,
+            });
+
+            const { author, articleId, title, content, timestamp } = decodedEvent.args;
             const articleIdStr = articleId.toString();
             const timestampDate = new Date(Number(timestamp) * 1000);
 
