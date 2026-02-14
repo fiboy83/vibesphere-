@@ -311,7 +311,7 @@ export const identityContractAbi = [
   }
 ];
 
-// This address has been updated to the correct deployed contract address.
+// This address will need to be updated after you deploy the new VibesphereArticle contract.
 export const articleContractAddress = "0xeea92f3946f0901828908772b61e3c05c6a07d40"; 
 
 export const articleContractAbi = [
@@ -320,15 +320,15 @@ export const articleContractAbi = [
     "inputs": [
       {
         "indexed": true,
-        "internalType": "uint256",
-        "name": "articleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
         "internalType": "address",
         "name": "author",
         "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "articleId",
+        "type": "uint256"
       },
       {
         "indexed": false,
@@ -339,60 +339,38 @@ export const articleContractAbi = [
       {
         "indexed": false,
         "internalType": "string",
-        "name": "contentHash",
+        "name": "content",
         "type": "string"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "createdAt",
+        "name": "timestamp",
         "type": "uint256"
       }
     ],
-    "name": "ArticlePublished",
+    "name": "ArticlePosted",
     "type": "event"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_articleId",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "getArticleById",
+    "name": "articleMetas",
     "outputs": [
       {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "id",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "author",
-            "type": "address"
-          },
-          {
-            "internalType": "string",
-            "name": "title",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "contentHash",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "createdAt",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct VibesphereArticle.Article",
-        "name": "",
-        "type": "tuple"
+        "internalType": "address",
+        "name": "author",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -407,18 +385,18 @@ export const articleContractAbi = [
       },
       {
         "internalType": "string",
-        "name": "_contentHash",
+        "name": "_content",
         "type": "string"
       }
     ],
-    "name": "publishArticle",
+    "name": "postArticle",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "totalArticles",
+    "name": "getTotalArticles",
     "outputs": [
       {
         "internalType": "uint256",

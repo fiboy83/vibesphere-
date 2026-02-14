@@ -234,7 +234,6 @@ export default function VibesphereApp() {
 
   // --- FEED & BOOKMARK STATE ---
   const [feed, setFeed] = useState<any[]>([]);
-  const [articles, setArticles] = useState<any[]>([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
@@ -330,6 +329,29 @@ export default function VibesphereApp() {
         setBookmarkedPosts(userBookmarkedPosts);
 
         const processedFeed = data.map((post: any) => {
+            if (post.type === 'article') {
+              const layout = post.sovereign_layout || {};
+              const handle = layout.handle || `${post.pharos_address.slice(0, 6)}.vibes`;
+              return {
+                id: post.id,
+                created_at: post.created_at,
+                title: post.title,
+                text: post.content, // Use content directly
+                time: formatDistanceToNow(new Date(post.created_at)),
+                handle: handle,
+                username: layout.username || 'Sovereign_User',
+                avatar: layout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${post.pharos_address}&backgroundColor=a855f7`,
+                themeColor: layout.vibe_color || '262 100% 70%',
+                pharos_address: post.pharos_address,
+                type: 'article',
+                commentCount: 0,
+                repostCount: 0,
+                likeCount: 0,
+                comments: [],
+              };
+            }
+            
+            // Existing post processing logic
             const layout = post.sovereign_layout || {};
             const handle = layout.handle || `${post.pharos_address.slice(0, 6)}.vibes`;
             
@@ -392,45 +414,6 @@ export default function VibesphereApp() {
     }
   }, [toast, wallet?.address]);
 
-  const fetchArticles = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/articles`);
-      if (!response.ok) throw new Error("Failed to fetch articles from server.");
-      const data = await response.json();
-
-      const processedArticles = data.map((article: any) => {
-        const layout = article.sovereign_layout || {};
-        const handle = layout.handle || `${article.pharos_address.slice(0, 6)}.vibes`;
-        return {
-          id: article.id,
-          created_at: article.created_at,
-          title: article.title,
-          contentHash: article.content_hash,
-          time: formatDistanceToNow(new Date(article.created_at)),
-          handle: handle,
-          username: layout.username || 'Sovereign_User',
-          avatar: layout.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${article.pharos_address}&backgroundColor=a855f7`,
-          themeColor: layout.vibe_color || '262 100% 70%',
-          pharos_address: article.pharos_address,
-          type: 'article',
-          // Articles don't have these, but we add them for type consistency in the feed
-          commentCount: 0,
-          repostCount: 0,
-          likeCount: 0,
-          comments: [],
-        };
-      });
-      setArticles(processedArticles);
-    } catch (error: any) {
-      console.error("Could not fetch articles:", error);
-      toast({
-          variant: "destructive",
-          title: "Could not load articles",
-          description: error.message || "Failed to connect to the sovereign network.",
-      });
-    }
-  }, [toast]);
-
   const fetchConversations = useCallback(async () => {
     if (!wallet?.address) return;
     try {
@@ -483,11 +466,10 @@ export default function VibesphereApp() {
   useEffect(() => {
     if (isConnected) {
         fetchFeed();
-        fetchArticles();
         fetchUserHandle();
         fetchConversations();
     }
-  }, [isConnected, fetchFeed, fetchArticles, fetchUserHandle, fetchConversations]);
+  }, [isConnected, fetchFeed, fetchUserHandle, fetchConversations]);
 
   useEffect(() => {
     if (conversationWith) {
@@ -578,10 +560,6 @@ export default function VibesphereApp() {
     }
   };
   
-  const combinedFeed = useMemo(() => {
-    return [...feed, ...articles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [feed, articles]);
-
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setSearchResults([]);
@@ -616,10 +594,10 @@ export default function VibesphereApp() {
       }
     };
     
-    searchRecursive(combinedFeed);
+    searchRecursive(feed);
     setSearchResults(results);
 
-  }, [searchQuery, combinedFeed]);
+  }, [searchQuery, feed]);
 
 
   const pushView = (newView: Partial<typeof currentView>) => {
@@ -1123,7 +1101,7 @@ export default function VibesphereApp() {
       }
       return null;
     };
-    originalPost = findItemRecursive(combinedFeed, postId);
+    originalPost = findItemRecursive(feed, postId);
 
     if (!originalPost) {
         toast({ variant: "destructive", title: "Vibe not found", description: "Could not find the original post to re-vibe." });
@@ -1287,8 +1265,8 @@ export default function VibesphereApp() {
       const hash = await walletClient.writeContract({
         address: articleContractAddress as `0x${string}`,
         abi: articleContractAbi,
-        functionName: 'publishArticle',
-        args: [composerTitle, composerText], // title, contentHash
+        functionName: 'postArticle',
+        args: [composerTitle, composerText],
         account,
       });
 
@@ -1305,7 +1283,7 @@ export default function VibesphereApp() {
             abi: articleContractAbi,
             data: log.data,
             topics: log.topics,
-            eventName: 'ArticlePublished'
+            eventName: 'ArticlePosted'
           });
           articleId = (decodedEvent.args as { articleId: bigint }).articleId.toString();
         }
@@ -1324,7 +1302,7 @@ export default function VibesphereApp() {
         body: JSON.stringify({
           author_address: wallet.address,
           title: composerTitle,
-          content_hash: composerText,
+          content: composerText,
           tx_hash: hash,
         }),
       });
@@ -1334,7 +1312,7 @@ export default function VibesphereApp() {
         throw new Error(`Failed to sync article to the database: ${errorData.details || dbResponse.statusText}`);
       }
       
-      await fetchArticles();
+      await fetchFeed();
       setIsComposerOpen(false);
       resetComposer();
 
@@ -1534,10 +1512,10 @@ export default function VibesphereApp() {
   if (profileToShow) {
       switch (profileTab) {
           case 'echo':
-              feedForProfileTab = combinedFeed.filter(item => item.handle === profileToShow.handle && item.type !== 'revibe');
+              feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type !== 'revibe');
               break;
           case 'r-echo':
-              feedForProfileTab = combinedFeed.filter(item => item.handle === profileToShow.handle && item.type === 'revibe');
+              feedForProfileTab = feed.filter(item => item.handle === profileToShow.handle && item.type === 'revibe');
               break;
           case 'vibes':
               if (profileToShow.handle === profile.handle) {
@@ -1556,7 +1534,7 @@ export default function VibesphereApp() {
                           }
                       }
                   }
-                  findLikedRecursive(combinedFeed);
+                  findLikedRecursive(feed);
                   feedForProfileTab = likedFeed;
               } else {
                   feedForProfileTab = [];
@@ -1580,7 +1558,7 @@ export default function VibesphereApp() {
             }
         }
       };
-      findBookmarkedRecursive(combinedFeed);
+      findBookmarkedRecursive(feed);
   }
 
 
@@ -1590,7 +1568,7 @@ export default function VibesphereApp() {
     ? bookmarkedFeed
     : profileToShow
     ? feedForProfileTab
-    : combinedFeed;
+    : feed;
   
   
   if (!ready) {
@@ -2408,7 +2386,7 @@ export default function VibesphereApp() {
                              </div>
                              <div className="pl-12">
                                <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
-                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.contentHash}</p>
+                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.text}</p>
                              </div>
                            </ResonanceCard>
                         )
@@ -2826,7 +2804,7 @@ export default function VibesphereApp() {
                              </div>
                              <div className="pl-12">
                                <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
-                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.contentHash}</p>
+                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.text}</p>
                              </div>
                            </ResonanceCard>
                         )
@@ -3649,7 +3627,7 @@ export default function VibesphereApp() {
                     placeholder={
                       composerTab === 'media' ? 'add a vibe to your media...' :
                       composerTab === 'tekt' ? 'what is your vibe...' :
-                      'article content hash (ipfs/arweave cid)...'
+                      'your sovereign thoughts...'
                     }
                     className="w-full bg-transparent text-lg text-slate-200 resize-none focus:outline-none placeholder:text-slate-500"
                     rows={composerTab === 'artikel' ? 4 : 4}

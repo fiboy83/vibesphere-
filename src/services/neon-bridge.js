@@ -112,30 +112,6 @@ export async function updateLayout(pharos_address, metadata, extendedBio, websit
 
 
 /**
- * Saves a new post to the database.
- * @param {string} pharos_address The author's Pharos wallet address.
- * @param {string} content The content of the post.
- * @param {string} tx_hash The on-chain transaction hash.
- * @param {string | null} image_url URL of the attached media.
- * @returns {Promise<void>}
- */
-export async function savePost(pharos_address, content, tx_hash, image_url) {
-  const dbPool = getDbPool();
-  if (!pharos_address || (!content && !image_url) || !dbPool) return;
-  try {
-    const query = 'INSERT INTO posts (pharos_address, content, tx_hash, image_url) VALUES ($1::text, $2::text, $3::text, $4::text)';
-    await dbPool.query(query, [pharos_address, content, tx_hash, image_url]);
-  } catch (error) {
-    console.error('[NEON SAVE POST ERROR]', {
-        message: error.message,
-        stack: error.stack,
-        detail: error.detail,
-    });
-    throw error;
-  }
-}
-
-/**
  * Fetches the global feed from the database with user-specific interaction data.
  * @param {string | null} pharos_address The requesting user's Pharos wallet address.
  * @returns {Promise<any[]>} A list of posts with user data and interaction counts.
@@ -149,7 +125,8 @@ export async function getFeed(pharos_address) {
   }
 
   try {
-    const query = `
+    // Fetch posts
+    const postQuery = `
       SELECT
         p.id,
         p.content,
@@ -162,6 +139,7 @@ export async function getFeed(pharos_address) {
             WHEN p.image_url IS NOT NULL AND p.image_url != '' THEN 'image'
             ELSE NULL
         END AS media_type,
+        'post' as type,
         (
           COALESCE(u.sovereign_layout, '{}'::jsonb) || 
           jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
@@ -190,17 +168,73 @@ export async function getFeed(pharos_address) {
         ) as comments
       FROM posts p
       LEFT JOIN users u ON p.pharos_address = u.pharos_address
-      ORDER BY p.created_at DESC
-      LIMIT 50;
     `;
-    const res = await dbPool.query(query, [pharos_address || null]);
-    console.log(`[NEON GET_FEED]: Query successful, found ${res.rows.length} rows.`);
-    return res.rows;
+
+    // Fetch articles
+    const articleParams = [];
+    let articleQuery = `
+      SELECT
+        a.id,
+        a.title,
+        a.content_hash as content,
+        a.timestamp as created_at,
+        a.author_address as pharos_address,
+        'article' as type,
+        (
+          COALESCE(u.sovereign_layout, '{}'::jsonb) || 
+          jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
+        ) as sovereign_layout
+      FROM articles a
+      LEFT JOIN users u ON a.author_address = u.pharos_address
+    `;
+
+    if (pharos_address) {
+      articleQuery += ' WHERE a.author_address = $1::text';
+      articleParams.push(pharos_address);
+    }
+
+    const [postRes, articleRes] = await Promise.all([
+        dbPool.query(postQuery, [pharos_address || null]),
+        dbPool.query(articleQuery, articleParams)
+    ]);
+    
+    // Combine and sort
+    const combinedFeed = [...postRes.rows, ...articleRes.rows];
+    combinedFeed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    console.log(`[NEON GET_FEED]: Query successful, found ${combinedFeed.length} total items.`);
+    return combinedFeed.slice(0, 100); // Limit to 100 items
+
   } catch (error) {
     console.error('[NEON GET_FEED ERROR]: Error fetching feed from Neon:', error);
     throw error;
   }
 }
+
+/**
+ * Saves a new post to the database.
+ * @param {string} pharos_address The author's Pharos wallet address.
+ * @param {string} content The content of the post.
+ * @param {string} tx_hash The on-chain transaction hash.
+ * @param {string | null} image_url URL of the attached media.
+ * @returns {Promise<void>}
+ */
+export async function savePost(pharos_address, content, tx_hash, image_url) {
+  const dbPool = getDbPool();
+  if (!pharos_address || (!content && !image_url) || !dbPool) return;
+  try {
+    const query = 'INSERT INTO posts (pharos_address, content, tx_hash, image_url) VALUES ($1::text, $2::text, $3::text, $4::text)';
+    await dbPool.query(query, [pharos_address, content, tx_hash, image_url]);
+  } catch (error) {
+    console.error('[NEON SAVE POST ERROR]', {
+        message: error.message,
+        stack: error.stack,
+        detail: error.detail,
+    });
+    throw error;
+  }
+}
+
 
 // --- Interaction Functions ---
 
@@ -347,21 +381,21 @@ export async function getConversations(pharos_address) {
 }
 
 /**
- * Saves a new article to the database.
+ * Saves a new article to the database. The content is stored in the content_hash column.
  * @param {string} author_address The author's Pharos wallet address.
  * @param {string} title The title of the article.
- * @param {string} content_hash The IPFS/Arweave content hash (CID).
+ * @param {string} content The full content of the article.
  * @returns {Promise<void>}
  */
-export async function saveArticle(author_address, title, content_hash) {
+export async function saveArticle(author_address, title, content) {
   const dbPool = getDbPool();
-  if (!author_address || !title || !content_hash || !dbPool) return;
+  if (!author_address || !title || !content || !dbPool) return;
   try {
     const query = `
       INSERT INTO articles (author_address, title, content_hash, visibility)
       VALUES ($1::text, $2::text, $3::text, 'public');
     `;
-    await dbPool.query(query, [author_address, title, content_hash]);
+    await dbPool.query(query, [author_address, title, content]);
     console.log(`[NEON SAVE ARTICLE]: Successfully saved article.`);
   } catch (error) {
     console.error('[NEON SAVE ARTICLE ERROR]', {
@@ -379,7 +413,7 @@ export async function saveArticle(author_address, title, content_hash) {
  * @returns {Promise<any[]>} A list of articles with author layout data.
  */
 export async function getArticles(author_address) {
-  console.log(`[NEON GET_ARTICLES]: Fetching articles for: ${author_address || 'guest'}`);
+  console.log(`[NEON GET_ARTICLES]: Fetching articles for: ${author_address || 'all'}`);
   const dbPool = getDbPool();
   if (!dbPool) {
     console.error('[NEON GET_ARTICLES]: DB Pool not available. Returning empty array.');
