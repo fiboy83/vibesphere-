@@ -161,9 +161,10 @@ async function syncArticlesFromChain() {
     });
 
     const latestBlock = await publicClient.getBlockNumber();
-    // Fetch events from the last 5000 blocks. In a production environment,
-    // you would store the last synced block number in the DB and query from there.
-    const fromBlock = latestBlock > 5000n ? latestBlock - 5000n : 0n;
+    // Start syncing from the specific deployment block of the contract
+    const fromBlock = 13496097n;
+
+    console.log(`[NEON SYNC]: Scanning for 'ArticlePosted' events from block ${fromBlock} to ${latestBlock}.`);
 
     const logs = await publicClient.getLogs({
       address: articleContractAddress,
@@ -643,5 +644,3 @@ module.exports = {
     getArticles,
     syncArticlesFromChain
 };
-
-    
