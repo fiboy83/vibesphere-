@@ -235,9 +235,9 @@ export default function VibesphereApp() {
   // --- FEED & BOOKMARK STATE ---
   const [feed, setFeed] = useState<any[]>([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([]);
-  const [likedPosts, setLikedPosts] = useState<number[]>([]);
-  const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<(number|string)[]>([]);
+  const [likedPosts, setLikedPosts] = useState<(number|string)[]>([]);
+  const [expandedItems, setExpandedItems] = useState<(number|string)[]>([]);
   const [vibedProfiles, setVibedProfiles] = useState<string[]>([]);
 
 
@@ -532,7 +532,7 @@ export default function VibesphereApp() {
     checkHandle();
   }, [debouncedClaimInput]);
   
-  const handleToggleBookmark = async (postId: number) => {
+  const handleToggleBookmark = async (postId: number | string) => {
     if (!wallet?.address) return;
     const isBookmarked = bookmarkedPosts.includes(postId);
 
@@ -568,7 +568,7 @@ export default function VibesphereApp() {
 
     const lowerCaseQuery = searchQuery.toLowerCase();
     
-    const foundIds = new Set<number>();
+    const foundIds = new Set<number | string>();
     const results: any[] = [];
 
     const searchRecursive = (items: any[]) => {
@@ -975,7 +975,7 @@ export default function VibesphereApp() {
     }, [isConnected, fetchLayout]);
 
   // --- RECURSIVE FEED UPDATER ---
-  const updateItemInFeed = (items: any[], itemId: number, updateFn: (item: any) => any): [any[], boolean] => {
+  const updateItemInFeed = (items: any[], itemId: number | string, updateFn: (item: any) => any): [any[], boolean] => {
     let itemFound = false;
     const updatedItems = items.map(item => {
         if (item.id === itemId) {
@@ -1036,7 +1036,7 @@ export default function VibesphereApp() {
   };
 
 
-  const handleToggleLike = async (postId: number) => {
+  const handleToggleLike = async (postId: number | string) => {
     if (!wallet?.address) return;
 
     const isLiked = likedPosts.includes(postId);
@@ -2365,6 +2365,11 @@ export default function VibesphereApp() {
                     } as React.CSSProperties;
 
                     if (item.type === 'article') {
+                        const isExpanded = expandedItems.includes(item.id);
+                        const isLongArticle = item.text.length > 300;
+                        const isLiked = likedPosts.includes(item.id);
+                        const isBookmarked = bookmarkedPosts.includes(item.id);
+
                         return (
                            <ResonanceCard key={`${item.id}-${index}`} style={cardStyle}>
                              <div className="flex justify-between items-start mb-3">
@@ -2385,8 +2390,90 @@ export default function VibesphereApp() {
                                </button>
                              </div>
                              <div className="pl-12">
-                               <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
-                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.text}</p>
+                                <h3 
+                                    onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: item }); }}
+                                    className="text-lg font-bold text-slate-100 leading-snug cursor-pointer hover:underline"
+                                >
+                                    {item.title}
+                                </h3>
+                                <div className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">
+                                    <AnimatePresence initial={false}>
+                                        <motion.p
+                                          key="content"
+                                          initial={{ opacity: 0 }}
+                                          animate={{ opacity: 1 }}
+                                          exit={{ opacity: 0 }}
+                                          transition={{ duration: 0.3 }}
+                                        >
+                                          {isLongArticle && !isExpanded ? `${item.text.substring(0, 300)}...` : item.text}
+                                        </motion.p>
+                                    </AnimatePresence>
+                                    {isLongArticle && !isExpanded && (
+                                    <button
+                                        onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedItems(prev => [...prev, item.id]);
+                                        }}
+                                        className="text-primary/80 hover:text-primary text-sm font-mono lowercase transition-colors mt-2"
+                                    >
+                                        read more
+                                    </button>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-between items-center mt-4 pt-3 border-t" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.2)`}}>
+                                    <motion.button 
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} 
+                                        className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        aria-label="Comment on article"
+                                        >
+                                        <MessageSquare size={18} strokeWidth={1.5} />
+                                        <span className="text-sm font-mono">{item.commentCount || 0}</span>
+                                    </motion.button>
+                                    <motion.button 
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
+                                        className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        style={isLiked ? {
+                                            color: `hsl(${postAuraColor})`,
+                                            filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
+                                        } : {}}
+                                        aria-label="Like article"
+                                    >
+                                        <Sparkles 
+                                            size={18} 
+                                            strokeWidth={1.5}
+                                            fill={isLiked ? 'currentColor' : 'none'}
+                                        />
+                                        <span className="text-sm font-mono">{item.likeCount || 0}</span>
+                                    </motion.button>
+                                    <motion.button
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRecipient(author.pharos_address);
+                                            setShowSendModal(true);
+                                            toast({title: `Tipping @${author.handle}`});
+                                        }} 
+                                        className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        aria-label="Tip author"
+                                    >
+                                        <DollarSign size={18} strokeWidth={1.5} />
+                                        <span className="text-sm font-mono">tip</span>
+                                    </motion.button>
+                                    <motion.button
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        aria-label="Bookmark article"
+                                        >
+                                        <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
+                                    </motion.button>
+                                </div>
                              </div>
                            </ResonanceCard>
                         )
@@ -2394,7 +2481,7 @@ export default function VibesphereApp() {
 
                     const isBookmarked = bookmarkedPosts.includes(mainPost.id);
                     const isLiked = likedPosts.includes(mainPost.id);
-                    const isExpanded = expandedPosts.includes(mainPost.id);
+                    const isExpanded = expandedItems.includes(mainPost.id);
 
                     const handleCardClick = () => {
                       pushView({ focusedPost: mainPost });
@@ -2481,7 +2568,7 @@ export default function VibesphereApp() {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setExpandedPosts(prev => [...prev, mainPost.id]);
+                                                        setExpandedItems(prev => [...prev, mainPost.id]);
                                                     }}
                                                     className="text-primary/80 hover:text-primary text-xs font-mono lowercase transition-colors"
                                                 >
@@ -2783,6 +2870,11 @@ export default function VibesphereApp() {
                     displayedFeed.map((item, index) => {
                       if (item.type === 'article') {
                         const postAuraColor = getPostAuraColor(item);
+                        const isExpanded = expandedItems.includes(item.id);
+                        const isLongArticle = item.text.length > 300;
+                        const isLiked = likedPosts.includes(item.id);
+                        const isBookmarked = bookmarkedPosts.includes(item.id);
+
                         return (
                            <ResonanceCard key={`${item.id}-${index}`} style={{'--primary': postAuraColor, '--primary-glow': postAuraColor.replace(/ /g, ', ') } as React.CSSProperties}>
                              <div className="flex justify-between items-start mb-3">
@@ -2803,8 +2895,89 @@ export default function VibesphereApp() {
                                </button>
                              </div>
                              <div className="pl-12">
-                               <h3 className="text-lg font-bold text-slate-100 leading-snug">{item.title}</h3>
-                               <p className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">{item.text}</p>
+                                <h3 
+                                    onClick={(e) => { e.stopPropagation(); pushView({ focusedPost: item }); }}
+                                    className="text-lg font-bold text-slate-100 leading-snug cursor-pointer hover:underline"
+                                >
+                                    {item.title}
+                                </h3>
+                                <div className="text-slate-200 text-base leading-relaxed font-light mt-2 whitespace-pre-wrap">
+                                    <AnimatePresence initial={false}>
+                                        <motion.p
+                                        key="content"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        >
+                                        {isLongArticle && !isExpanded ? `${item.text.substring(0, 300)}...` : item.text}
+                                        </motion.p>
+                                    </AnimatePresence>
+                                    {isLongArticle && !isExpanded && (
+                                    <button
+                                        onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedItems(prev => [...prev, item.id]);
+                                        }}
+                                        className="text-primary/80 hover:text-primary text-sm font-mono lowercase transition-colors mt-2"
+                                    >
+                                        read more
+                                    </button>
+                                    )}
+                                </div>
+                                <div className="flex justify-between items-center mt-4 pt-3 border-t" style={{borderColor: `hsla(${postAuraColor.replace(/ /g, ',')}, 0.2)`}}>
+                                    <motion.button 
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {e.stopPropagation(); pushView({ focusedPost: item }); setTimeout(() => setIsCommentSectionVisible(true), 100); }} 
+                                        className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        aria-label="Comment on article"
+                                        >
+                                        <MessageSquare size={18} strokeWidth={1.5} />
+                                        <span className="text-sm font-mono">{item.commentCount || 0}</span>
+                                    </motion.button>
+                                    <motion.button 
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {e.stopPropagation(); handleToggleLike(item.id)}}
+                                        className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        style={isLiked ? {
+                                            color: `hsl(${postAuraColor})`,
+                                            filter: `drop-shadow(0 0 5px hsla(${postAuraColor.replace(/ /g, ',')}, 0.8))`
+                                        } : {}}
+                                        aria-label="Like article"
+                                    >
+                                        <Sparkles 
+                                            size={18} 
+                                            strokeWidth={1.5}
+                                            fill={isLiked ? 'currentColor' : 'none'}
+                                        />
+                                        <span className="text-sm font-mono">{item.likeCount || 0}</span>
+                                    </motion.button>
+                                    <motion.button
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRecipient(item.pharos_address);
+                                            setShowSendModal(true);
+                                            toast({title: `Tipping @${item.handle}`});
+                                        }} 
+                                        className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        aria-label="Tip author"
+                                    >
+                                        <DollarSign size={18} strokeWidth={1.5} />
+                                        <span className="text-sm font-mono">tip</span>
+                                    </motion.button>
+                                    <motion.button
+                                        whileTap={{ scale: 1.2 }}
+                                        transition={{ duration: 0.1 }}
+                                        onClick={(e) => {e.stopPropagation(); handleToggleBookmark(item.id)}} className="group flex items-center gap-2 text-primary/70 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/10"
+                                        aria-label="Bookmark article"
+                                        >
+                                        <Bookmark size={18} strokeWidth={1.5} className="transition-all duration-300" fill={isBookmarked ? 'currentColor' : 'none'}/>
+                                    </motion.button>
+                                </div>
                              </div>
                            </ResonanceCard>
                         )
@@ -2822,7 +2995,7 @@ export default function VibesphereApp() {
                       
                       const isBookmarked = bookmarkedPosts.includes(mainPost.id);
                       const isLiked = likedPosts.includes(mainPost.id);
-                      const isExpanded = expandedPosts.includes(mainPost.id);
+                      const isExpanded = expandedItems.includes(mainPost.id);
 
                       const handleCardClick = () => {
                           pushView({ focusedPost: mainPost });
@@ -2910,7 +3083,7 @@ export default function VibesphereApp() {
                                               <button
                                                   onClick={(e) => {
                                                       e.stopPropagation();
-                                                      setExpandedPosts(prev => [...prev, item.id]);
+                                                      setExpandedItems(prev => [...prev, item.id]);
                                                   }}
                                                   className="text-primary/80 hover:text-primary text-xs font-mono lowercase transition-colors"
                                               >
