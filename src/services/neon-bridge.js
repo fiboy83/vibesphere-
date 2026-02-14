@@ -1,8 +1,124 @@
 
-import { Pool } from 'pg';
-import { createPublicClient, http, decodeEventLog } from 'viem';
-import { pharosTestnet } from '@/components/providers/privy-provider';
-import { articleContractAddress, articleContractAbi } from '@/constants/contracts';
+const { Pool } = require('pg');
+const { createPublicClient, http, decodeEventLog, defineChain } = require('viem');
+
+// --- Self-contained constants to avoid alias/TS issues in Node script context ---
+
+const articleContractAddress = "0x6b1cf09d412eA114B21A762b5049F4251264f85f"; 
+
+const articleContractAbi = [
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "author",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "articleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "content",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "ArticlePosted",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "articleMetas",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "author",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_title",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_content",
+        "type": "string"
+      }
+    ],
+    "name": "postArticle",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalArticles",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+const pharosTestnet = defineChain({
+  id: 688689,
+  name: 'Pharos Atlantic Testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'PHAROS',
+    symbol: 'PHRS',
+  },
+  rpcUrls: {
+    default: {
+      http: [process.env.NEXT_PUBLIC_RPC_URL || 'https://atlantic.dplabs-internal.com'],
+    },
+  },
+  blockExplorers: {
+    default: { name: 'Pharos Scan', url: 'https://pharos-testnet.socialscan.io' },
+  },
+  testnet: true,
+});
 
 
 let pool;
@@ -35,8 +151,8 @@ async function syncArticlesFromChain() {
   const dbPool = getDbPool();
   if (!dbPool) return;
 
-  console.log('[NEON SYNC]: Starting on-demand article sync from chain.');
-  console.log('[vibesphere] 🌐 Bridge Active: Listening for PHRS articles on 0x6b1c...');
+  const shortAddress = articleContractAddress.slice(0, 6);
+  console.log(`[vibesphere] 🌐 Bridge Active: Listening for PHRS articles on ${shortAddress}...`);
 
   try {
     const publicClient = createPublicClient({
@@ -75,24 +191,24 @@ async function syncArticlesFromChain() {
 
         // Upsert metadata into 'articles' table. We'll use the tx_hash as a unique key for content hash.
         const articleMetaResult = await client.query(
-          `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility)
-           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public')
+          `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility, contract_address)
+           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public', $6::text)
            ON CONFLICT (id) DO UPDATE SET
              title = EXCLUDED.title,
              timestamp = EXCLUDED.timestamp
            RETURNING id;`,
-          [articleIdStr, author, title, log.transactionHash, timestampDate]
+          [articleIdStr, author, title, log.transactionHash, timestampDate, articleContractAddress]
         );
         const dbArticleId = articleMetaResult.rows[0].id;
 
         // Upsert full content into 'article_content' table
         await client.query(
-          `INSERT INTO article_content (article_id, title, content, author_address, created_at)
-           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp)
+          `INSERT INTO article_content (article_id, title, content, author_address, created_at, tx_hash)
+           VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $6::text)
            ON CONFLICT (article_id) DO UPDATE SET
              title = EXCLUDED.title,
              content = EXCLUDED.content;`,
-          [dbArticleId, title, content, author, timestampDate]
+          [dbArticleId, title, content, author, timestampDate, log.transactionHash]
         );
       }
 
@@ -116,7 +232,7 @@ async function syncArticlesFromChain() {
  * @param {string} pharos_address The user's Pharos wallet address.
  * @returns {Promise<{vibe_color: string, avatar: string, username: string, handle: string, bio: string, extendedBio: string, websiteUrl: string} | null>} The layout metadata or null if not found.
  */
-export async function getLayout(pharos_address) {
+async function getLayout(pharos_address) {
   const dbPool = getDbPool();
   if (!pharos_address || !dbPool) return null;
 
@@ -154,7 +270,7 @@ export async function getLayout(pharos_address) {
  * @param {string} [websiteUrl] The user's primary website URL.
  * @returns {Promise<void>}
  */
-export async function updateLayout(pharos_address, metadata, extendedBio, websiteUrl) {
+async function updateLayout(pharos_address, metadata, extendedBio, websiteUrl) {
   const dbPool = getDbPool();
   if (!pharos_address || !dbPool) return;
 
@@ -201,7 +317,7 @@ export async function updateLayout(pharos_address, metadata, extendedBio, websit
  * @param {string | null} pharos_address The requesting user's Pharos wallet address.
  * @returns {Promise<any[]>} A list of posts with user data and interaction counts.
  */
-export async function getFeed(pharos_address) {
+async function getFeed(pharos_address) {
   // Run the sync process before fetching the feed to get latest articles.
   await syncArticlesFromChain();
   
@@ -304,7 +420,7 @@ export async function getFeed(pharos_address) {
  * @param {string | null} image_url URL of the attached media.
  * @returns {Promise<void>}
  */
-export async function savePost(pharos_address, content, tx_hash, image_url) {
+async function savePost(pharos_address, content, tx_hash, image_url) {
   const dbPool = getDbPool();
   if (!pharos_address || (!content && !image_url) || !dbPool) return;
   try {
@@ -321,31 +437,31 @@ export async function savePost(pharos_address, content, tx_hash, image_url) {
 }
 
 
-export async function addLike(postId, pharos_address) {
+async function addLike(postId, pharos_address) {
   const dbPool = getDbPool();
   if (!dbPool) return;
   await dbPool.query('INSERT INTO likes (post_id_onchain, pharos_address) VALUES ($1::text, $2::text) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
 }
 
-export async function removeLike(postId, pharos_address) {
+async function removeLike(postId, pharos_address) {
   const dbPool = getDbPool();
   if (!dbPool) return;
   await dbPool.query('DELETE FROM likes WHERE post_id_onchain = $1::text AND pharos_address = $2::text', [postId, pharos_address]);
 }
 
-export async function addBookmark(postId, pharos_address) {
+async function addBookmark(postId, pharos_address) {
   const dbPool = getDbPool();
   if (!dbPool) return;
   await dbPool.query('INSERT INTO bookmarks (post_id_onchain, pharos_address) VALUES ($1::text, $2::text) ON CONFLICT (post_id_onchain, pharos_address) DO NOTHING', [postId, pharos_address]);
 }
 
-export async function removeBookmark(postId, pharos_address) {
+async function removeBookmark(postId, pharos_address) {
   const dbPool = getDbPool();
   if (!dbPool) return;
   await dbPool.query('DELETE FROM bookmarks WHERE post_id_onchain = $1::text AND pharos_address = $2::text', [postId, pharos_address]);
 }
 
-export async function addComment(postId, pharos_address, content, parentId = null) {
+async function addComment(postId, pharos_address, content, parentId = null) {
     const dbPool = getDbPool();
     if (!dbPool) return null;
     const res = await dbPool.query(
@@ -356,7 +472,7 @@ export async function addComment(postId, pharos_address, content, parentId = nul
 }
 
 
-export async function saveMessage(sender_address, receiver_address, content) {
+async function saveMessage(sender_address, receiver_address, content) {
   const dbPool = getDbPool();
   if (!sender_address || !receiver_address || !content || !dbPool) return null;
   try {
@@ -373,7 +489,7 @@ export async function saveMessage(sender_address, receiver_address, content) {
   }
 }
 
-export async function getMessages(address1, address2) {
+async function getMessages(address1, address2) {
     const dbPool = getDbPool();
     if (!address1 || !address2 || !dbPool) return [];
     try {
@@ -401,7 +517,7 @@ export async function getMessages(address1, address2) {
     }
 }
 
-export async function getConversations(pharos_address) {
+async function getConversations(pharos_address) {
   const dbPool = getDbPool();
   if (!pharos_address || !dbPool) return [];
   try {
@@ -444,7 +560,7 @@ export async function getConversations(pharos_address) {
   }
 }
 
-export async function saveArticle(author_address, title, content) {
+async function saveArticle(author_address, title, content) {
   const dbPool = getDbPool();
   if (!author_address || !title || !content || !dbPool) return;
   try {
@@ -464,7 +580,7 @@ export async function saveArticle(author_address, title, content) {
   }
 }
 
-export async function getArticles(author_address) {
+async function getArticles(author_address) {
   console.log(`[NEON GET_ARTICLES]: Fetching articles for: ${author_address || 'all'}`);
   const dbPool = getDbPool();
   if (!dbPool) {
@@ -527,3 +643,5 @@ module.exports = {
     getArticles,
     syncArticlesFromChain
 };
+
+    
