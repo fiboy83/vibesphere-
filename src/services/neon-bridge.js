@@ -192,32 +192,19 @@ async function syncArticlesFromChain() {
               topics: log.topics,
             });
 
-            const { author, articleId, title, content, timestamp } = decodedEvent.args;
-            const articleIdStr = articleId.toString();
+            const { author, title, content, timestamp } = decodedEvent.args;
             const timestampDate = new Date(Number(timestamp) * 1000);
 
             console.log(`[vibesphere] ✨ New Article Detected: ${title}`);
             
-            // Upsert metadata into 'articles' table
-            const articleMetaResult = await client.query(
-              `INSERT INTO articles (id, author_address, title, content_hash, timestamp, tx_hash, visibility, contract_address)
-               VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $4::text, 'public', $6::text)
-               ON CONFLICT (id) DO UPDATE SET
-                 title = EXCLUDED.title,
-                 timestamp = EXCLUDED.timestamp
-               RETURNING id;`,
-              [articleIdStr, author, title, log.transactionHash, timestampDate, articleContractAddress]
-            );
-            const dbArticleId = articleMetaResult.rows[0].id;
-
-            // Upsert full content into 'article_content' table
+            // Insert full article data into the 'articles' table, using tx_hash as the unique key for conflict resolution.
             await client.query(
-              `INSERT INTO article_content (article_id, title, content, author_address, created_at, tx_hash)
-               VALUES ($1::bigint, $2::text, $3::text, $4::text, $5::timestamp, $6::text)
-               ON CONFLICT (article_id) DO UPDATE SET
-                 title = EXCLUDED.title,
+              `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address, tx_hash)
+               VALUES ($1, $2, $3, $4, 'public', $5, $6)
+               ON CONFLICT (tx_hash) DO UPDATE SET 
+                 title = EXCLUDED.title, 
                  content = EXCLUDED.content;`,
-              [dbArticleId, title, content, author, timestampDate, log.transactionHash]
+              [author, title, content, timestampDate, articleContractAddress, log.transactionHash]
             );
           }
           await client.query('COMMIT');
@@ -389,19 +376,20 @@ async function getFeed(pharos_address) {
 
     const articleQuery = `
       SELECT
-        ac.article_id as id,
-        ac.title,
-        ac.content,
-        ac.created_at,
-        ac.author_address as pharos_address,
+        a.id,
+        a.title,
+        a.content,
+        a."timestamp" as created_at,
+        a.author_address as pharos_address,
         'article' as type,
         (
           COALESCE(u.sovereign_layout, '{}'::jsonb) || 
           jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
         ) as sovereign_layout
-      FROM article_content ac
-      LEFT JOIN users u ON ac.author_address = u.pharos_address
-      WHERE ($1::text IS NULL OR ac.author_address = $1::text)
+      FROM articles a
+      LEFT JOIN users u ON a.author_address = u.pharos_address
+      WHERE a.contract_address = '${articleContractAddress}'
+      AND ($1::text IS NULL OR a.author_address = $1::text)
     `;
 
     const [postRes, articleRes] = await Promise.all([
@@ -573,29 +561,15 @@ async function saveArticle(author_address, title, content, tx_hash) {
   const dbPool = getDbPool();
   if (!author_address || !title || !content || !tx_hash || !dbPool) return;
   try {
-    const res = await dbPool.query(
-      `INSERT INTO articles (author_address, title, content_hash, visibility, tx_hash, contract_address)
-       VALUES ($1, $2, $3, 'public', $3, $4)
-       ON CONFLICT (tx_hash) DO NOTHING
-       RETURNING id;`,
-      [author_address, title, tx_hash, articleContractAddress]
-    );
-
-    if (res.rows.length === 0) {
-      console.log(`[NEON SAVE ARTICLE]: Article with tx_hash ${tx_hash} already exists.`);
-      return;
-    }
-    
-    const articleId = res.rows[0].id;
-    
     await dbPool.query(
-      `INSERT INTO article_content (article_id, title, content, author_address, tx_hash)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (article_id) DO UPDATE SET title = $2, content = $3;`,
-      [articleId, title, content, author_address, tx_hash]
+      `INSERT INTO articles (author_address, title, content, "timestamp", visibility, contract_address, tx_hash)
+       VALUES ($1, $2, $3, NOW(), 'public', $4, $5)
+       ON CONFLICT (tx_hash) DO UPDATE SET
+         title = EXCLUDED.title,
+         content = EXCLUDED.content;`,
+      [author_address, title, content, articleContractAddress, tx_hash]
     );
-
-    console.log(`[NEON SAVE ARTICLE]: Successfully saved article ${articleId}.`);
+    console.log(`[NEON SAVE ARTICLE]: Successfully saved/updated article with tx_hash ${tx_hash}.`);
   } catch (error) {
     console.error('[NEON SAVE ARTICLE ERROR]', error);
     throw error;
@@ -615,9 +589,9 @@ async function getArticles(author_address) {
     let query = `
       SELECT
         a.id,
-        ac.title,
-        ac.content,
-        a.timestamp as created_at,
+        a.title,
+        a.content,
+        a."timestamp" as created_at,
         a.author_address,
         a.visibility,
         (
@@ -625,7 +599,6 @@ async function getArticles(author_address) {
           jsonb_build_object('extendedBio', u.extended_bio, 'websiteUrl', u.website_url)
         ) as sovereign_layout
       FROM articles a
-      JOIN article_content ac ON a.id = ac.article_id
       LEFT JOIN users u ON a.author_address = u.pharos_address
     `;
 
@@ -635,7 +608,7 @@ async function getArticles(author_address) {
     }
     
     query += `
-      ORDER BY a.timestamp DESC
+      ORDER BY a."timestamp" DESC
       LIMIT 50;
     `;
 
